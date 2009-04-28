@@ -21,9 +21,33 @@ CConfig::CConfig ( )
 {
 }
 
-CConfig::CConfig ( const CConfig &copy )
+CConfig::CConfig ( const CConfig& copy )
 : m_pSections ( 0 ), m_iErrno ( 0 )
 {
+    SIniSection* pSection;
+    SIniEntry* pEntry;
+
+    for ( pSection = copy.m_pSections;
+          pSection != 0;
+          pSection = pSection->pNext )
+    {
+        SIniSection* pNewSection = new SIniSection;
+        pNewSection->pEntries = 0;
+        pNewSection->pNext = m_pSections;
+        m_pSections = pNewSection;
+        pNewSection->szName = pSection->szName;
+
+        for ( pEntry = pSection->pEntries;
+              pEntry != 0;
+              pEntry = pEntry->pNext )
+        {
+            SIniEntry* pNewEntry = new SIniEntry;
+            pNewEntry->pNext = pNewSection->pEntries;
+            pNewSection->pEntries = pNewEntry;
+            pNewEntry->szName = pEntry->szName;
+            pNewEntry->szValue = pEntry->szValue;
+        }
+    }
 }
 
 CConfig::CConfig ( const CString& szFilename )
