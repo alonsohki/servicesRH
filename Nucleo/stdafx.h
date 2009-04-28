@@ -46,3 +46,11 @@
 // Encabezados propios
 #include "CString.h"
 #include "CConfig.h"
+
+// Definiciones varias
+static inline void Pause ( )
+{
+#ifdef WIN32
+    system ( "pause ");
+#endif
+}
