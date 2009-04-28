@@ -28,7 +28,7 @@ public:
     static bool     StartupNetworking   ( );
     static void     CleanupNetworking   ( );
 private:
-    static bool     m_bNetworkingOk;
+    static bool     ms_bNetworkingOk;
 
 public:
                     CSocket             ( );
@@ -49,6 +49,7 @@ public:
 private:
     void            InternalClose       ( bool bKeepErrors );
 
+private:
     sock_t          m_socket;
     char            m_buffer [ BUFFER_SIZE ];
     size_t          m_bufferSize;

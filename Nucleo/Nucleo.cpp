@@ -49,12 +49,12 @@ int main( int argc, const char* argv[], const char* envp[] )
         return EXIT_FAILURE;
     }
 
+    // Inicializamos el protocolo
+    CProtocol& protocol = CProtocol::GetSingleton ( );
+    protocol.Initialize ( &socket );
+
     // Bucle
-    CString szLine;
-    while ( socket.ReadLine ( szLine ) > 0 )
-    {
-        puts ( szLine );
-    }
+    while ( protocol.Loop () > 0 );
 
     // Finalizamos
     socket.Close ();

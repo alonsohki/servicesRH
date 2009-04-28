@@ -184,6 +184,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CProtocol.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CSocket.cpp"
 				>
 			</File>
@@ -223,6 +227,10 @@
 			</File>
 			<File
 				RelativePath=".\CPortability.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CProtocol.h"
 				>
 			</File>
 			<File

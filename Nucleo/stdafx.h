@@ -51,3 +51,4 @@
 #include "CPortability.h"
 #include "CConfig.h"
 #include "CSocket.h"
+#include "CProtocol.h"

@@ -213,11 +213,11 @@ const CString& CSocket::Error ( ) const
 
 
 // Parte estática de la clase
-bool CSocket::m_bNetworkingOk = false;
+bool CSocket::ms_bNetworkingOk = false;
 
 bool CSocket::StartupNetworking ( )
 {
-    if ( m_bNetworkingOk == true )
+    if ( ms_bNetworkingOk == true )
         return true;
 
 #ifdef WIN32
@@ -231,7 +231,7 @@ bool CSocket::StartupNetworking ( )
     if ( iError != 0 )
     {
         printf ( "WSAStartup ha fallado con el código de error: %d\n", iError );
-        m_bNetworkingOk = false;
+        ms_bNetworkingOk = false;
         return false;
     }
 
@@ -239,23 +239,23 @@ bool CSocket::StartupNetworking ( )
     {
         printf ( "No se ha encontrado una versión apropiada de Winsock\n" );
         WSACleanup ( );
-        m_bNetworkingOk = false;
+        ms_bNetworkingOk = false;
         return false;
     }
 
 #endif
 
-    m_bNetworkingOk = true;
+    ms_bNetworkingOk = true;
     return true;
 }
 
 void CSocket::CleanupNetworking ( )
 {
 #ifdef WIN32
-    if ( m_bNetworkingOk )
+    if ( ms_bNetworkingOk )
     {
         WSACleanup ( );
     }
 #endif
-    m_bNetworkingOk = false;
+    ms_bNetworkingOk = false;
 }
