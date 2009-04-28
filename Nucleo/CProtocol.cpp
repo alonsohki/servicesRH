@@ -18,6 +18,7 @@
 
 // Parte no estática
 CProtocol::CProtocol ( )
+: m_bGotServer ( false )
 {
     m_commandsMap.set_deleted_key ( (const char *)0xFABADA00 );
     m_commandsMap.set_empty_key ( (const char *)0x00000000 );
@@ -61,6 +62,8 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
     unsigned long ulNow = static_cast < unsigned long > ( time ( 0 ) );
     CString szServerInfo ( "%s 1 %lu %lu P10 %s]]", szHost.c_str (), ulNow, ulNow, m_me.szNumeric );
     Send ( CClient(), "SERVER", szServerInfo, CClient(), szDesc );
+    Send ( m_me, "DB", "* 0 J 0 2", CClient(), "" );
+    Send ( m_me, "DB", "* J 0 0 n", CClient(), "" );
 
     return true;
 }
@@ -80,7 +83,42 @@ int CProtocol::Loop ( )
 
 bool CProtocol::Process ( const CString& szLine )
 {
-    puts ( szLine );
+    bool bGotText = false;
+    std::vector < CString > vec;
+
+    // Separamos los tokens del comando
+    int iPos = szLine.find ( ':' );
+    if ( iPos != CString::npos )
+    {
+        bGotText = true;
+        szLine.Split ( vec, ' ', iPos );
+    }
+    else
+        szLine.Split ( vec, ' ' );
+
+
+    if ( !m_bGotServer )
+    {
+        // El primer mensaje esperado es el de la información del servidor al que nos conectamos
+        if ( bGotText && szLine.compare ( 0, 6, "SERVER" ) == 0 )
+        {
+            m_bGotServer = true;
+
+            CServer *pServer = new CServer ( vec [ 1 ], std::string ( vec [ 8 ], 1 ) );
+            strcpy ( pServer->szNumeric, vec [ 6 ] );
+
+            if ( strlen ( pServer->szNumeric ) == 3 )
+                pServer->szNumeric [ 1 ] = '\0';
+            else
+                pServer->szNumeric [ 2 ] = '\0';
+            pServer->ulNumeric = base64toint ( pServer->szNumeric );
+
+            CClientManager::GetSingleton ().AddClient ( pServer );
+        }
+
+        return false;
+    }
+
     return true;
 }
 

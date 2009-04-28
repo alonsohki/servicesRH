@@ -178,6 +178,23 @@ public:
 
     }
 
+    void Split ( std::vector < CString >& dest, char cSeparator = ' ', unsigned int uiMax = (unsigned int)-1 ) const
+    {
+        int iPos = 0;
+        int iPos2 = 0;
+        while ( ( iPos = find ( cSeparator, iPos ) ) != npos )
+        {
+            if ( static_cast < unsigned int > ( iPos ) > uiMax )
+                break;
+
+            dest.push_back ( std::string ( *this, iPos2, iPos - iPos2 ) );
+            iPos++;
+            iPos2 = iPos;
+        }
+
+        dest.push_back ( std::string ( *this, iPos2 ) );
+    }
+
     // Assignment  
     operator const char*() const    { return c_str (); }        // Auto assign to const char* without using c_str()
 };

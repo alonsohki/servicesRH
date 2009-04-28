@@ -31,7 +31,7 @@ public:
     {
     }
 
-    inline          CClient     ( const CString& szClient )
+    inline          CClient     ( const CString& szClient, const CString& _szDesc = "" )
     {
         int iIdent = szClient.find ( '!' );
         if ( iIdent == CString::npos )
@@ -48,6 +48,8 @@ public:
                 szHost = szClient.substr ( iHost + 1 );
             }
         }
+
+        szDesc = _szDesc;
     }
 
     virtual         ~CClient    ( )
@@ -66,6 +68,7 @@ public:
     CString         szName;
     CString         szIdent;
     CString         szHost;
+    CString         szDesc;
 };
 
 class CServer : public CClient
@@ -75,8 +78,8 @@ public:
     {
     }
 
-    inline          CServer     ( const CString& szClient )
-        : CClient ( szClient )
+    inline          CServer     ( const CString& szClient, const CString& szDesc = "" )
+        : CClient ( szClient, szDesc )
     {
     }
 
@@ -89,5 +92,3 @@ public:
         return CClient::SERVER;
     }
 };
-
-static const CClient NullClient ();

@@ -61,4 +61,6 @@
 #include "CConfig.h"
 #include "CSocket.h"
 #include "CClient.h"
+#include "CClientManager.h"
+#include "CMessage.h"
 #include "CProtocol.h"

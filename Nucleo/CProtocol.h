@@ -63,4 +63,5 @@ private:
     CString                 m_szLine;
     CServer                 m_me;
     t_commandsMap           m_commandsMap;
+    bool                    m_bGotServer;
 };

@@ -188,6 +188,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CClientManager.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CConfig.cpp"
 				>
 			</File>
@@ -242,7 +246,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CClientManager.h"
+				>
+			</File>
+			<File
 				RelativePath=".\CConfig.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CMessage.h"
 				>
 			</File>
 			<File
