@@ -48,6 +48,9 @@ CConfig::CConfig ( const CConfig& copy )
             pNewEntry->szValue = pEntry->szValue;
         }
     }
+
+    m_iErrno = copy.m_iErrno;
+    m_szError = copy.m_szError;
 }
 
 CConfig::CConfig ( const CString& szFilename )
@@ -176,6 +179,8 @@ void CConfig::Reset ( )
     }
 
     m_pSections = 0;
+    m_iErrno = 0;
+    m_szError = "";
 }
 
 bool CConfig::GetValue ( CString& szDest, const CString& szSection, const CString& szEntry )

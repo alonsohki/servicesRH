@@ -65,6 +65,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				UseUnicodeResponseFiles="false"
+				AdditionalDependencies="WS2_32.Lib"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -139,6 +140,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				UseUnicodeResponseFiles="false"
+				AdditionalDependencies="WS2_32.Lib"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -182,6 +184,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CSocket.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Nucleo.cpp"
 				>
 			</File>
@@ -213,6 +219,10 @@
 			>
 			<File
 				RelativePath=".\CConfig.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CSocket.h"
 				>
 			</File>
 			<File

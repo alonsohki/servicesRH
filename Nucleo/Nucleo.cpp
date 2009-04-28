@@ -18,14 +18,25 @@
 
 int main( int argc, const char* argv[], const char* envp[] )
 {
+    // Cargamos la configuración
     CConfig config ( "servicios.conf" );
     if ( config.IsOk () == false )
     {
         puts ( "Error cargando la configuración" );
-        Pause ();
+        Pause ( );
         return EXIT_FAILURE;
     }
 
+    // Inicializamos la conexión
+    if ( CSocket::StartupNetworking ( ) == false )
+    {
+        puts ( "Error inicializando la red" );
+        Pause ( );
+        return EXIT_FAILURE;
+    }
+
+    // Finalizamos
+    CSocket::CleanupNetworking ( );
     Pause ();
     return EXIT_SUCCESS;
 }

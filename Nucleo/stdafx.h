@@ -29,8 +29,9 @@
 #include <sys/stat.h>
 
 #ifdef WIN32
-    #define va_copy(dest, orig) (dest) = (orig)
+    #include <winsock2.h>
     #include <windows.h>
+    #include <io.h>
 #else
     #include <sys/socket.h>
     #include <netdb.h>
@@ -43,9 +44,6 @@
 #include <list>
 #include <map>
 
-// Encabezados propios
-#include "CString.h"
-#include "CConfig.h"
 
 // Definiciones varias
 static inline void Pause ( )
@@ -54,3 +52,15 @@ static inline void Pause ( )
     system ( "pause ");
 #endif
 }
+
+#ifdef WIN32
+    #define va_copy(dest, orig) (dest) = (orig)
+    #define close(a) _close(a)
+    #define dup2(a,b) _dup2(a,b)
+#endif
+
+
+// Encabezados propios
+#include "CString.h"
+#include "CConfig.h"
+#include "CSocket.h"
