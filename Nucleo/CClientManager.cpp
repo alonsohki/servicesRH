@@ -27,27 +27,38 @@ CClientManager::CClientManager ( )
 
 CClientManager::~CClientManager ( )
 {
+    for ( t_mapClientsByName::iterator i = m_mapClientsByName.begin ();
+          i != m_mapClientsByName.end ();
+          ++i )
+    {
+        delete (*i).second;
+    }
+
+    m_mapClientsByName.clear ();
+    m_mapClientsByNumeric.clear ();
 }
 
-void CClientManager::AddClient ( CClient* client )
+void CClientManager::AddClient ( CClient* pClient )
 {
-    m_mapClientsByName.insert ( t_mapClientsByName::value_type ( client->szName.c_str (), client ) );
-    m_mapClientsByNumeric.insert ( t_mapClientsByNumeric::value_type ( client->ulNumeric, client ) );
+    m_mapClientsByName.insert ( t_mapClientsByName::value_type ( pClient->szName.c_str (), pClient ) );
+    m_mapClientsByNumeric.insert ( t_mapClientsByNumeric::value_type ( pClient->ulNumeric, pClient ) );
 }
 
-void CClientManager::RemoveClient ( CClient* client )
+void CClientManager::RemoveClient ( CClient* pClient )
 {
-    t_mapClientsByName::iterator iter1 = m_mapClientsByName.find ( client->szName.c_str () );
+    t_mapClientsByName::iterator iter1 = m_mapClientsByName.find ( pClient->szName.c_str () );
     if ( iter1 != m_mapClientsByName.end () )
     {
         m_mapClientsByName.erase ( iter1 );
     }
 
-    t_mapClientsByNumeric::iterator iter2 = m_mapClientsByNumeric.find ( client->ulNumeric );
+    t_mapClientsByNumeric::iterator iter2 = m_mapClientsByNumeric.find ( pClient->ulNumeric );
     if ( iter2 != m_mapClientsByNumeric.end () )
     {
         m_mapClientsByNumeric.erase ( iter2 );
     }
+
+    delete pClient;
 }
 
 CClient* CClientManager::GetClient ( const CString& szName )
