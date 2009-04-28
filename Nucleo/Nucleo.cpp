@@ -51,7 +51,7 @@ int main( int argc, const char* argv[], const char* envp[] )
 
     // Inicializamos el protocolo
     CProtocol& protocol = CProtocol::GetSingleton ( );
-    protocol.Initialize ( &socket );
+    protocol.Initialize ( socket, config );
 
     // Bucle
     while ( protocol.Loop () > 0 );

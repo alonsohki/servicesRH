@@ -26,14 +26,18 @@ CProtocol::~CProtocol ( )
 }
 
 
-void CProtocol::Initialize ( CSocket* pSocket )
+void CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
 {
-    m_pSocket = pSocket;
+    m_socket = socket;
+    m_config = config;
 }
 
 int CProtocol::Loop ( )
 {
-    int iSize = m_pSocket->ReadLine ( m_szLine );
+    if ( m_socket.IsOk () == false )
+        return -1;
+
+    int iSize = m_socket.ReadLine ( m_szLine );
     if ( iSize > 0 )
     {
         Process ( m_szLine );

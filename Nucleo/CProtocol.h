@@ -30,11 +30,12 @@ private:
 public:
     virtual                 ~CProtocol          ( );
 
-    virtual void            Initialize          ( CSocket* pSocket );
+    virtual void            Initialize          ( const CSocket& socket, const CConfig& config );
     virtual int             Loop                ( );
     virtual bool            Process             ( const CString& szLine );
 
 private:
-    CSocket*                m_pSocket;
+    CSocket                 m_socket;
+    CConfig                 m_config;
     CString                 m_szLine;
 };
