@@ -222,6 +222,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CPortability.h"
+				>
+			</File>
+			<File
 				RelativePath=".\CSocket.h"
 				>
 			</File>

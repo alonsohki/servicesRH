@@ -14,6 +14,12 @@
 // Autores:     Alberto Alonso <rydencillo@gmail.com>
 //
 
+#ifndef va_copy
+    #ifdef WIN32
+        #define va_copy(dest, orig) (dest) = (orig)
+    #endif
+#endif
+
 class CString : public std::string
 {
 public:

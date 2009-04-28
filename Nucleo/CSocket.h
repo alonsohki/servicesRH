@@ -16,8 +16,6 @@
 
 #pragma once
 
-typedef int sock_t;
-
 class CSocket
 {
 public:
@@ -49,8 +47,11 @@ public:
     const CString&  Error               ( ) const;
 
 private:
+    void            InternalClose       ( bool bKeepErrors );
+
     sock_t          m_socket;
-    char            buffer [ BUFFER_SIZE ];
+    char            m_buffer [ BUFFER_SIZE ];
+    size_t          m_bufferSize;
     int             m_iErrno;
     CString         m_szError;
 };

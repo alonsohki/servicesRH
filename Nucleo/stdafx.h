@@ -33,6 +33,7 @@
     #include <windows.h>
     #include <io.h>
 #else
+    #include <arpa/inet.h>
     #include <sys/socket.h>
     #include <netdb.h>
     #include <unistd.h>
@@ -45,22 +46,8 @@
 #include <map>
 
 
-// Definiciones varias
-static inline void Pause ( )
-{
-#ifdef WIN32
-    system ( "pause ");
-#endif
-}
-
-#ifdef WIN32
-    #define va_copy(dest, orig) (dest) = (orig)
-    #define close(a) _close(a)
-    #define dup2(a,b) _dup2(a,b)
-#endif
-
-
 // Encabezados propios
 #include "CString.h"
+#include "CPortability.h"
 #include "CConfig.h"
 #include "CSocket.h"

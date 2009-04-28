@@ -23,21 +23,43 @@ int main( int argc, const char* argv[], const char* envp[] )
     if ( config.IsOk () == false )
     {
         puts ( "Error cargando la configuración" );
-        Pause ( );
+        CPortability::Pause ();
         return EXIT_FAILURE;
     }
 
     // Inicializamos la conexión
-    if ( CSocket::StartupNetworking ( ) == false )
+    if ( CSocket::StartupNetworking () == false )
     {
         puts ( "Error inicializando la red" );
-        Pause ( );
+        CPortability::Pause ();
         return EXIT_FAILURE;
     }
 
+    // Conectamos
+    CString szHost;
+    CString szPort;
+    config.GetValue ( szHost, "servidor", "host" );
+    config.GetValue ( szPort, "servidor", "puerto" );
+
+    CSocket socket;
+    if ( socket.Connect ( szHost, atoi ( szPort ) ) == false )
+    {
+        printf ( "Error conectando al servidor (%d): %s\n", socket.Errno (), socket.Error ().c_str () );
+        CPortability::Pause ();
+        return EXIT_FAILURE;
+    }
+
+    // Bucle
+    CString szLine;
+    while ( socket.ReadLine ( szLine ) > 0 )
+    {
+        puts ( szLine );
+    }
+
     // Finalizamos
-    CSocket::CleanupNetworking ( );
-    Pause ();
+    socket.Close ();
+    CSocket::CleanupNetworking ();
+    CPortability::Pause ();
     return EXIT_SUCCESS;
 }
 
