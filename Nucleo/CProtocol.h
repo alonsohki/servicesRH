@@ -16,8 +16,22 @@
 
 #pragma once
 
+#define PROTOCOL_CALLBACK CCallback < bool, const CProtocol::SProtocolMessage& >
+
 class CProtocol
 {
+public:
+    struct SProtocolMessage
+    {
+        CClient source;
+        CString szCommand;
+        CClient dest;
+        CString szText;
+    };
+
+private:
+    typedef google::dense_hash_map < const char*, std::vector < PROTOCOL_CALLBACK* > > t_commandsMap;
+
 private:
     static CProtocol        ms_instance;
 
@@ -30,12 +44,22 @@ private:
 public:
     virtual                 ~CProtocol          ( );
 
-    virtual void            Initialize          ( const CSocket& socket, const CConfig& config );
+    virtual bool            Initialize          ( const CSocket& socket, const CConfig& config );
     virtual int             Loop                ( );
     virtual bool            Process             ( const CString& szLine );
+    virtual int             Send                ( const CClient& source, const CString& szCommand, const CClient& dest, const CString& szText );
+
+    void                    AddHandler          ( const CString& szCommand, const PROTOCOL_CALLBACK& callback );
+    inline const CServer&   GetMe               ( ) const { return m_me; }
+
+private:
+    // Comandos
+    bool                    CmdPing             ( const SProtocolMessage& message );
 
 private:
     CSocket                 m_socket;
     CConfig                 m_config;
     CString                 m_szLine;
+    CServer                 m_me;
+    t_commandsMap           m_commandsMap;
 };

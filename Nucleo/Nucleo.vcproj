@@ -42,6 +42,7 @@
 				Name="VCCLCompilerTool"
 				UseUnicodeResponseFiles="false"
 				Optimization="0"
+				AdditionalIncludeDirectories="google/sparsehash-1.4/src;google/sparsehash-1.4/src/windows"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -52,6 +53,7 @@
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="4"
+				DisableSpecificWarnings="4996"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -121,12 +123,14 @@
 				UseUnicodeResponseFiles="false"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
+				AdditionalIncludeDirectories="google/sparsehash-1.4/src;google/sparsehash-1.4/src/windows"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="2"
 				WarningLevel="3"
 				DebugInformationFormat="3"
+				DisableSpecificWarnings="4996"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -180,6 +184,10 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\base64.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CConfig.cpp"
 				>
 			</File>
@@ -221,6 +229,18 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath=".\base64.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CCallback.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CClient.h"
+				>
+			</File>
 			<File
 				RelativePath=".\CConfig.h"
 				>

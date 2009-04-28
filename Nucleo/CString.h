@@ -82,7 +82,7 @@ public:
 
         // Try to format the string into the std::string buffer. If we will need
         // more capacity it will return -1 and we will resize. Else we've finished.
-        int iSize = _vsnprintf_s( szDest, curCapacity, curCapacity, szFormat, vlLocal );
+        int iSize = _vsnprintf ( szDest, curCapacity, szFormat, vlLocal );
         if ( iSize == -1 || static_cast < size_t > ( iSize ) >= curCapacity )
         {
             // We didn't have enough capacity to fit the string. Count how much
@@ -107,7 +107,7 @@ public:
 
                 // Finally format it
                 va_copy ( vlLocal, vl );
-                iSize = _vsnprintf_s ( szDest, curCapacity, curCapacity, szFormat, vlLocal );
+                iSize = _vsnprintf ( szDest, curCapacity, szFormat, vlLocal );
             }
         }
 

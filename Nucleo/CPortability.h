@@ -19,6 +19,7 @@
 #ifdef WIN32
     #define va_copy(dest, orig) (dest) = (orig)
     #define close(a) _close(a)
+    #define dup(a) _dup(a)
     #define dup2(a,b) _dup2(a,b)
     typedef int sock_t;
 #else

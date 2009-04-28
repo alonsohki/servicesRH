@@ -36,6 +36,8 @@ public:
                     CSocket             ( const CString& szHost, unsigned short usPort );
     virtual         ~CSocket            ( );
 
+    CSocket&        operator=           ( const CSocket& copy );
+
     bool            Connect             ( const CString& szHost, unsigned short usPort );
     void            Close               ( );
 

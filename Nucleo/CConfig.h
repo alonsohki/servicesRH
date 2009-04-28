@@ -39,6 +39,8 @@ public:
                     CConfig         ( const CString& szFilename );
     virtual         ~CConfig        ( );
 
+    CConfig&        operator=       ( const CConfig& copy );
+
     bool            SetFilename     ( const CString& szFilename );
     bool            GetValue        ( CString& szDest, const CString& szSection, const CString& szEntry );
 

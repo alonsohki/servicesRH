@@ -53,6 +53,41 @@ CConfig::CConfig ( const CConfig& copy )
     m_szError = copy.m_szError;
 }
 
+CConfig& CConfig::operator= ( const CConfig& copy )
+{
+    SIniSection* pSection;
+    SIniEntry* pEntry;
+
+    Reset ();
+
+    for ( pSection = copy.m_pSections;
+          pSection != 0;
+          pSection = pSection->pNext )
+    {
+        SIniSection* pNewSection = new SIniSection;
+        pNewSection->pEntries = 0;
+        pNewSection->pNext = m_pSections;
+        m_pSections = pNewSection;
+        pNewSection->szName = pSection->szName;
+
+        for ( pEntry = pSection->pEntries;
+              pEntry != 0;
+              pEntry = pEntry->pNext )
+        {
+            SIniEntry* pNewEntry = new SIniEntry;
+            pNewEntry->pNext = pNewSection->pEntries;
+            pNewSection->pEntries = pNewEntry;
+            pNewEntry->szName = pEntry->szName;
+            pNewEntry->szValue = pEntry->szValue;
+        }
+    }
+
+    m_iErrno = copy.m_iErrno;
+    m_szError = copy.m_szError;
+
+    return *this;
+}
+
 CConfig::CConfig ( const CString& szFilename )
 : m_pSections ( 0 ), m_iErrno ( 0 )
 {

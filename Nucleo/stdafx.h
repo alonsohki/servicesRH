@@ -27,6 +27,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <time.h>
 
 #ifdef WIN32
     #include <winsock2.h>
@@ -37,6 +38,7 @@
     #include <sys/socket.h>
     #include <netdb.h>
     #include <unistd.h>
+    #include <sys/time.h>
 #endif
 
 // Encabezados de C++
@@ -46,9 +48,17 @@
 #include <map>
 
 
+// sparse hash
+#include "google/dense_hash_map"
+#include "google/sparse_hash_map"
+
+
 // Encabezados propios
 #include "CString.h"
+#include "base64.h"
 #include "CPortability.h"
+#include "CCallback.h"
 #include "CConfig.h"
 #include "CSocket.h"
+#include "CClient.h"
 #include "CProtocol.h"

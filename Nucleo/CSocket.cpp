@@ -30,7 +30,11 @@ CSocket::CSocket ( const CSocket& copy )
     m_szError = copy.m_szError;
     if ( copy.m_socket != -1 )
     {
-        dup2 ( m_socket, copy.m_socket );
+#ifdef WIN32
+        m_socket = copy.m_socket;
+#else
+        m_socket = dup ( copy.m_socket );
+#endif
     }
     else
         m_socket = -1;
@@ -48,6 +52,29 @@ CSocket::CSocket ( const CString& szHost, unsigned short usPort )
 CSocket::~CSocket ( )
 {
     Close ();
+}
+
+CSocket& CSocket::operator= ( const CSocket& copy )
+{
+    Close ();
+
+    m_iErrno = copy.m_iErrno;
+    m_szError = copy.m_szError;
+    if ( copy.m_socket != -1 )
+    {
+#ifdef WIN32
+        m_socket = copy.m_socket;
+#else
+        m_socket = dup ( copy.m_socket );
+#endif
+    }
+    else
+        m_socket = -1;
+
+    memcpy ( m_buffer, copy.m_buffer, copy.m_bufferSize );
+    m_bufferSize = copy.m_bufferSize;
+
+    return *this;
 }
 
 bool CSocket::Connect ( const CString& szHost, unsigned short usPort )
