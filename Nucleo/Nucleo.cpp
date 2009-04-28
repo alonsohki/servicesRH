@@ -18,6 +18,7 @@
 
 int main( int argc, const char* argv[], const char* envp[] )
 {
+    CConfig config ( "servicios.conf" );
     return 0;
 }
 

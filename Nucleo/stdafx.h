@@ -15,6 +15,34 @@
 //
 
 #pragma once
+#pragma message("Compilando encabezado precompilado...\n")
 
+// Encabezados de C
+#include <assert.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#ifdef WIN32
+    #define va_copy(dest, orig) (dest) = (orig)
+    #include <windows.h>
+#else
+    #include <sys/socket.h>
+    #include <netdb.h>
+    #include <unistd.h>
+#endif
+
+// Encabezados de C++
+#include <string>
+#include <vector>
+#include <list>
+#include <map>
+
+// Encabezados propios
+#include "CString.h"
+#include "CConfig.h"
