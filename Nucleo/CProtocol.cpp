@@ -56,11 +56,11 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
     else
         inttobase64 ( m_me.szNumeric, m_me.ulNumeric, 1 );
 
-    Send ( CClient(), "PASS", CClient(), szPass );
+    Send ( CClient(), "PASS", "", CClient(), szPass );
 
     unsigned long ulNow = static_cast < unsigned long > ( time ( 0 ) );
-    CString szServerCommand ( "SERVER %s 1 %lu %lu P10 %s]]", szHost.c_str (), ulNow, ulNow, m_me.szNumeric );
-    Send ( CClient(), szServerCommand, CClient(), szDesc );
+    CString szServerInfo ( "%s 1 %lu %lu P10 %s]]", szHost.c_str (), ulNow, ulNow, m_me.szNumeric );
+    Send ( CClient(), "SERVER", szServerInfo, CClient(), szDesc );
 
     return true;
 }
@@ -84,7 +84,7 @@ bool CProtocol::Process ( const CString& szLine )
     return true;
 }
 
-int CProtocol::Send ( const CClient& source, const CString& szCommand, const CClient& dest, const CString& szText )
+int CProtocol::Send ( const CClient& source, const CString& szCommand, const CString& szExtraInfo, const CClient& dest, const CString& szText )
 {
     if ( m_socket.IsOk () == false )
         return -1;
@@ -105,6 +105,11 @@ int CProtocol::Send ( const CClient& source, const CString& szCommand, const CCl
     }
 
     szMessage.append ( szCommand );
+    if ( szExtraInfo.length () > 0 )
+    {
+        szMessage.append ( " " );
+        szMessage.append ( szExtraInfo );
+    }
 
     switch ( dest.GetType () )
     {

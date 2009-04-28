@@ -25,6 +25,7 @@ public:
     {
         CClient source;
         CString szCommand;
+        CString szExtraInfo;
         CClient dest;
         CString szText;
     };
@@ -47,7 +48,7 @@ public:
     virtual bool            Initialize          ( const CSocket& socket, const CConfig& config );
     virtual int             Loop                ( );
     virtual bool            Process             ( const CString& szLine );
-    virtual int             Send                ( const CClient& source, const CString& szCommand, const CClient& dest, const CString& szText );
+    virtual int             Send                ( const CClient& source, const CString& szCommand, const CString& szExtraInfo, const CClient& dest, const CString& szText );
 
     void                    AddHandler          ( const CString& szCommand, const PROTOCOL_CALLBACK& callback );
     inline const CServer&   GetMe               ( ) const { return m_me; }
