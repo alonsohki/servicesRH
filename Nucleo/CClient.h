@@ -27,11 +27,8 @@ public:
     };
 
 public:
-    inline          CClient     ( )
-    {
-    }
-
-    inline          CClient     ( const CString& szClient, const CString& _szDesc = "" )
+    inline                  CClient         ( ) {}
+    inline                  CClient         ( const CString& szClient, const CString& _szDesc = "" )
     {
         int iIdent = szClient.find ( '!' );
         if ( iIdent == CString::npos )
@@ -51,44 +48,15 @@ public:
 
         szDesc = _szDesc;
     }
+    virtual                 ~CClient        ( ) { }
 
-    virtual         ~CClient    ( )
-    {
-    }
-
-
-    virtual EType   GetType     ( ) const
-    {
-        return UNKNOWN;
-    }
+    virtual inline void     FormatNumeric   ( char* szDest ) const { *szDest = '\0'; }
+    virtual inline EType    GetType         ( ) const { return UNKNOWN; }
 
 public:
     unsigned long   ulNumeric;
-    char            szNumeric [ 32 ];
     CString         szName;
     CString         szIdent;
     CString         szHost;
     CString         szDesc;
-};
-
-class CServer : public CClient
-{
-public:
-    inline          CServer     ( )
-    {
-    }
-
-    inline          CServer     ( const CString& szClient, const CString& szDesc = "" )
-        : CClient ( szClient, szDesc )
-    {
-    }
-
-                    ~CServer    ( )
-    {
-    }
-
-    inline EType    GetType     ( ) const
-    {
-        return CClient::SERVER;
-    }
 };

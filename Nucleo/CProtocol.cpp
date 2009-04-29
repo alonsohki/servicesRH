@@ -52,18 +52,15 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
 
     m_me.szName = szHost;
     m_me.ulNumeric = atol ( szNumeric );
-    if ( m_me.ulNumeric > 63 )
-        inttobase64 ( m_me.szNumeric, m_me.ulNumeric, 2 );
-    else
-        inttobase64 ( m_me.szNumeric, m_me.ulNumeric, 1 );
 
     Send ( CClient(), "PASS", "", CClient(), szPass );
 
     unsigned long ulNow = static_cast < unsigned long > ( time ( 0 ) );
-    CString szServerInfo ( "%s 1 %lu %lu P10 %s]]", szHost.c_str (), ulNow, ulNow, m_me.szNumeric );
+    char szFormattedNumeric [ 8 ];
+    m_me.FormatNumeric ( szFormattedNumeric );
+    CString szServerInfo ( "%s 1 %lu %lu P10 %s]]", szHost.c_str (), ulNow, ulNow, szFormattedNumeric );
+
     Send ( CClient(), "SERVER", szServerInfo, CClient(), szDesc );
-    Send ( m_me, "DB", "* 0 J 0 2", CClient(), "" );
-    Send ( m_me, "DB", "* J 0 0 n", CClient(), "" );
 
     return true;
 }
@@ -105,25 +102,36 @@ bool CProtocol::Process ( const CString& szLine )
             m_bGotServer = true;
 
             CServer *pServer = new CServer ( vec [ 1 ], std::string ( vec [ 8 ], 1 ) );
-            strcpy ( pServer->szNumeric, vec [ 6 ] );
 
-            if ( strlen ( pServer->szNumeric ) == 3 )
-                pServer->szNumeric [ 1 ] = '\0';
+            // Calculamos el numérico
+            char szNumeric [ 8 ];
+            strcpy ( szNumeric, vec [ 6 ] );
+            if ( strlen ( szNumeric ) == 3 )
+                szNumeric [ 1 ] = '\0';
             else
-                pServer->szNumeric [ 2 ] = '\0';
-            pServer->ulNumeric = base64toint ( pServer->szNumeric );
+                szNumeric [ 2 ] = '\0';
+            pServer->ulNumeric = base64toint ( szNumeric );
 
             CClientManager::GetSingleton ().AddClient ( pServer );
+
+            return true;
         }
 
         return false;
     }
+
+    unsigned long ulNumeric = base64toint ( vec [ 0 ] );
+    CClient* pClient = CClientManager::GetSingleton ().GetClient ( ulNumeric );
+    if ( pClient == 0 )
+        return false;
 
     return true;
 }
 
 int CProtocol::Send ( const CClient& source, const CString& szCommand, const CString& szExtraInfo, const CClient& dest, const CString& szText )
 {
+    char szNumeric [ 8 ];
+
     if ( m_socket.IsOk () == false )
         return -1;
 
@@ -133,7 +141,8 @@ int CProtocol::Send ( const CClient& source, const CString& szCommand, const CSt
     {
         case CClient::SERVER:
         {
-            szMessage.Format ( "%s ", source.szNumeric );
+            source.FormatNumeric ( szNumeric );
+            szMessage.Format ( "%s ", szNumeric );
             break;
         }
         case CClient::UNKNOWN:
@@ -153,8 +162,9 @@ int CProtocol::Send ( const CClient& source, const CString& szCommand, const CSt
     {
         case CClient::SERVER:
         {
+            dest.FormatNumeric ( szNumeric );
             szMessage.append ( " " );
-            szMessage.append ( dest.szNumeric );
+            szMessage.append ( szNumeric );
             break;
         }
         case CClient::UNKNOWN:

@@ -200,7 +200,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CServer.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CSocket.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CUser.cpp"
 				>
 			</File>
 			<File
@@ -266,11 +274,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CServer.h"
+				>
+			</File>
+			<File
 				RelativePath=".\CSocket.h"
 				>
 			</File>
 			<File
 				RelativePath=".\CString.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CUser.h"
 				>
 			</File>
 			<File
