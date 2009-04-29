@@ -59,6 +59,9 @@ public:
     inline const CString&   GetDesc         ( ) const { return m_szDesc; }
     inline unsigned long    GetNumeric      ( ) const { return m_ulNumeric; }
 
+protected:
+    inline void             SetName         ( const CString& szName ) { m_szName = szName; }
+
 private:
     CServer*        m_pParent;
     unsigned long   m_ulNumeric;

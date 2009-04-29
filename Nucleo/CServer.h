@@ -41,6 +41,10 @@ public:
     CUser*                  GetUser         ( const CString& szName );
     CUser*                  GetUser         ( unsigned long ulNumeric );
 
+    void                    AddUser         ( CUser* pUser );
+    void                    RemoveUser      ( CUser* pUser );
+    void                    UpdateUserName  ( CUser* pUser, const CString& szName );
+
     bool                    IsConnectedTo   ( const CServer* pServer ) const;
 
 private:

@@ -26,7 +26,7 @@
 extern void init_hash ( void );
 extern int strhash ( const char *n );
 
-#define HASH_STRING_DELETED (const char *)0xFABADA00
+#define HASH_STRING_DELETED (const char *)0xDEADBEEF
 #define HASH_STRING_EMPTY (const char *)0x00000000
 
 static inline int CompareStrings ( const char* s1, const char* s2 )
@@ -54,7 +54,7 @@ struct SStringEquals
     {
         if ( s1 == s2 )
             return true;
-        if ( s1 == HASH_STRING_EMPTY || s2 == HASH_STRING_EMPTY || s2 == HASH_STRING_DELETED )
+        if ( s1 == HASH_STRING_EMPTY || s2 == HASH_STRING_EMPTY || s1 == HASH_STRING_DELETED || s2 == HASH_STRING_DELETED )
             return false;
         return !CompareStrings ( s1, s2 );
     }

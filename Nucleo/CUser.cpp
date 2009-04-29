@@ -20,18 +20,33 @@ CUser::CUser ( )
 {
 }
 
-CUser::CUser ( CServer* pServer, unsigned long ulNumeric, const CString& szName, const CString& szDesc )
+CUser::CUser ( CServer* pServer,
+               unsigned long ulNumeric,
+               const CString& szName,
+               const CString& szIdent,
+               const CString& szDesc,
+               const CString& szHost,
+               unsigned long ulAddress )
 {
-    Create ( pServer, ulNumeric, szName, szDesc );
+    Create ( pServer, ulNumeric, szName, szIdent, szDesc, szHost, ulAddress );
 }
 
 CUser::~CUser ()
 {
 }
 
-void CUser::Create ( CServer* pServer, unsigned long ulNumeric, const CString& szName, const CString& szDesc )
+void CUser::Create ( CServer* pServer,
+               unsigned long ulNumeric,
+               const CString& szName,
+               const CString& szIdent,
+               const CString& szDesc,
+               const CString& szHost,
+               unsigned long ulAddress )
 {
     CClient::Create ( pServer, ulNumeric, szName, szDesc );
+    m_szIdent = szIdent;
+    m_szHost = szHost;
+    m_ulAddress = ulAddress;
 }
 
 void CUser::FormatNumeric ( char* szDest ) const
@@ -55,4 +70,15 @@ void CUser::FormatNumeric ( char* szDest ) const
     }
     else
         *szDest = '\0';
+}
+
+void CUser::SetNick ( const CString& szNick )
+{
+    CClient* pParent = GetParent ();
+    if ( pParent )
+    {
+        CServer* pServer = static_cast < CServer* > ( pParent );
+        pServer->UpdateUserName ( this, szNick );
+    }
+    CClient::SetName ( szNick );
 }

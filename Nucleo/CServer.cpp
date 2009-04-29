@@ -84,6 +84,21 @@ CUser* CServer::GetUser ( unsigned long ulNumeric )
     return m_clientManager.GetUser ( ulNumeric );
 }
 
+void CServer::AddUser ( CUser* pUser )
+{
+    m_clientManager.AddClient ( pUser );
+}
+
+void CServer::RemoveUser ( CUser* pUser )
+{
+    m_clientManager.RemoveClient ( pUser );
+}
+
+void CServer::UpdateUserName ( CUser* pUser, const CString& szName )
+{
+    m_clientManager.UpdateClientName ( pUser, szName );
+}
+
 bool CServer::IsConnectedTo ( const CServer* pServer ) const
 {
     for ( std::list < CServer* >::const_iterator iter = m_children.begin ();

@@ -70,6 +70,9 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
     // Registramos eventos
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageEND_OF_BURST(), PROTOCOL_CALLBACK ( &CProtocol::evtEndOfBurst, this ) );
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessagePING(), PROTOCOL_CALLBACK ( &CProtocol::evtPing, this ) );
+    InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageSERVER(), PROTOCOL_CALLBACK ( &CProtocol::evtServer, this ) );
+    InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageNICK(), PROTOCOL_CALLBACK ( &CProtocol::evtNick, this ) );
+    InternalAddHandler ( HANDLER_AFTER_CALLBACKS, CMessageQUIT(), PROTOCOL_CALLBACK ( &CProtocol::evtQuit, this ) );
 
     return true;
 }
@@ -98,7 +101,8 @@ bool CProtocol::Process ( const CString& szLine )
     if ( iPos != CString::npos )
     {
         bGotText = true;
-        szLine.Split ( vec, ' ', iPos );
+        szLine.Split ( vec, ' ', iPos - 1 );
+        vec [ vec.size () - 1 ] = std::string ( szLine, iPos + 1 );
     }
     else
         szLine.Split ( vec, ' ' );
@@ -137,14 +141,18 @@ bool CProtocol::Process ( const CString& szLine )
         {
             // Servidor con numérico de dos dígitos
             pServer = m_me.GetServer ( ulNumeric >> 18 );
+            char szNumeric [ 4 ];
+            char szNumeric2 [ 8 ];
+            inttobase64 ( szNumeric, ulNumeric & 262143, 3 );
+            inttobase64 ( szNumeric2, ulNumeric, 5 );
             if ( pServer )
-                pSource = pServer->GetUser ( ulNumeric | 262143 );
+                pSource = pServer->GetUser ( ulNumeric & 262143 );
         }
         else
         {
             pServer = m_me.GetServer ( ulNumeric >> 12 );
             if ( pServer )
-                pSource = pServer->GetUser ( ulNumeric | 4095 );
+                pSource = pServer->GetUser ( ulNumeric & 4095 );
         }
     }
     else
@@ -162,10 +170,9 @@ bool CProtocol::Process ( const CString& szLine )
     if ( iterBefore != m_commandsMapBefore.end () )
     {
         IMessage* pMessage = ((*iterBefore).second).pMessage;
+        pMessage->SetSource ( pSource );
         if ( pMessage->ProcessMessage ( szLine, vec ) )
         {
-            pMessage->SetSource ( pSource );
-
             std::vector < PROTOCOL_CALLBACK* >& callbacks = ((*iterBefore).second).vecCallbacks;
             for ( std::vector < PROTOCOL_CALLBACK* >::const_iterator iter = callbacks.begin ();
                   iter != callbacks.end ();
@@ -183,10 +190,9 @@ bool CProtocol::Process ( const CString& szLine )
     if ( iterIn != m_commandsMap.end () )
     {
         IMessage* pMessage = ((*iterIn).second).pMessage;
+        pMessage->SetSource ( pSource );
         if ( pMessage->ProcessMessage ( szLine, vec ) )
         {
-            pMessage->SetSource ( pSource );
-
             std::vector < PROTOCOL_CALLBACK* >& callbacks = ((*iterIn).second).vecCallbacks;
             for ( std::vector < PROTOCOL_CALLBACK* >::const_iterator iter = callbacks.begin ();
                   iter != callbacks.end ();
@@ -204,10 +210,9 @@ bool CProtocol::Process ( const CString& szLine )
     if ( iterAfter != m_commandsMapAfter.end () )
     {
         IMessage* pMessage = ((*iterAfter).second).pMessage;
+        pMessage->SetSource ( pSource );
         if ( pMessage->ProcessMessage ( szLine, vec ) )
         {
-            pMessage->SetSource ( pSource );
-
             std::vector < PROTOCOL_CALLBACK* >& callbacks = ((*iterAfter).second).vecCallbacks;
             for ( std::vector < PROTOCOL_CALLBACK* >::const_iterator iter = callbacks.begin ();
                   iter != callbacks.end ();
@@ -227,7 +232,7 @@ int CProtocol::Send ( const IMessage& ircmessage, CClient* pSource )
 {
     SProtocolMessage message;
     message.pSource = pSource;
-    message.szCommand = ircmessage.GetName ( );
+    message.szCommand = ircmessage.GetMessageName ( );
     if ( ircmessage.BuildMessage ( message ) == false )
         return 0;
 
@@ -313,11 +318,11 @@ void CProtocol::InternalAddHandler ( EHandlerStage eStage, const IMessage& messa
 
     std::vector < PROTOCOL_CALLBACK* >* pVector;
 
-    t_commandsMap::iterator find = map->find ( message.GetName () );
+    t_commandsMap::iterator find = map->find ( message.GetMessageName () );
     if ( find == map->end () )
     {
         std::pair < t_commandsMap::iterator, bool > pair =
-            map->insert ( t_commandsMap::value_type ( message.GetName (), SCommandCallbacks () ) );
+            map->insert ( t_commandsMap::value_type ( message.GetMessageName (), SCommandCallbacks () ) );
         find = pair.first;
         SCommandCallbacks& s = (*find).second;
         s.pMessage = message.Copy ();
@@ -345,9 +350,19 @@ CProtocol* CProtocol::GetSingletonPtr ( )
 
 
 // Eventos
-bool CProtocol::evtEndOfBurst ( const IMessage& )
+bool CProtocol::evtEndOfBurst ( const IMessage& message_ )
 {
-    Send ( CMessageEOB_ACK (), &m_me );
+    try
+    {
+        const CMessageEND_OF_BURST& message = dynamic_cast < const CMessageEND_OF_BURST& > ( message_ );
+        if ( m_me.IsConnectedTo ( static_cast < CServer* > ( message.GetSource () ) ) )
+        {
+            Send ( CMessageEOB_ACK (), &m_me );
+        }
+        return true;
+    }
+    catch ( std::bad_cast ) { return false; }
+
     return true;
 }
 
@@ -364,4 +379,68 @@ bool CProtocol::evtPing ( const IMessage& message_ )
     catch ( std::bad_cast ) { return false; }
 
     return true;
+}
+
+bool CProtocol::evtServer ( const IMessage& message_ )
+{
+    try
+    {
+        const CMessageSERVER& message = dynamic_cast < const CMessageSERVER& > ( message_ );
+        new CServer ( static_cast < CServer* > ( message.GetSource () ),
+                      message.GetNumeric (), message.GetHost (),
+                      message.GetDesc () );
+    }
+    catch ( std::bad_cast ) { return false; }
+
+    return true;
+}
+
+bool CProtocol::evtNick ( const IMessage& message_ )
+{
+    try
+    {
+        const CMessageNICK& message = dynamic_cast < const CMessageNICK& > ( message_ );
+        if ( message.GetServer () )
+        {
+            // Nuevo usuario desde un servidor
+            CUser* pUser = new CUser ( message.GetServer (),
+                                       message.GetNumeric (),
+                                       message.GetNick (),
+                                       message.GetIdent (),
+                                       message.GetDesc (),
+                                       message.GetHost (),
+                                       message.GetAddress () );
+            message.GetServer ()->AddUser ( pUser );
+        }
+        else
+        {
+            // Cambio de nick
+            CUser* pUser = static_cast < CUser* > ( message.GetSource ( ) );
+            pUser->SetNick ( message.GetNick () );
+        }
+    }
+    catch ( std::bad_cast ) { return false; }
+
+    return true;
+}
+
+bool CProtocol::evtQuit ( const IMessage& message_ )
+{
+    try
+    {
+        const CMessageQUIT& message = dynamic_cast < const CMessageQUIT& > ( message_ );
+        if ( message.GetSource () )
+        {
+            CUser* pUser = static_cast < CUser* > ( message.GetSource () );
+            CServer* pServer = static_cast < CServer* > ( pUser->GetParent ( ) );
+
+            if ( pServer )
+            {
+                pServer->RemoveUser ( pUser );
+                return true;
+            }
+        }
+        return false;
+    }
+    catch ( std::bad_cast ) { return false; }
 }

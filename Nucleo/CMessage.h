@@ -23,12 +23,12 @@ public:
 
     virtual IMessage*       Copy            ( ) const = 0;
 
-    virtual const char*     GetName         ( ) const = 0;
+    virtual const char*     GetMessageName  ( ) const = 0;
     virtual bool            BuildMessage    ( SProtocolMessage& message ) const = 0;
     virtual bool            ProcessMessage  ( const CString& szLine, const std::vector < CString >& vec ) = 0;
 
     inline void             SetSource       ( CClient* pSource ) { m_pSource = pSource; }
-    inline CClient*         GetSource       ( ) { return m_pSource; }
+    inline CClient*         GetSource       ( ) const { return m_pSource; }
 
 private:
     CClient*                m_pSource;
@@ -41,8 +41,8 @@ class CMessage ## msg : public IMessage \
         CMessage ## msg ( ) { } \
         ~ ## CMessage ## msg(); \
 \
-        IMessage*   Copy    ( ) const { return new CMessage ## msg ( ); } \
-        const char* GetName ( ) const { return #msg ; }
+        IMessage*   Copy            ( ) const { return new CMessage ## msg ( ); } \
+        const char* GetMessageName  ( ) const { return #msg ; }
 
 #define BEGIN_MESSAGE_DECLARATION(msg, ...) \
 class CMessage ## msg : public IMessage \
@@ -52,8 +52,8 @@ class CMessage ## msg : public IMessage \
         CMessage ## msg ( __VA_ARGS__ ); \
         ~ ## CMessage ## msg(); \
 \
-        IMessage*   Copy    ( ) const { return new CMessage ## msg ( ); } \
-        const char* GetName ( ) const { return #msg ; }
+        IMessage*   Copy            ( ) const { return new CMessage ## msg ( ); } \
+        const char* GetMessageName  ( ) const { return #msg ; }
 
 #define END_MESSAGE_DECLARATION() \
   public: \
@@ -137,6 +137,45 @@ private:
     CServer*            m_pDest;
 END_MESSAGE_DECLARATION()
 
+
+////////////////////////////
+//          NICK          //
+////////////////////////////
+BEGIN_MESSAGE_DECLARATION(NICK, const CString& szNick, time_t timestamp, CServer* pServer = NULL, unsigned int uiDepth = 1, const CString& szIdent = "", const CString& szHost = "", const CString& szModes = "+", unsigned long ulAddress = 2130706433, unsigned long ulNumeric = 0, const CString& szDesc = "")
+public:
+    inline const CString&       GetNick         ( ) const { return m_szNick; }
+    inline time_t               GetTimestamp    ( ) const { return m_timestamp; }
+    inline CServer*             GetServer       ( ) const { return m_pServer; }
+    inline unsigned int         GetDepth        ( ) const { return m_uiDepth; }
+    inline const CString&       GetIdent        ( ) const { return m_szIdent; }
+    inline const CString&       GetHost         ( ) const { return m_szHost; }
+    inline const CString&       GetModes        ( ) const { return m_szModes; }
+    inline unsigned long        GetAddress      ( ) const { return m_ulAddress; }
+    inline unsigned long        GetNumeric      ( ) const { return m_ulNumeric; }
+    inline const CString&       GetDesc         ( ) const { return m_szDesc; }
+private:
+    CString         m_szNick;
+    time_t          m_timestamp;
+    CServer*        m_pServer;
+    unsigned int    m_uiDepth;
+    CString         m_szIdent;
+    CString         m_szHost;
+    CString         m_szModes;
+    unsigned long   m_ulAddress;
+    unsigned long   m_ulNumeric;
+    CString         m_szDesc;
+END_MESSAGE_DECLARATION()
+
+
+////////////////////////////
+//          QUIT          //
+////////////////////////////
+BEGIN_MESSAGE_DECLARATION(QUIT, const CString& szMessage)
+public:
+    inline const CString&   GetMessage  ( ) const { return m_szMessage; }
+private:
+    CString     m_szMessage;
+END_MESSAGE_DECLARATION()
 
 
 #undef BEGIN_MESSAGE_DECLARATION

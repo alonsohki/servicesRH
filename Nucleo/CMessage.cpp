@@ -94,13 +94,40 @@ bool CMessageSERVER::BuildMessage ( SProtocolMessage& message ) const
                                  m_szProtocol.c_str (),
                                  szNumeric, szMaxusers,
                                  m_szFlags.c_str () );
-   message.szText = m_szDesc;
+    message.szText = m_szDesc;
 
-   return true;
+    return true;
 }
 
 bool CMessageSERVER::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
 {
+    if ( vec.size () < 9 )
+        return false;
+
+    if ( GetSource ()->GetType () != CClient::SERVER )
+        return false;
+
+    m_szHost = vec [ 2 ];
+    m_uiDepth = atoi ( vec [ 3 ] );
+    m_timestamp = atol ( vec [ 5 ] );
+    m_szProtocol = vec [ 6 ];
+
+    if ( vec [ 7 ].length () > 3 )
+    {
+        // Numérico largo
+        m_ulNumeric = base64toint ( vec [ 7 ].substr ( 0, 2 ).c_str () );
+        m_ulMaxusers = base64toint ( vec [ 7 ].substr ( 2 ).c_str () );
+    }
+    else
+    {
+        // Numérico corto
+        m_ulNumeric = base64toint ( vec [ 7 ].substr ( 0, 1 ).c_str () );
+        m_ulMaxusers = base64toint ( vec [ 7 ].substr ( 1 ).c_str () );
+    }
+
+    m_szFlags = vec [ 8 ].substr ( 1 );
+    m_szDesc = vec [ 9 ];
+
     return true;
 }
 
@@ -197,5 +224,118 @@ bool CMessagePONG::BuildMessage ( SProtocolMessage& message ) const
 bool CMessagePONG::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
 {
     // No lo vamos a necesitar
+    return true;
+}
+
+////////////////////////////
+//          NICK          //
+////////////////////////////
+CMessageNICK::CMessageNICK ( const CString& szNick,
+                             time_t timestamp,
+                             CServer* pServer,
+                             unsigned int uiDepth,
+                             const CString& szIdent,
+                             const CString& szHost,
+                             const CString& szModes,
+                             unsigned long ulAddress,
+                             unsigned long ulNumeric,
+                             const CString& szDesc )
+: m_szNick ( szNick ),
+  m_timestamp ( timestamp ),
+  m_pServer ( pServer ),
+  m_uiDepth ( uiDepth ),
+  m_szIdent ( szIdent ),
+  m_szHost ( szHost ),
+  m_szModes ( szModes ),
+  m_ulAddress ( ulAddress ),
+  m_ulNumeric ( ulNumeric ),
+  m_szDesc ( szDesc )
+{
+}
+CMessageNICK::~CMessageNICK ( ) { }
+
+bool CMessageNICK::BuildMessage ( SProtocolMessage& message ) const
+{
+    // TODO
+    return true;
+}
+
+bool CMessageNICK::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
+{
+    if ( vec.size () < 4 )
+        return false;
+
+    if ( vec.size () < 11 )
+    {
+        // Cambio de nick
+        m_pServer = 0;
+        m_szNick = vec [ 2 ];
+        m_timestamp = static_cast < time_t > ( atoi ( vec [ 3 ] ) );
+
+        m_pServer = 0;
+        m_uiDepth = 0;
+        m_szIdent = "";
+        m_szHost = "";
+        m_szModes = "";
+        m_ulAddress = 0;
+        m_ulNumeric = 0;
+        m_szDesc = "";
+    }
+    else
+    {
+        CClient* pSource = GetSource ();
+        if ( !pSource || pSource->GetType () != CClient::SERVER )
+            return false;
+
+        // Nuevo nick desde un servidor
+        m_pServer = static_cast < CServer* > ( pSource );
+        m_szNick = vec [ 2 ];
+        m_uiDepth = atoi ( vec [ 3 ] );
+        m_timestamp = static_cast < time_t > ( atol ( vec [ 4 ] ) );
+        m_szIdent = vec [ 5 ];
+        m_szHost = vec [ 6 ];
+        m_szModes = vec [ 7 ];
+        m_ulAddress = base64toint ( vec [ 8 ] );
+        
+        if ( vec [ 9 ].length () > 3 )
+        {
+            // Numérico largo
+            m_ulNumeric = base64toint ( vec [ 9 ].substr ( 2 ).c_str () );
+        }
+        else
+        {
+            // Numérico corto
+            m_ulNumeric = base64toint ( vec [ 9 ].substr ( 1 ).c_str () );
+        }
+
+        m_szDesc = vec [ 10 ];
+    }
+
+    
+    return true;
+}
+
+
+////////////////////////////
+//          QUIT          //
+////////////////////////////
+CMessageQUIT::CMessageQUIT ( const CString& szMessage )
+: m_szMessage ( szMessage )
+{
+}
+CMessageQUIT::~CMessageQUIT ( ) { }
+
+bool CMessageQUIT::BuildMessage ( SProtocolMessage& message ) const
+{
+    // TODO
+    return true;
+}
+
+bool CMessageQUIT::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
+{
+    if ( vec.size () < 3 )
+        return false;
+
+    m_szMessage = vec [ 2 ];
     return true;
 }
