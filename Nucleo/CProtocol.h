@@ -48,9 +48,10 @@ public:
     virtual bool            Initialize          ( const CSocket& socket, const CConfig& config );
     virtual int             Loop                ( );
     virtual bool            Process             ( const CString& szLine );
-    virtual int             Send                ( const CClient& source, const CString& szCommand, const CString& szExtraInfo, const CClient& dest, const CString& szText );
+    virtual int             Send                ( const CClient& source, const CString& szCommand, const CString& szExtraInfo = "", const CClient& dest = CClient(), const CString& szText = "" );
 
     void                    AddHandler          ( const CString& szCommand, const PROTOCOL_CALLBACK& callback );
+    inline CServer&         GetMe               ( ) { return m_me; }
     inline const CServer&   GetMe               ( ) const { return m_me; }
 
 private:

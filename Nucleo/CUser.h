@@ -22,12 +22,17 @@ class CUser : public CClient
 {
 public:
                     CUser           ( );
-                    CUser           ( CServer* pServer, const CString& szClient, const CString& szDesc = "" );
+                    CUser           ( CServer* pServer,
+                                      unsigned long ulNumeric,
+                                      const CString& szName,
+                                      const CString& szDesc = "" );
     virtual         ~CUser          ( );
+
+    void            Create          ( CServer* pServer,
+                                      unsigned long ulNumeric,
+                                      const CString& szName,
+                                      const CString& szDesc = "" );
 
     void            FormatNumeric   ( char* szDest ) const;
     inline EType    GetType         ( ) const { return CClient::USER; }
-
-private:
-    CServer*        m_pServer;
 };

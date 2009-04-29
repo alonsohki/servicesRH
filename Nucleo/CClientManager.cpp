@@ -16,84 +16,106 @@
 
 #include "stdafx.h"
 
-// Parte no estática
 CClientManager::CClientManager ( )
 {
-    m_mapClientsByName.set_deleted_key ( (const char *)0xDEADBEEF );
-    m_mapClientsByNumeric.set_deleted_key ( 0xDEADBEEF );
-    m_mapClientsByName.set_empty_key ( (const char *)NULL );
-    m_mapClientsByNumeric.set_empty_key ( 0xDEADBEFF );
+    m_mapServersByName.set_deleted_key ( (const char *)0xDEADBEEF );
+    m_mapServersByNumeric.set_deleted_key ( 0xDEADBEEF );
+    m_mapServersByName.set_empty_key ( (const char *)NULL );
+    m_mapServersByNumeric.set_empty_key ( 0xDEADBEFF );
+
+    m_mapUsersByName.set_deleted_key ( (const char *)0xDEADBEEF );
+    m_mapUsersByNumeric.set_deleted_key ( 0xDEADBEEF );
+    m_mapUsersByName.set_empty_key ( (const char *)NULL );
+    m_mapUsersByNumeric.set_empty_key ( 0xDEADBEFF );
 }
 
 CClientManager::~CClientManager ( )
 {
-    for ( t_mapClientsByName::iterator i = m_mapClientsByName.begin ();
-          i != m_mapClientsByName.end ();
+    for ( t_mapUsersByName::iterator i = m_mapUsersByName.begin ();
+          i != m_mapUsersByName.end ();
           ++i )
     {
         delete (*i).second;
     }
 
-    m_mapClientsByName.clear ();
-    m_mapClientsByNumeric.clear ();
+    m_mapServersByName.clear ();
+    m_mapServersByNumeric.clear ();
+    m_mapUsersByName.clear ();
+    m_mapUsersByNumeric.clear ();
 }
 
-void CClientManager::AddClient ( CClient* pClient )
+void CClientManager::AddClient ( CServer* pServer )
 {
-    m_mapClientsByName.insert ( t_mapClientsByName::value_type ( pClient->szName.c_str (), pClient ) );
-    m_mapClientsByNumeric.insert ( t_mapClientsByNumeric::value_type ( pClient->ulNumeric, pClient ) );
+    m_mapServersByName.insert ( t_mapServersByName::value_type ( pServer->GetName ().c_str (), pServer ) );
+    m_mapServersByNumeric.insert ( t_mapServersByNumeric::value_type ( pServer->GetNumeric (), pServer ) );
 }
 
-void CClientManager::RemoveClient ( CClient* pClient )
+void CClientManager::AddClient ( CUser* pUser )
 {
-    t_mapClientsByName::iterator iter1 = m_mapClientsByName.find ( pClient->szName.c_str () );
-    if ( iter1 != m_mapClientsByName.end () )
+    m_mapUsersByName.insert ( t_mapUsersByName::value_type ( pUser->GetName ().c_str (), pUser ) );
+    m_mapUsersByNumeric.insert ( t_mapUsersByNumeric::value_type ( pUser->GetNumeric (), pUser ) );
+}
+
+void CClientManager::RemoveClient ( CServer* pServer )
+{
+    t_mapServersByName::iterator iter1 = m_mapServersByName.find ( pServer->GetName ().c_str () );
+    if ( iter1 != m_mapServersByName.end () )
     {
-        m_mapClientsByName.erase ( iter1 );
+        m_mapServersByName.erase ( iter1 );
+
+        t_mapServersByNumeric::iterator iter2 = m_mapServersByNumeric.find ( pServer->GetNumeric () );
+        if ( iter2 != m_mapServersByNumeric.end () )
+        {
+            m_mapServersByNumeric.erase ( iter2 );
+        }
     }
-
-    t_mapClientsByNumeric::iterator iter2 = m_mapClientsByNumeric.find ( pClient->ulNumeric );
-    if ( iter2 != m_mapClientsByNumeric.end () )
-    {
-        m_mapClientsByNumeric.erase ( iter2 );
-    }
-
-    delete pClient;
 }
 
-CClient* CClientManager::GetClient ( const CString& szName )
+void CClientManager::RemoveClient ( CUser* pUser )
 {
-    t_mapClientsByName::iterator iter = m_mapClientsByName.find ( szName.c_str () );
-    if ( iter != m_mapClientsByName.end () )
+    t_mapUsersByName::iterator iter1 = m_mapUsersByName.find ( pUser->GetName ().c_str () );
+    if ( iter1 != m_mapUsersByName.end () )
     {
+        m_mapUsersByName.erase ( iter1 );
+        delete (*iter1).second;
+
+        t_mapUsersByNumeric::iterator iter2 = m_mapUsersByNumeric.find ( pUser->GetNumeric () );
+        if ( iter2 != m_mapUsersByNumeric.end () )
+        {
+            m_mapUsersByNumeric.erase ( iter2 );
+        }
+    }
+}
+
+CServer* CClientManager::GetServer ( const CString& szName )
+{
+
+    t_mapServersByName::iterator iter = m_mapServersByName.find ( szName.c_str () );
+    if ( iter != m_mapServersByName.end () )
         return (*iter).second;
-    }
-
     return NULL;
 }
 
-CClient* CClientManager::GetClient ( unsigned long ulNumeric )
+CServer* CClientManager::GetServer ( unsigned long ulNumeric )
 {
-    t_mapClientsByNumeric::iterator iter = m_mapClientsByNumeric.find ( ulNumeric );
-    if ( iter != m_mapClientsByNumeric.end () )
-    {
+    t_mapServersByNumeric::iterator iter = m_mapServersByNumeric.find ( ulNumeric );
+    if ( iter != m_mapServersByNumeric.end () )
         return (*iter).second;
-    }
-
     return NULL;
 }
 
-
-
-// Parte estática
-CClientManager CClientManager::ms_instance;
-
-CClientManager& CClientManager::GetSingleton ( )
+CUser* CClientManager::GetUser ( const CString& szName )
 {
-    return ms_instance;
+    t_mapUsersByName::iterator iter = m_mapUsersByName.find ( szName.c_str () );
+    if ( iter != m_mapUsersByName.end () )
+        return (*iter).second;
+    return NULL;
 }
 
-CClientManager* CClientManager::GetSingletonPtr ( )
+CUser* CClientManager::GetUser ( unsigned long ulNumeric )
 {
-    return &GetSingleton ();
+    t_mapUsersByNumeric::iterator iter = m_mapUsersByNumeric.find ( ulNumeric );
+    if ( iter != m_mapUsersByNumeric.end () )
+        return (*iter).second;
+    return NULL;
 }

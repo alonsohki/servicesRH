@@ -16,6 +16,8 @@
 
 #pragma once
 
+class CServer;
+
 class CClient
 {
 public:
@@ -28,35 +30,38 @@ public:
 
 public:
     inline                  CClient         ( ) {}
-    inline                  CClient         ( const CString& szClient, const CString& _szDesc = "" )
+    inline                  CClient         ( CServer* pParent,
+                                              unsigned long ulNumeric,
+                                              const CString& szName,
+                                              const CString& szDesc = "" )
     {
-        int iIdent = szClient.find ( '!' );
-        if ( iIdent == CString::npos )
-        {
-            szName = szClient;
-        }
-        else
-        {
-            szName = szClient.substr ( 0, iIdent - 1 );
-            int iHost = szClient.find ( '@', iIdent + 1 );
-            if ( iHost != CString::npos )
-            {
-                szIdent = szClient.substr ( iIdent + 1, iHost - 1 );
-                szHost = szClient.substr ( iHost + 1 );
-            }
-        }
-
-        szDesc = _szDesc;
+        Create ( pParent, ulNumeric, szName, szDesc );
     }
     virtual                 ~CClient        ( ) { }
+
+    inline void             Create          ( CServer* pParent,
+                                              unsigned long ulNumeric,
+                                              const CString& szName,
+                                              const CString& szDesc = "" )
+    {
+        m_pParent = pParent;
+        m_ulNumeric = ulNumeric;
+        m_szName = szName;
+        m_szDesc = szDesc;
+    }
 
     virtual inline void     FormatNumeric   ( char* szDest ) const { *szDest = '\0'; }
     virtual inline EType    GetType         ( ) const { return UNKNOWN; }
 
-public:
-    unsigned long   ulNumeric;
-    CString         szName;
-    CString         szIdent;
-    CString         szHost;
-    CString         szDesc;
+    inline CServer*         GetParent       ( ) { return m_pParent; }
+    inline const CServer*   GetParent       ( ) const { return m_pParent; }
+    inline const CString&   GetName         ( ) const { return m_szName; }
+    inline const CString&   GetDesc         ( ) const { return m_szDesc; }
+    inline unsigned long    GetNumeric      ( ) const { return m_ulNumeric; }
+
+private:
+    CServer*        m_pParent;
+    unsigned long   m_ulNumeric;
+    CString         m_szName;
+    CString         m_szDesc;
 };

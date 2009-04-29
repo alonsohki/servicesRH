@@ -16,29 +16,34 @@
 
 #pragma once
 
+class CUser;
+class CServer;
+
 class CClientManager
 {
 public:
-    static CClientManager&      GetSingleton        ( );
-    static CClientManager*      GetSingletonPtr     ( );
-private:
-    static CClientManager       ms_instance;
-
-private:
                                 CClientManager      ( );
-public:
     virtual                     ~CClientManager     ( );
 
-    void                        AddClient           ( CClient* client );
-    void                        RemoveClient        ( CClient* client );
+    void                        AddClient           ( CServer* pServer );
+    void                        AddClient           ( CUser* pUser );
+    void                        RemoveClient        ( CServer* pServer );
+    void                        RemoveClient        ( CUser* pUser );
 
-    CClient*                    GetClient           ( unsigned long ulNumeric );
-    CClient*                    GetClient           ( const CString& szName );
+    CServer*                    GetServer           ( unsigned long ulNumeric );
+    CServer*                    GetServer           ( const CString& szName );
+
+    CUser*                      GetUser             ( unsigned long ulNumeric );
+    CUser*                      GetUser             ( const CString& szName );
 
 private:
-    typedef google::dense_hash_map < const char*, CClient* > t_mapClientsByName;
-    typedef google::dense_hash_map < unsigned long, CClient* > t_mapClientsByNumeric;
+    typedef google::dense_hash_map < const char*, CServer* > t_mapServersByName;
+    typedef google::dense_hash_map < unsigned long, CServer* > t_mapServersByNumeric;
+    typedef google::dense_hash_map < const char*, CUser* > t_mapUsersByName;
+    typedef google::dense_hash_map < unsigned long, CUser* > t_mapUsersByNumeric;
 
-    t_mapClientsByName          m_mapClientsByName;
-    t_mapClientsByNumeric       m_mapClientsByNumeric;
+    t_mapServersByName          m_mapServersByName;
+    t_mapServersByNumeric       m_mapServersByNumeric;
+    t_mapUsersByName            m_mapUsersByName;
+    t_mapUsersByNumeric         m_mapUsersByNumeric;
 };

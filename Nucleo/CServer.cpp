@@ -20,20 +20,57 @@ CServer::CServer ( )
 {
 }
 
-CServer::CServer ( const CString& szClient, const CString& szDesc )
-    : CClient ( szClient, szDesc )
+CServer::CServer ( CServer* pParent, unsigned long ulNumeric, const CString& szName, const CString& szDesc )
 {
+    Create ( pParent, ulNumeric, szName, szDesc );
 }
 
 CServer::~CServer ( )
 {
+    CClient* pParent_ = CClient::GetParent ();
+    if ( pParent_ )
+    {
+        // Es un servidor de la red, no yo
+        CProtocol::GetSingleton ().GetMe ().m_clientManager.RemoveClient ( this );
+    }
+
+    // Destruímos todos los servidores hijos linkados a este servidor
+    for ( std::list < CServer* >::iterator i = m_children.begin ();
+          i != m_children.end ();
+          ++i )
+    {
+        delete *i;
+    }
+    m_children.clear ();
+}
+
+void CServer::Create ( CServer* pParent, unsigned long ulNumeric, const CString& szName, const CString& szDesc )
+{
+    CClient::Create ( pParent, ulNumeric, szName, szDesc );
+
+    if ( pParent )
+    {
+        CProtocol::GetSingleton ().GetMe ().m_clientManager.AddClient ( this );
+        pParent->m_children.push_back ( this );
+    }
 }
 
 
 void CServer::FormatNumeric ( char* szDest ) const
 {
+    unsigned long ulNumeric = CClient::GetNumeric ();
     if ( ulNumeric > 63 )
         inttobase64 ( szDest, ulNumeric, 2 );
     else
         inttobase64 ( szDest, ulNumeric, 1 );
+}
+
+CServer* CServer::GetServer ( unsigned long ulNumeric )
+{
+    return m_clientManager.GetServer ( ulNumeric );
+}
+
+CUser* CServer::GetUser ( unsigned long ulNumeric )
+{
+    return m_clientManager.GetUser ( ulNumeric );
 }

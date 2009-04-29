@@ -20,21 +20,39 @@ CUser::CUser ( )
 {
 }
 
-CUser::CUser ( CServer* pServer, const CString& szClient, const CString& szDesc )
-    : CClient ( szClient, szDesc )
+CUser::CUser ( CServer* pServer, unsigned long ulNumeric, const CString& szName, const CString& szDesc )
 {
-    m_pServer = pServer;
+    Create ( pServer, ulNumeric, szName, szDesc );
 }
 
 CUser::~CUser ()
 {
 }
 
+void CUser::Create ( CServer* pServer, unsigned long ulNumeric, const CString& szName, const CString& szDesc )
+{
+    CClient::Create ( pServer, ulNumeric, szName, szDesc );
+}
 
 void CUser::FormatNumeric ( char* szDest ) const
 {
-    if ( ulNumeric > 262144 )
-        inttobase64 ( szDest, ulNumeric, 5 );
+    const CClient* pParent = CClient::GetParent ();
+
+    if ( pParent )
+    {
+        unsigned long ulServerNumeric = pParent->GetNumeric ();
+        if ( ulServerNumeric > 63 )
+        {
+            unsigned long ulNumeric = ( ulServerNumeric << 18 ) | CClient::GetNumeric ();
+            inttobase64 ( szDest, ulNumeric, 5 );
+        }
+        else
+        {
+            unsigned long ulNumeric = ( ulServerNumeric << 12 ) | CClient::GetNumeric ();
+            inttobase64 ( szDest, ulNumeric, 3 );
+        }
+
+    }
     else
-        inttobase64 ( szDest, ulNumeric, 3 );
+        *szDest = '\0';
 }

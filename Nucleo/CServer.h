@@ -21,10 +21,27 @@ class CUser;
 class CServer : public CClient
 {
 public:
-                    CServer         ( );
-                    CServer         ( const CString& szClient, const CString& szDesc = "" );
-                    ~CServer        ( );
+                            CServer         ( );
+                            CServer         ( CServer* pParent,
+                                              unsigned long ulNumeric,
+                                              const CString& szName,
+                                              const CString& szDesc = "" );
+                            ~CServer        ( );
 
-    void            FormatNumeric   ( char* szDest ) const;
-    inline EType    GetType         ( ) const { return CClient::SERVER; }
+    void                    Create          ( CServer* pParent,
+                                              unsigned long ulNumeric,
+                                              const CString& szName,
+                                              const CString& szDesc = "" );
+
+    void                    FormatNumeric   ( char* szDest ) const;
+    inline EType            GetType         ( ) const { return CClient::SERVER; }
+
+    CServer*                GetServer       ( const CString& szName );
+    CServer*                GetServer       ( unsigned long ulNumeric );
+    CUser*                  GetUser         ( const CString& szName );
+    CUser*                  GetUser         ( unsigned long ulNumeric );
+
+private:
+    CClientManager          m_clientManager;
+    std::list < CServer* >  m_children;
 };

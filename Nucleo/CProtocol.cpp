@@ -50,20 +50,25 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
     if ( ! m_config.GetValue ( szDesc, "bots", "descripcion" ) )
         return false;
 
-    m_me.szName = szHost;
-    m_me.ulNumeric = atol ( szNumeric );
+    // Creamos nuestra estructura de servidor
+    m_me.Create ( 0, atol ( szNumeric ), szHost, szDesc );
 
-    Send ( CClient(), "PASS", "", CClient(), szPass );
-
+    // Negociamos la conexión
     unsigned long ulNow = static_cast < unsigned long > ( time ( 0 ) );
     char szFormattedNumeric [ 8 ];
-    m_me.FormatNumeric ( szFormattedNumeric );
-    CString szServerInfo ( "%s 1 %lu %lu P10 %s]]", szHost.c_str (), ulNow, ulNow, szFormattedNumeric );
 
+    m_me.FormatNumeric ( szFormattedNumeric );
+    CString szServerInfo ( "%s 1 %lu %lu P10 %s]] +hs", m_me.GetName ().c_str (), ulNow, ulNow, szFormattedNumeric );
+
+    Send ( CClient(), "PASS", "", CClient(), szPass );
     Send ( CClient(), "SERVER", szServerInfo, CClient(), szDesc );
+    //Send ( m_me, "DB", "* 0 J 0 2" );
+    Send ( m_me, "END_OF_BURST" );
+    Send ( m_me, "EOB_ACK" );
 
     return true;
 }
+
 
 int CProtocol::Loop ( )
 {
@@ -99,30 +104,52 @@ bool CProtocol::Process ( const CString& szLine )
         // El primer mensaje esperado es el de la información del servidor al que nos conectamos
         if ( bGotText && szLine.compare ( 0, 6, "SERVER" ) == 0 )
         {
-            m_bGotServer = true;
-
-            CServer *pServer = new CServer ( vec [ 1 ], std::string ( vec [ 8 ], 1 ) );
-
-            // Calculamos el numérico
-            char szNumeric [ 8 ];
-            strcpy ( szNumeric, vec [ 6 ] );
-            if ( strlen ( szNumeric ) == 3 )
-                szNumeric [ 1 ] = '\0';
+            // Obtenemos el numérico del servidor
+            unsigned long ulNumeric;
+            if ( vec [ 6 ].length () == 3 )
+                vec [ 6 ].resize ( 1 );
             else
-                szNumeric [ 2 ] = '\0';
-            pServer->ulNumeric = base64toint ( szNumeric );
+                vec [ 6 ].resize ( 2 );
+            ulNumeric = base64toint ( vec [ 6 ] );
 
-            CClientManager::GetSingleton ().AddClient ( pServer );
-
+            m_bGotServer = true;
+            CServer *pServer = new CServer ( &m_me, ulNumeric, vec [ 1 ], std::string ( vec [ 8 ], 1 ) );
             return true;
         }
 
         return false;
     }
 
+    CClient* pSource = 0;
     unsigned long ulNumeric = base64toint ( vec [ 0 ] );
-    CClient* pClient = CClientManager::GetSingleton ().GetClient ( ulNumeric );
-    if ( pClient == 0 )
+    if ( ulNumeric > 4095 )
+    {
+        // Es un usuario
+        CServer* pServer;
+
+        if ( ulNumeric > 262143 )
+        {
+            // Servidor con numérico de dos dígitos
+            pServer = m_me.GetServer ( ulNumeric >> 18 );
+            if ( pServer )
+                pSource = pServer->GetUser ( ulNumeric | 262143 );
+        }
+        else
+        {
+            pServer = m_me.GetServer ( ulNumeric >> 12 );
+            if ( pServer )
+                pSource = pServer->GetUser ( ulNumeric | 4095 );
+        }
+    }
+    else
+    {
+        // Es un servidor
+        pSource = m_me.GetServer ( ulNumeric );
+    }
+
+    puts ( szLine );
+
+    if ( !pSource )
         return false;
 
     return true;
