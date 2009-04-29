@@ -31,9 +31,7 @@ bool CMessagePASS::BuildMessage ( SProtocolMessage& message ) const
     return true;
 }
 
-bool CMessagePASS::ProcessMessage ( const CString& szLine,
-                                    const std::vector < CString >& vec,
-                                    SProtocolMessage& dest ) const
+bool CMessagePASS::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
 {
     // Nunca vamos a necesitar procesar este mensaje
     return true;
@@ -101,9 +99,7 @@ bool CMessageSERVER::BuildMessage ( SProtocolMessage& message ) const
    return true;
 }
 
-bool CMessageSERVER::ProcessMessage ( const CString& szLine,
-                                    const std::vector < CString >& vec,
-                                    SProtocolMessage& dest ) const
+bool CMessageSERVER::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
 {
     return true;
 }
@@ -120,9 +116,7 @@ bool CMessageEND_OF_BURST::BuildMessage ( SProtocolMessage& message ) const
     return true;
 }
 
-bool CMessageEND_OF_BURST::ProcessMessage ( const CString& szLine,
-                                            const std::vector < CString >& vec,
-                                            SProtocolMessage& dest ) const
+bool CMessageEND_OF_BURST::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
 {
     return true;
 }
@@ -137,9 +131,71 @@ bool CMessageEOB_ACK::BuildMessage ( SProtocolMessage& message ) const
     return true;
 }
 
-bool CMessageEOB_ACK::ProcessMessage ( const CString& szLine,
-                                       const std::vector < CString >& vec,
-                                       SProtocolMessage& dest ) const
+bool CMessageEOB_ACK::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
 {
+    return true;
+}
+
+
+////////////////////////////
+//          PING          //
+////////////////////////////
+CMessagePING::CMessagePING ( time_t time, CServer* pDest )
+: m_time ( time ), m_pDest ( pDest )
+{
+}
+CMessagePING::~CMessagePING ( ) { }
+
+bool CMessagePING::BuildMessage ( SProtocolMessage& message ) const
+{
+    // No lo vamos a necesitar
+    return false;
+}
+
+bool CMessagePING::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
+{
+    if ( vec.size () < 5 )
+        return false;
+
+    m_pDest = CProtocol::GetSingleton ().GetMe ().GetServer ( vec [ 3 ] );
+    if ( ! m_pDest )
+    {
+        return false;
+    }
+
+    unsigned long ulTime = atol ( vec [ 4 ] );
+    m_time = static_cast < time_t > ( ulTime );
+
+    return true;
+}
+
+
+
+////////////////////////////
+//          PONG          //
+////////////////////////////
+CMessagePONG::CMessagePONG ( time_t time, CServer* pDest )
+: m_time ( time ), m_pDest ( pDest )
+{
+}
+CMessagePONG::~CMessagePONG ( ) { }
+
+bool CMessagePONG::BuildMessage ( SProtocolMessage& message ) const
+{
+    if ( m_pDest )
+    {
+        char szNumeric [ 4 ];
+        unsigned long ulTime = static_cast < unsigned long > ( m_time );
+
+        m_pDest->FormatNumeric ( szNumeric );
+        message.szExtraInfo.Format ( "%s !%lu %lu 0 %lu", szNumeric, ulTime, ulTime, ulTime );
+        return true;
+    }
+    return false;
+}
+
+bool CMessagePONG::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
+{
+    // No lo vamos a necesitar
     return true;
 }

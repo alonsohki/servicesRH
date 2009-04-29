@@ -25,9 +25,13 @@ public:
 
     virtual const char*     GetName         ( ) const = 0;
     virtual bool            BuildMessage    ( SProtocolMessage& message ) const = 0;
-    virtual bool            ProcessMessage  ( const CString& szLine,
-                                              const std::vector < CString >& vec,
-                                              SProtocolMessage& dest ) const = 0;
+    virtual bool            ProcessMessage  ( const CString& szLine, const std::vector < CString >& vec ) = 0;
+
+    inline void             SetSource       ( CClient* pSource ) { m_pSource = pSource; }
+    inline CClient*         GetSource       ( ) { return m_pSource; }
+
+private:
+    CClient*                m_pSource;
 };
 
 #define BEGIN_MESSAGE_DECLARATION_NOPARAMS(msg) \
@@ -53,10 +57,8 @@ class CMessage ## msg : public IMessage \
 
 #define END_MESSAGE_DECLARATION() \
   public: \
-        bool        ProcessMessage  ( const CString& szLine, \
-                                      const std::vector < CString >& vec, \
-                                      SProtocolMessage& dest ) const; \
-        bool        BuildMessage ( SProtocolMessage& message ) const; \
+        bool        ProcessMessage  ( const CString& szLine, const std::vector < CString >& vec ); \
+        bool        BuildMessage    ( SProtocolMessage& message ) const; \
   };
 
 
@@ -109,6 +111,31 @@ END_MESSAGE_DECLARATION()
 BEGIN_MESSAGE_DECLARATION_NOPARAMS(EOB_ACK)
 END_MESSAGE_DECLARATION()
 
+
+////////////////////////////
+//          PING          //
+////////////////////////////
+BEGIN_MESSAGE_DECLARATION(PING, time_t time, CServer* pDest)
+public:
+    inline time_t       GetTime ( ) const { return m_time; }
+    inline CServer*     GetDest ( ) const { return m_pDest; }
+private:
+    time_t              m_time;
+    CServer*            m_pDest;
+END_MESSAGE_DECLARATION()
+
+
+////////////////////////////
+//          PONG          //
+////////////////////////////
+BEGIN_MESSAGE_DECLARATION(PONG, time_t time, CServer* pDest)
+public:
+    inline time_t       GetTime ( ) const { return m_time; }
+    inline CServer*     GetDest ( ) const { return m_pDest; }
+private:
+    time_t              m_time;
+    CServer*            m_pDest;
+END_MESSAGE_DECLARATION()
 
 
 

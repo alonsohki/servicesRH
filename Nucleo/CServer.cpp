@@ -65,8 +65,17 @@ void CServer::FormatNumeric ( char* szDest ) const
         inttobase64 ( szDest, ulNumeric, 1 );
 }
 
+CServer* CServer::GetServer ( const CString& szName )
+{
+    if ( !CompareStrings ( szName.c_str (), CClient::GetName ().c_str () ) )
+        return this;
+    return m_clientManager.GetServer ( szName );
+}
+
 CServer* CServer::GetServer ( unsigned long ulNumeric )
 {
+    if ( ulNumeric == CClient::GetNumeric () )
+        return this;
     return m_clientManager.GetServer ( ulNumeric );
 }
 

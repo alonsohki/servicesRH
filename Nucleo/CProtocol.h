@@ -16,7 +16,7 @@
 
 #pragma once
 
-#define PROTOCOL_CALLBACK CCallback < bool, const SProtocolMessage& >
+#define PROTOCOL_CALLBACK CCallback < bool, const IMessage& >
 
 class CProtocol
 {
@@ -61,7 +61,8 @@ private:
                                                   const PROTOCOL_CALLBACK& callback );
 private:
     // Eventos
-    bool                    evtEndOfBurst       ( const SProtocolMessage& message );
+    bool                    evtEndOfBurst       ( const IMessage& message );
+    bool                    evtPing             ( const IMessage& message );
 
 private:
     CSocket                 m_socket;

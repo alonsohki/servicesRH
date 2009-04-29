@@ -69,6 +69,7 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
 
     // Registramos eventos
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageEND_OF_BURST(), PROTOCOL_CALLBACK ( &CProtocol::evtEndOfBurst, this ) );
+    InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessagePING(), PROTOCOL_CALLBACK ( &CProtocol::evtPing, this ) );
 
     return true;
 }
@@ -160,20 +161,18 @@ bool CProtocol::Process ( const CString& szLine )
     t_commandsMap::iterator iterBefore = m_commandsMapBefore.find ( vec [ 1 ].c_str () );
     if ( iterBefore != m_commandsMapBefore.end () )
     {
-        SProtocolMessage message;
-        message.pSource = pSource;
-        message.szCommand = vec [ 1 ];
-
         IMessage* pMessage = ((*iterBefore).second).pMessage;
-        if ( pMessage->ProcessMessage ( szLine, vec, message ) )
+        if ( pMessage->ProcessMessage ( szLine, vec ) )
         {
+            pMessage->SetSource ( pSource );
+
             std::vector < PROTOCOL_CALLBACK* >& callbacks = ((*iterBefore).second).vecCallbacks;
             for ( std::vector < PROTOCOL_CALLBACK* >::const_iterator iter = callbacks.begin ();
                   iter != callbacks.end ();
                   ++iter )
             {
                 PROTOCOL_CALLBACK* pCallback = *iter;
-                if ( ! (*pCallback)( message ) )
+                if ( ! (*pCallback)( *pMessage ) )
                     break;
             }
         }
@@ -183,20 +182,18 @@ bool CProtocol::Process ( const CString& szLine )
     t_commandsMap::iterator iterIn = m_commandsMap.find ( vec [ 1 ].c_str () );
     if ( iterIn != m_commandsMap.end () )
     {
-        SProtocolMessage message;
-        message.pSource = pSource;
-        message.szCommand = vec [ 1 ];
-
         IMessage* pMessage = ((*iterIn).second).pMessage;
-        if ( pMessage->ProcessMessage ( szLine, vec, message ) )
+        if ( pMessage->ProcessMessage ( szLine, vec ) )
         {
+            pMessage->SetSource ( pSource );
+
             std::vector < PROTOCOL_CALLBACK* >& callbacks = ((*iterIn).second).vecCallbacks;
             for ( std::vector < PROTOCOL_CALLBACK* >::const_iterator iter = callbacks.begin ();
                   iter != callbacks.end ();
                   ++iter )
             {
                 PROTOCOL_CALLBACK* pCallback = *iter;
-                if ( ! (*pCallback)( message ) )
+                if ( ! (*pCallback)( *pMessage ) )
                     break;
             }
         }
@@ -206,20 +203,18 @@ bool CProtocol::Process ( const CString& szLine )
     t_commandsMap::iterator iterAfter = m_commandsMapAfter.find ( vec [ 1 ].c_str () );
     if ( iterAfter != m_commandsMapAfter.end () )
     {
-        SProtocolMessage message;
-        message.pSource = pSource;
-        message.szCommand = vec [ 1 ];
-
         IMessage* pMessage = ((*iterAfter).second).pMessage;
-        if ( pMessage->ProcessMessage ( szLine, vec, message ) )
+        if ( pMessage->ProcessMessage ( szLine, vec ) )
         {
+            pMessage->SetSource ( pSource );
+
             std::vector < PROTOCOL_CALLBACK* >& callbacks = ((*iterAfter).second).vecCallbacks;
             for ( std::vector < PROTOCOL_CALLBACK* >::const_iterator iter = callbacks.begin ();
                   iter != callbacks.end ();
                   ++iter )
             {
                 PROTOCOL_CALLBACK* pCallback = *iter;
-                if ( ! (*pCallback)( message ) )
+                if ( ! (*pCallback)( *pMessage ) )
                     break;
             }
         }
@@ -350,8 +345,23 @@ CProtocol* CProtocol::GetSingletonPtr ( )
 
 
 // Eventos
-bool CProtocol::evtEndOfBurst ( const SProtocolMessage& message )
+bool CProtocol::evtEndOfBurst ( const IMessage& )
 {
     Send ( CMessageEOB_ACK (), &m_me );
+    return true;
+}
+
+bool CProtocol::evtPing ( const IMessage& message_ )
+{
+    try
+    {
+        const CMessagePING& message = dynamic_cast < const CMessagePING& > ( message_ );
+        if ( message.GetDest () == &m_me )
+        {
+            Send ( CMessagePONG ( message.GetTime (), &m_me ), &m_me );
+        }
+    }
+    catch ( std::bad_cast ) { return false; }
+
     return true;
 }
