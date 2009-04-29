@@ -31,6 +31,14 @@ bool CMessagePASS::BuildMessage ( SProtocolMessage& message ) const
     return true;
 }
 
+bool CMessagePASS::ProcessMessage ( const CString& szLine,
+                                    const std::vector < CString >& vec,
+                                    SProtocolMessage& dest ) const
+{
+    // Nunca vamos a necesitar procesar este mensaje
+    return true;
+}
+
 
 ////////////////////////////
 //         SERVER         //
@@ -93,6 +101,14 @@ bool CMessageSERVER::BuildMessage ( SProtocolMessage& message ) const
    return true;
 }
 
+bool CMessageSERVER::ProcessMessage ( const CString& szLine,
+                                    const std::vector < CString >& vec,
+                                    SProtocolMessage& dest ) const
+{
+    return true;
+}
+
+
 
 
 ////////////////////////////
@@ -104,12 +120,26 @@ bool CMessageEND_OF_BURST::BuildMessage ( SProtocolMessage& message ) const
     return true;
 }
 
+bool CMessageEND_OF_BURST::ProcessMessage ( const CString& szLine,
+                                            const std::vector < CString >& vec,
+                                            SProtocolMessage& dest ) const
+{
+    return true;
+}
+
 
 ////////////////////////////
 //         EOB_ACK        //
 ////////////////////////////
 CMessageEOB_ACK::~CMessageEOB_ACK ( ) { }
 bool CMessageEOB_ACK::BuildMessage ( SProtocolMessage& message ) const
+{
+    return true;
+}
+
+bool CMessageEOB_ACK::ProcessMessage ( const CString& szLine,
+                                       const std::vector < CString >& vec,
+                                       SProtocolMessage& dest ) const
 {
     return true;
 }

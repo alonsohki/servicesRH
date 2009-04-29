@@ -18,14 +18,14 @@
 
 CClientManager::CClientManager ( )
 {
-    m_mapServersByName.set_deleted_key ( (const char *)0xDEADBEEF );
+    m_mapServersByName.set_deleted_key ( (const char *)HASH_STRING_DELETED );
+    m_mapServersByName.set_empty_key ( (const char *)HASH_STRING_EMPTY );
     m_mapServersByNumeric.set_deleted_key ( 0xDEADBEEF );
-    m_mapServersByName.set_empty_key ( (const char *)NULL );
     m_mapServersByNumeric.set_empty_key ( 0xDEADBEFF );
 
-    m_mapUsersByName.set_deleted_key ( (const char *)0xDEADBEEF );
+    m_mapUsersByName.set_deleted_key ( (const char *)HASH_STRING_DELETED );
+    m_mapUsersByName.set_empty_key ( (const char *)HASH_STRING_EMPTY );
     m_mapUsersByNumeric.set_deleted_key ( 0xDEADBEEF );
-    m_mapUsersByName.set_empty_key ( (const char *)NULL );
     m_mapUsersByNumeric.set_empty_key ( 0xDEADBEFF );
 }
 

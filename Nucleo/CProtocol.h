@@ -21,7 +21,18 @@
 class CProtocol
 {
 private:
-    typedef google::dense_hash_map < const char*, std::vector < PROTOCOL_CALLBACK* > > t_commandsMap;
+    struct SCommandCallbacks
+    {
+        IMessage* pMessage;
+        std::vector < PROTOCOL_CALLBACK* > vecCallbacks;
+    };
+    enum EHandlerStage
+    {
+        HANDLER_BEFORE_CALLBACKS,
+        HANDLER_IN_CALLBACKS,
+        HANDLER_AFTER_CALLBACKS
+    };
+    typedef google::dense_hash_map < const char*, SCommandCallbacks, SStringHasher, SStringEquals > t_commandsMap;
 
 private:
     static CProtocol        ms_instance;
@@ -40,9 +51,17 @@ public:
     virtual bool            Process             ( const CString& szLine );
     virtual int             Send                ( const IMessage& ircmessage, CClient* pSource = NULL );
 
-    void                    AddHandler          ( const IMessage& message, const PROTOCOL_CALLBACK& callback );
     inline CServer&         GetMe               ( ) { return m_me; }
     inline const CServer&   GetMe               ( ) const { return m_me; }
+
+    void                    AddHandler          ( const IMessage& message, const PROTOCOL_CALLBACK& callback );
+private:
+    void                    InternalAddHandler  ( EHandlerStage eStage,
+                                                  const IMessage& message,
+                                                  const PROTOCOL_CALLBACK& callback );
+private:
+    // Eventos
+    bool                    evtEndOfBurst       ( const SProtocolMessage& message );
 
 private:
     CSocket                 m_socket;
@@ -50,5 +69,7 @@ private:
     CString                 m_szLine;
     CServer                 m_me;
     t_commandsMap           m_commandsMap;
+    t_commandsMap           m_commandsMapBefore;
+    t_commandsMap           m_commandsMapAfter;
     bool                    m_bGotServer;
 };

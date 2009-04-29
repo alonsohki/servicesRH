@@ -20,8 +20,12 @@
 CProtocol::CProtocol ( )
 : m_bGotServer ( false )
 {
-    m_commandsMap.set_deleted_key ( (const char *)0xFABADA00 );
-    m_commandsMap.set_empty_key ( (const char *)0x00000000 );
+    m_commandsMap.set_deleted_key ( (const char *)HASH_STRING_DELETED );
+    m_commandsMap.set_empty_key ( (const char *)HASH_STRING_EMPTY );
+    m_commandsMapBefore.set_deleted_key ( (const char *)HASH_STRING_DELETED );
+    m_commandsMapBefore.set_empty_key ( (const char *)HASH_STRING_EMPTY );
+    m_commandsMapAfter.set_deleted_key ( (const char *)HASH_STRING_DELETED );
+    m_commandsMapAfter.set_empty_key ( (const char *)HASH_STRING_EMPTY );
 }
 
 CProtocol::~CProtocol ( )
@@ -62,7 +66,9 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
     Send ( CMessagePASS ( szPass ) );
     Send ( CMessageSERVER ( szHost, 1, time ( 0 ), "J10", atol ( szNumeric ), ulMaxusers, "hs", szDesc ) );
     Send ( CMessageEND_OF_BURST (), &m_me );
-    Send ( CMessageEOB_ACK (), &m_me );
+
+    // Registramos eventos
+    InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageEND_OF_BURST(), PROTOCOL_CALLBACK ( &CProtocol::evtEndOfBurst, this ) );
 
     return true;
 }
@@ -118,6 +124,7 @@ bool CProtocol::Process ( const CString& szLine )
         return false;
     }
 
+    // Buscamos el orígen del mensaje
     CClient* pSource = 0;
     unsigned long ulNumeric = base64toint ( vec [ 0 ] );
     if ( ulNumeric > 4095 )
@@ -146,11 +153,77 @@ bool CProtocol::Process ( const CString& szLine )
     }
 
     puts ( szLine );
-
     if ( !pSource )
         return false;
 
+    // Ejecutamos los pre-eventos
+    t_commandsMap::iterator iterBefore = m_commandsMapBefore.find ( vec [ 1 ].c_str () );
+    if ( iterBefore != m_commandsMapBefore.end () )
+    {
+        SProtocolMessage message;
+        message.pSource = pSource;
+        message.szCommand = vec [ 1 ];
 
+        IMessage* pMessage = ((*iterBefore).second).pMessage;
+        if ( pMessage->ProcessMessage ( szLine, vec, message ) )
+        {
+            std::vector < PROTOCOL_CALLBACK* >& callbacks = ((*iterBefore).second).vecCallbacks;
+            for ( std::vector < PROTOCOL_CALLBACK* >::const_iterator iter = callbacks.begin ();
+                  iter != callbacks.end ();
+                  ++iter )
+            {
+                PROTOCOL_CALLBACK* pCallback = *iter;
+                if ( ! (*pCallback)( message ) )
+                    break;
+            }
+        }
+    }
+
+    // Ejecutamos los eventos
+    t_commandsMap::iterator iterIn = m_commandsMap.find ( vec [ 1 ].c_str () );
+    if ( iterIn != m_commandsMap.end () )
+    {
+        SProtocolMessage message;
+        message.pSource = pSource;
+        message.szCommand = vec [ 1 ];
+
+        IMessage* pMessage = ((*iterIn).second).pMessage;
+        if ( pMessage->ProcessMessage ( szLine, vec, message ) )
+        {
+            std::vector < PROTOCOL_CALLBACK* >& callbacks = ((*iterIn).second).vecCallbacks;
+            for ( std::vector < PROTOCOL_CALLBACK* >::const_iterator iter = callbacks.begin ();
+                  iter != callbacks.end ();
+                  ++iter )
+            {
+                PROTOCOL_CALLBACK* pCallback = *iter;
+                if ( ! (*pCallback)( message ) )
+                    break;
+            }
+        }
+    }
+
+    // Ejecutamos los post-eventos
+    t_commandsMap::iterator iterAfter = m_commandsMapAfter.find ( vec [ 1 ].c_str () );
+    if ( iterAfter != m_commandsMapAfter.end () )
+    {
+        SProtocolMessage message;
+        message.pSource = pSource;
+        message.szCommand = vec [ 1 ];
+
+        IMessage* pMessage = ((*iterAfter).second).pMessage;
+        if ( pMessage->ProcessMessage ( szLine, vec, message ) )
+        {
+            std::vector < PROTOCOL_CALLBACK* >& callbacks = ((*iterAfter).second).vecCallbacks;
+            for ( std::vector < PROTOCOL_CALLBACK* >::const_iterator iter = callbacks.begin ();
+                  iter != callbacks.end ();
+                  ++iter )
+            {
+                PROTOCOL_CALLBACK* pCallback = *iter;
+                if ( ! (*pCallback)( message ) )
+                    break;
+            }
+        }
+    }
 
     return true;
 }
@@ -218,31 +291,48 @@ int CProtocol::Send ( const IMessage& ircmessage, CClient* pSource )
         szMessage.append ( message.szText );
     }
 
-    puts(szMessage);
-
     return m_socket.WriteString ( szMessage );
 }
 
 void CProtocol::AddHandler ( const IMessage& pMessage, const PROTOCOL_CALLBACK& callback )
 {
-/*    std::vector < PROTOCOL_CALLBACK* >* pVector;
+    InternalAddHandler ( HANDLER_IN_CALLBACKS, pMessage, callback );
+}
 
-    t_commandsMap::iterator find = m_commandsMap.find ( pMessage->GetName () );
-    if ( find == m_commandsMap.end () )
+void CProtocol::InternalAddHandler ( EHandlerStage eStage, const IMessage& message, const PROTOCOL_CALLBACK& callback )
+{
+    t_commandsMap* map;
+
+    switch ( eStage )
     {
-        std::pair < t_commandsMap::iterator, bool > pair = m_commandsMap.insert (
-                                                            t_commandsMap::value_type (
-                                                                pMessage->GetName (),
-                                                                std::vector < PROTOCOL_CALLBACK* > ( 64 )
-                                                            )
-                                                           );
-        find = pair.first;
+        case HANDLER_BEFORE_CALLBACKS:
+            map = &m_commandsMapBefore;
+            break;
+        case HANDLER_IN_CALLBACKS:
+            map = &m_commandsMap;
+            break;
+        case HANDLER_AFTER_CALLBACKS:
+            map = &m_commandsMapAfter;
+            break;
     }
 
-    pVector = &((*find).second);
+    std::vector < PROTOCOL_CALLBACK* >* pVector;
+
+    t_commandsMap::iterator find = map->find ( message.GetName () );
+    if ( find == map->end () )
+    {
+        std::pair < t_commandsMap::iterator, bool > pair =
+            map->insert ( t_commandsMap::value_type ( message.GetName (), SCommandCallbacks () ) );
+        find = pair.first;
+        SCommandCallbacks& s = (*find).second;
+        s.pMessage = message.Copy ();
+        pVector = &s.vecCallbacks;
+    }
+    else
+        pVector = &((*find).second).vecCallbacks;
 
     PROTOCOL_CALLBACK* pCallback = new PROTOCOL_CALLBACK ( callback );
-    pVector->push_back ( pCallback );*/
+    pVector->push_back ( pCallback );
 }
 
 // Parte estática
@@ -256,4 +346,12 @@ CProtocol& CProtocol::GetSingleton ( )
 CProtocol* CProtocol::GetSingletonPtr ( )
 {
     return &GetSingleton ();
+}
+
+
+// Eventos
+bool CProtocol::evtEndOfBurst ( const SProtocolMessage& message )
+{
+    Send ( CMessageEOB_ACK (), &m_me );
+    return true;
 }

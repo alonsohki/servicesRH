@@ -28,6 +28,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <limits.h>
 
 #ifdef WIN32
     #include <winsock2.h>
@@ -55,7 +56,9 @@
 
 // Encabezados propios
 #include "CString.h"
+#include "ircd_chattr.h"
 #include "base64.h"
+#include "hash.h"
 #include "CPortability.h"
 #include "CCallback.h"
 #include "CConfig.h"

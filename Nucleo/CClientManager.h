@@ -37,9 +37,9 @@ public:
     CUser*                      GetUser             ( const CString& szName );
 
 private:
-    typedef google::dense_hash_map < const char*, CServer* > t_mapServersByName;
+    typedef google::dense_hash_map < const char*, CServer*, SStringHasher > t_mapServersByName;
     typedef google::dense_hash_map < unsigned long, CServer* > t_mapServersByNumeric;
-    typedef google::dense_hash_map < const char*, CUser* > t_mapUsersByName;
+    typedef google::dense_hash_map < const char*, CUser*, SStringHasher > t_mapUsersByName;
     typedef google::dense_hash_map < unsigned long, CUser* > t_mapUsersByNumeric;
 
     t_mapServersByName          m_mapServersByName;

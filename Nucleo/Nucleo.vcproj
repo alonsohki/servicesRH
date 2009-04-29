@@ -196,6 +196,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\chattr.tab.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CMessage.cpp"
 				>
 			</File>
@@ -213,6 +217,10 @@
 			</File>
 			<File
 				RelativePath=".\CUser.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\hash.cpp"
 				>
 			</File>
 			<File
@@ -291,6 +299,14 @@
 			</File>
 			<File
 				RelativePath=".\CUser.h"
+				>
+			</File>
+			<File
+				RelativePath=".\hash.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ircd_chattr.h"
 				>
 			</File>
 			<File

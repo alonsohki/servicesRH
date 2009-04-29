@@ -25,6 +25,9 @@ public:
 
     virtual const char*     GetName         ( ) const = 0;
     virtual bool            BuildMessage    ( SProtocolMessage& message ) const = 0;
+    virtual bool            ProcessMessage  ( const CString& szLine,
+                                              const std::vector < CString >& vec,
+                                              SProtocolMessage& dest ) const = 0;
 };
 
 #define BEGIN_MESSAGE_DECLARATION_NOPARAMS(msg) \
@@ -50,6 +53,9 @@ class CMessage ## msg : public IMessage \
 
 #define END_MESSAGE_DECLARATION() \
   public: \
+        bool        ProcessMessage  ( const CString& szLine, \
+                                      const std::vector < CString >& vec, \
+                                      SProtocolMessage& dest ) const; \
         bool        BuildMessage ( SProtocolMessage& message ) const; \
   };
 

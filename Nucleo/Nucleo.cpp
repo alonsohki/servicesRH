@@ -18,6 +18,9 @@
 
 int main( int argc, const char* argv[], const char* envp[] )
 {
+    // Inicializamos el hasher de cadenas
+    init_hash ();
+
     // Cargamos la configuración
     CConfig config ( "servicios.conf" );
     if ( config.IsOk () == false )
