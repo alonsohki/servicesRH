@@ -21,6 +21,35 @@ class CServer;
 class CUser : public CClient
 {
 public:
+    enum EUserMode
+    {
+        UMODE_INVISIBLE     = 0x000001,
+        UMODE_OPER          = 0x000002,
+        UMODE_WALLOP        = 0x000004,
+        UMODE_DEAF          = 0x000008,
+        UMODE_CHSERV        = 0x000010,
+        UMODE_DEBUG         = 0x000020,
+        UMODE_ACCOUNT       = 0x000040,
+        UMODE_HIDDENHOST    = 0x000080,
+        UMODE_VIEWIP        = 0x000100,
+        UMODE_HELPOP        = 0x000200,
+        UMODE_DEVELOPER     = 0x000400,
+        UMODE_COADMIN       = 0x000800,
+        UMODE_ADMIN         = 0x001000,
+        UMODE_PREOP         = 0x002000,
+        UMODE_ONLYREG       = 0x004000,
+        UMODE_REGNICK       = 0x008000,
+        UMODE_USERBOT       = 0x010000,
+        UMODE_BOT           = 0x020000,
+        UMODE_SUSPENDED     = 0x040000,
+        UMODE_IDENTIFIED    = 0x080000,
+        UMODE_SERVNOTICE    = 0x100000,
+        UMODE_LOCOP         = 0x200000
+    };
+
+    static const unsigned long ms_ulUserModes [ 256 ];
+
+public:
                             CUser           ( );
                             CUser           ( CServer* pServer,
                                               unsigned long ulNumeric,
@@ -43,13 +72,19 @@ public:
     inline EType            GetType         ( ) const { return CClient::USER; }
 
     void                    SetNick         ( const CString& szNick );
+    void                    SetModes        ( const CString& szModes );
+    inline void             SetModes        ( unsigned long ulModes ) { m_ulModes = ulModes; }
+    inline void             AddModes        ( unsigned long ulModes ) { m_ulModes |= ulModes; }
+    inline void             RemoveModes     ( unsigned long ulModes ) { m_ulModes &= ~ulModes; }
 
     inline const CString&   GetIdent        ( ) const { return m_szIdent; }
     inline const CString&   GetHost         ( ) const { return m_szHost; }
     inline unsigned long    GetAdddress     ( ) const { return m_ulAddress; }
+    inline unsigned long    GetModes        ( ) const { return m_ulModes; }
 
 private:
     CString         m_szIdent;
     CString         m_szHost;
     unsigned long   m_ulAddress;
+    unsigned long   m_ulModes;
 };

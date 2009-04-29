@@ -178,5 +178,19 @@ private:
 END_MESSAGE_DECLARATION()
 
 
+////////////////////////////
+//          MODE          //
+////////////////////////////
+BEGIN_MESSAGE_DECLARATION(MODE, CUser* pUser, const CString& szModes)
+public:
+    inline CUser*           GetUser     ( ) const { return m_pUser; }
+    inline const CString&   GetModes    ( ) const { return m_szModes; }
+private:
+    CUser*      m_pUser;
+    CString     m_szModes;
+END_MESSAGE_DECLARATION()
+
+
+
 #undef BEGIN_MESSAGE_DECLARATION
 #undef END_MESSAGE_DECLARATION

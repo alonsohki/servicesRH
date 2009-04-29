@@ -40,6 +40,7 @@ public:
     CServer*                GetServer       ( unsigned long ulNumeric );
     CUser*                  GetUser         ( const CString& szName );
     CUser*                  GetUser         ( unsigned long ulNumeric );
+    CUser*                  GetUserAnywhere ( const CString& szName );
 
     void                    AddUser         ( CUser* pUser );
     void                    RemoveUser      ( CUser* pUser );

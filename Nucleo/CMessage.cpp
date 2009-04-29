@@ -339,3 +339,42 @@ bool CMessageQUIT::ProcessMessage ( const CString& szLine, const std::vector < C
     m_szMessage = vec [ 2 ];
     return true;
 }
+
+
+////////////////////////////
+//          MODE          //
+////////////////////////////
+CMessageMODE::CMessageMODE ( CUser* pUser, const CString& szModes )
+: m_pUser ( pUser ), m_szModes ( szModes )
+{
+}
+CMessageMODE::~CMessageMODE ( ) { }
+
+bool CMessageMODE::BuildMessage ( SProtocolMessage& message ) const
+{
+    // TODO
+    return true;
+}
+
+bool CMessageMODE::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
+{
+    if ( vec.size () < 4 )
+        return false;
+
+    if ( *( vec [ 2 ].c_str () ) == '#' )
+    {
+        // Cambio de modo de canales
+        m_pUser = 0;
+    }
+    else
+    {
+        // Cambio de modo de usuarios
+        m_pUser = CProtocol::GetSingleton ().GetMe ().GetUserAnywhere ( vec [ 2 ] );
+        if ( ! m_pUser )
+            return false;
+
+        m_szModes = vec [ 3 ];
+    }
+
+    return true;
+}

@@ -84,6 +84,24 @@ CUser* CServer::GetUser ( unsigned long ulNumeric )
     return m_clientManager.GetUser ( ulNumeric );
 }
 
+CUser* CServer::GetUserAnywhere ( const CString& szName )
+{
+    CUser* pUser = m_clientManager.GetUser ( szName );
+    if ( ! pUser )
+    {
+        for ( std::list < CServer* >::iterator iter = m_children.begin ();
+              iter != m_children.end ();
+              ++iter )
+        {
+            pUser = (*iter)->GetUserAnywhere ( szName );
+            if ( pUser )
+                break;
+        }
+    }
+
+    return pUser;
+}
+
 void CServer::AddUser ( CUser* pUser )
 {
     m_clientManager.AddClient ( pUser );

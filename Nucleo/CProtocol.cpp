@@ -73,6 +73,7 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageSERVER(), PROTOCOL_CALLBACK ( &CProtocol::evtServer, this ) );
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageNICK(), PROTOCOL_CALLBACK ( &CProtocol::evtNick, this ) );
     InternalAddHandler ( HANDLER_AFTER_CALLBACKS, CMessageQUIT(), PROTOCOL_CALLBACK ( &CProtocol::evtQuit, this ) );
+    InternalAddHandler ( HANDLER_AFTER_CALLBACKS, CMessageMODE(), PROTOCOL_CALLBACK ( &CProtocol::evtUmode, this ) );
 
     return true;
 }
@@ -410,6 +411,7 @@ bool CProtocol::evtNick ( const IMessage& message_ )
                                        message.GetDesc (),
                                        message.GetHost (),
                                        message.GetAddress () );
+            pUser->SetModes ( message.GetModes () );
             message.GetServer ()->AddUser ( pUser );
         }
         else
@@ -443,4 +445,20 @@ bool CProtocol::evtQuit ( const IMessage& message_ )
         return false;
     }
     catch ( std::bad_cast ) { return false; }
+}
+
+bool CProtocol::evtUmode ( const IMessage& message_ )
+{
+    try
+    {
+        const CMessageMODE& message = dynamic_cast < const CMessageMODE& > ( message_ );
+        CUser* pUser = message.GetUser ();
+        if ( pUser )
+        {
+            // Cambio de modos de usuario
+            pUser->SetModes ( message.GetModes () );
+        }
+    }
+    catch ( std::bad_cast ) { return false; }
+    return true;
 }
