@@ -41,6 +41,8 @@ public:
     CUser*                  GetUser         ( const CString& szName );
     CUser*                  GetUser         ( unsigned long ulNumeric );
 
+    bool                    IsConnectedTo   ( const CServer* pServer ) const;
+
 private:
     CClientManager          m_clientManager;
     std::list < CServer* >  m_children;

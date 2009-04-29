@@ -74,3 +74,15 @@ CUser* CServer::GetUser ( unsigned long ulNumeric )
 {
     return m_clientManager.GetUser ( ulNumeric );
 }
+
+bool CServer::IsConnectedTo ( const CServer* pServer ) const
+{
+    for ( std::list < CServer* >::const_iterator iter = m_children.begin ();
+          iter != m_children.end ();
+          ++iter )
+    {
+        if ( *iter == pServer )
+            return true;
+    }
+    return false;
+}

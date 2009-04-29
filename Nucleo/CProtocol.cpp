@@ -22,8 +22,6 @@ CProtocol::CProtocol ( )
 {
     m_commandsMap.set_deleted_key ( (const char *)0xFABADA00 );
     m_commandsMap.set_empty_key ( (const char *)0x00000000 );
-
-    AddHandler ( "PING", PROTOCOL_CALLBACK ( &CProtocol::CmdPing, this ) );
 }
 
 CProtocol::~CProtocol ( )
@@ -49,22 +47,22 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
     CString szDesc;
     if ( ! m_config.GetValue ( szDesc, "bots", "descripcion" ) )
         return false;
+    unsigned long ulNumeric = atol ( szNumeric );
 
     // Creamos nuestra estructura de servidor
-    m_me.Create ( 0, atol ( szNumeric ), szHost, szDesc );
+    m_me.Create ( 0, ulNumeric, szHost, szDesc );
 
     // Negociamos la conexión
-    unsigned long ulNow = static_cast < unsigned long > ( time ( 0 ) );
-    char szFormattedNumeric [ 8 ];
+    unsigned long ulMaxusers;
+    if ( ulNumeric > 63 )
+        ulMaxusers = 262143;
+    else
+        ulMaxusers = 4095;
 
-    m_me.FormatNumeric ( szFormattedNumeric );
-    CString szServerInfo ( "%s 1 %lu %lu P10 %s]] +hs", m_me.GetName ().c_str (), ulNow, ulNow, szFormattedNumeric );
-
-    Send ( CClient(), "PASS", "", CClient(), szPass );
-    Send ( CClient(), "SERVER", szServerInfo, CClient(), szDesc );
-    //Send ( m_me, "DB", "* 0 J 0 2" );
-    Send ( m_me, "END_OF_BURST" );
-    Send ( m_me, "EOB_ACK" );
+    Send ( CMessagePASS ( szPass ) );
+    Send ( CMessageSERVER ( szHost, 1, time ( 0 ), "J10", atol ( szNumeric ), ulMaxusers, "hs", szDesc ) );
+    Send ( CMessageEND_OF_BURST (), &m_me );
+    Send ( CMessageEOB_ACK (), &m_me );
 
     return true;
 }
@@ -152,11 +150,19 @@ bool CProtocol::Process ( const CString& szLine )
     if ( !pSource )
         return false;
 
+
+
     return true;
 }
 
-int CProtocol::Send ( const CClient& source, const CString& szCommand, const CString& szExtraInfo, const CClient& dest, const CString& szText )
+int CProtocol::Send ( const IMessage& ircmessage, CClient* pSource )
 {
+    SProtocolMessage message;
+    message.pSource = pSource;
+    message.szCommand = ircmessage.GetName ( );
+    if ( ircmessage.BuildMessage ( message ) == false )
+        return 0;
+
     char szNumeric [ 8 ];
 
     if ( m_socket.IsOk () == false )
@@ -164,61 +170,69 @@ int CProtocol::Send ( const CClient& source, const CString& szCommand, const CSt
 
     // Construímos el mensaje
     CString szMessage;
-    switch ( source.GetType () )
+    if ( message.pSource )
     {
-        case CClient::SERVER:
+        switch ( message.pSource->GetType () )
         {
-            source.FormatNumeric ( szNumeric );
-            szMessage.Format ( "%s ", szNumeric );
-            break;
-        }
-        case CClient::UNKNOWN:
-        {
-            break;
+            case CClient::SERVER:
+            {
+                message.pSource->FormatNumeric ( szNumeric );
+                szMessage.Format ( "%s ", szNumeric );
+                break;
+            }
+            case CClient::UNKNOWN:
+            {
+                break;
+            }
         }
     }
 
-    szMessage.append ( szCommand );
-    if ( szExtraInfo.length () > 0 )
+    szMessage.append ( message.szCommand );
+    if ( message.szExtraInfo.length () > 0 )
     {
         szMessage.append ( " " );
-        szMessage.append ( szExtraInfo );
+        szMessage.append ( message.szExtraInfo );
     }
 
-    switch ( dest.GetType () )
+    if ( message.pDest )
     {
-        case CClient::SERVER:
+        switch ( message.pDest->GetType () )
         {
-            dest.FormatNumeric ( szNumeric );
-            szMessage.append ( " " );
-            szMessage.append ( szNumeric );
-            break;
-        }
-        case CClient::UNKNOWN:
-        {
-            break;
+            case CClient::SERVER:
+            {
+                message.pDest->FormatNumeric ( szNumeric );
+                szMessage.append ( " " );
+                szMessage.append ( szNumeric );
+                break;
+            }
+            case CClient::UNKNOWN:
+            {
+                break;
+            }
         }
     }
 
-    if ( szText.length () > 0 )
+    if ( message.szText.length () > 0 )
     {
         szMessage.append ( " :" );
-        szMessage.append ( szText );
+        szMessage.append ( message.szText );
     }
+
+    puts(szMessage);
 
     return m_socket.WriteString ( szMessage );
 }
 
-void CProtocol::AddHandler ( const CString& szCommand, const PROTOCOL_CALLBACK& callback )
+void CProtocol::AddHandler ( const IMessage& pMessage, const PROTOCOL_CALLBACK& callback )
 {
-    std::vector < PROTOCOL_CALLBACK* >* pVector;
+/*    std::vector < PROTOCOL_CALLBACK* >* pVector;
 
-    t_commandsMap::iterator find = m_commandsMap.find ( szCommand.c_str () );
+    t_commandsMap::iterator find = m_commandsMap.find ( pMessage->GetName () );
     if ( find == m_commandsMap.end () )
     {
         std::pair < t_commandsMap::iterator, bool > pair = m_commandsMap.insert (
                                                             t_commandsMap::value_type (
-                                                                szCommand.c_str (),
+                                                                pMessage->GetName (),
                                                                 std::vector < PROTOCOL_CALLBACK* > ( 64 )
                                                             )
                                                            );
@@ -228,7 +242,7 @@ void CProtocol::AddHandler ( const CString& szCommand, const PROTOCOL_CALLBACK& 
     pVector = &((*find).second);
 
     PROTOCOL_CALLBACK* pCallback = new PROTOCOL_CALLBACK ( callback );
-    pVector->push_back ( pCallback );
+    pVector->push_back ( pCallback );*/
 }
 
 // Parte estática
@@ -242,11 +256,4 @@ CProtocol& CProtocol::GetSingleton ( )
 CProtocol* CProtocol::GetSingletonPtr ( )
 {
     return &GetSingleton ();
-}
-
-
-// Comandos
-bool CProtocol::CmdPing ( const CProtocol::SProtocolMessage& message )
-{
-    return true;
 }

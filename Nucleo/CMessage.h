@@ -16,3 +16,95 @@
 
 #pragma once
 
+class IMessage
+{
+public:
+    virtual                 ~IMessage       ( ) { }
+
+    virtual IMessage*       Copy            ( ) const = 0;
+
+    virtual const char*     GetName         ( ) const = 0;
+    virtual bool            BuildMessage    ( SProtocolMessage& message ) const = 0;
+};
+
+#define BEGIN_MESSAGE_DECLARATION_NOPARAMS(msg) \
+class CMessage ## msg : public IMessage \
+{ \
+    public: \
+        CMessage ## msg ( ) { } \
+        ~ ## CMessage ## msg(); \
+\
+        IMessage*   Copy    ( ) const { return new CMessage ## msg ( ); } \
+        const char* GetName ( ) const { return #msg ; }
+
+#define BEGIN_MESSAGE_DECLARATION(msg, ...) \
+class CMessage ## msg : public IMessage \
+{ \
+    public: \
+        CMessage ## msg ( ) { } \
+        CMessage ## msg ( __VA_ARGS__ ); \
+        ~ ## CMessage ## msg(); \
+\
+        IMessage*   Copy    ( ) const { return new CMessage ## msg ( ); } \
+        const char* GetName ( ) const { return #msg ; }
+
+#define END_MESSAGE_DECLARATION() \
+  public: \
+        bool        BuildMessage ( SProtocolMessage& message ) const; \
+  };
+
+
+////////////////////////////
+//          PASS          //
+////////////////////////////
+BEGIN_MESSAGE_DECLARATION(PASS, const CString& szPassword)
+public:
+    inline const CString& GetPassword ( ) const { return m_szPass; }
+private:
+    CString m_szPass;
+END_MESSAGE_DECLARATION()
+
+
+////////////////////////////
+//         SERVER         //
+////////////////////////////
+BEGIN_MESSAGE_DECLARATION(SERVER, const CString& szHost, unsigned int uiDepth, time_t timestamp, const CString& szProtocol, unsigned long ulNumeric, unsigned long ulMaxusers, const CString& szFlags, const CString& szDesc)
+public:
+    inline const CString&   GetHost     ( ) const { return m_szHost; }
+    inline unsigned int     GetDepth    ( ) const { return m_uiDepth; }
+    inline time_t           GetTime     ( ) const { return m_timestamp; }
+    inline const CString&   GetProtocol ( ) const { return m_szProtocol; }
+    inline unsigned long    GetNumeric  ( ) const { return m_ulNumeric; }
+    inline unsigned long    GetMaxusers ( ) const { return m_ulMaxusers; }
+    inline const CString&   GetFlags    ( ) const { return m_szFlags; }
+    inline const CString&   GetDesc     ( ) const { return m_szDesc; }
+private:
+    CString         m_szHost;
+    unsigned int    m_uiDepth;
+    time_t          m_timestamp;
+    CString         m_szProtocol;
+    unsigned long   m_ulNumeric;
+    unsigned long   m_ulMaxusers;
+    CString         m_szFlags;
+    CString         m_szDesc;
+END_MESSAGE_DECLARATION()
+
+
+////////////////////////////
+//      END_OF_BURST      //
+////////////////////////////
+BEGIN_MESSAGE_DECLARATION_NOPARAMS(END_OF_BURST)
+END_MESSAGE_DECLARATION()
+
+
+////////////////////////////
+//         EOB_ACK        //
+////////////////////////////
+BEGIN_MESSAGE_DECLARATION_NOPARAMS(EOB_ACK)
+END_MESSAGE_DECLARATION()
+
+
+
+
+#undef BEGIN_MESSAGE_DECLARATION
+#undef END_MESSAGE_DECLARATION

@@ -64,5 +64,6 @@
 #include "CClientManager.h"
 #include "CServer.h"
 #include "CUser.h"
+#include "SProtocolMessage.h"
 #include "CMessage.h"
 #include "CProtocol.h"
