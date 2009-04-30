@@ -64,9 +64,10 @@ private:
     bool                    evtEndOfBurst       ( const IMessage& message );
     bool                    evtPing             ( const IMessage& message );
     bool                    evtServer           ( const IMessage& message );
+    bool                    evtSquit            ( const IMessage& message );
     bool                    evtNick             ( const IMessage& message );
     bool                    evtQuit             ( const IMessage& message );
-    bool                    evtUmode             ( const IMessage& message );
+    bool                    evtUmode            ( const IMessage& message );
 
 private:
     CSocket                 m_socket;

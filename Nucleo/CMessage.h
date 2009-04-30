@@ -191,6 +191,21 @@ private:
 END_MESSAGE_DECLARATION()
 
 
+////////////////////////////
+//          SQUIT         //
+////////////////////////////
+BEGIN_MESSAGE_DECLARATION(SQUIT, CServer* pServer, time_t timestamp, const CString& szMessage)
+public:
+    inline CServer*         GetServer       ( ) const { return m_pServer; }
+    inline time_t           GetTimestamp    ( ) const { return m_timestamp; }
+    inline const CString&   GetMessage      ( ) const { return m_szMessage; }
+private:
+    CServer*        m_pServer;
+    time_t          m_timestamp;
+    CString         m_szMessage;
+END_MESSAGE_DECLARATION()
+
+
 
 #undef BEGIN_MESSAGE_DECLARATION
 #undef END_MESSAGE_DECLARATION

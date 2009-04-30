@@ -378,3 +378,34 @@ bool CMessageMODE::ProcessMessage ( const CString& szLine, const std::vector < C
 
     return true;
 }
+
+
+////////////////////////////
+//          SQUIT         //
+////////////////////////////
+CMessageSQUIT::CMessageSQUIT ( CServer* pServer, time_t timestamp, const CString& szMessage )
+: m_pServer ( pServer ), m_timestamp ( timestamp ), m_szMessage ( szMessage )
+{
+}
+CMessageSQUIT::~CMessageSQUIT ( ) { }
+
+bool CMessageSQUIT::BuildMessage ( SProtocolMessage& message ) const
+{
+    // TODO
+    return true;
+}
+
+bool CMessageSQUIT::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
+{
+    if ( vec.size () < 5 )
+        return false;
+
+    m_pServer = CProtocol::GetSingleton ().GetMe ().GetServer ( vec [ 2 ] );
+    if ( !m_pServer )
+        return false;
+
+    m_timestamp = static_cast < time_t > ( atol ( vec [ 3 ] ) );
+    m_szMessage = vec [ 4 ];
+
+    return true;
+}

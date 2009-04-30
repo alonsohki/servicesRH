@@ -71,9 +71,10 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageEND_OF_BURST(), PROTOCOL_CALLBACK ( &CProtocol::evtEndOfBurst, this ) );
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessagePING(), PROTOCOL_CALLBACK ( &CProtocol::evtPing, this ) );
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageSERVER(), PROTOCOL_CALLBACK ( &CProtocol::evtServer, this ) );
+    InternalAddHandler ( HANDLER_AFTER_CALLBACKS,  CMessageSQUIT(), PROTOCOL_CALLBACK ( &CProtocol::evtSquit, this ) );
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageNICK(), PROTOCOL_CALLBACK ( &CProtocol::evtNick, this ) );
-    InternalAddHandler ( HANDLER_AFTER_CALLBACKS, CMessageQUIT(), PROTOCOL_CALLBACK ( &CProtocol::evtQuit, this ) );
-    InternalAddHandler ( HANDLER_AFTER_CALLBACKS, CMessageMODE(), PROTOCOL_CALLBACK ( &CProtocol::evtUmode, this ) );
+    InternalAddHandler ( HANDLER_AFTER_CALLBACKS,  CMessageQUIT(), PROTOCOL_CALLBACK ( &CProtocol::evtQuit, this ) );
+    InternalAddHandler ( HANDLER_AFTER_CALLBACKS,  CMessageMODE(), PROTOCOL_CALLBACK ( &CProtocol::evtUmode, this ) );
 
     return true;
 }
@@ -390,6 +391,18 @@ bool CProtocol::evtServer ( const IMessage& message_ )
         new CServer ( static_cast < CServer* > ( message.GetSource () ),
                       message.GetNumeric (), message.GetHost (),
                       message.GetDesc () );
+    }
+    catch ( std::bad_cast ) { return false; }
+
+    return true;
+}
+
+bool CProtocol::evtSquit ( const IMessage& message_ )
+{
+    try
+    {
+        const CMessageSQUIT& message = dynamic_cast < const CMessageSQUIT& > ( message_ );
+        delete message.GetServer ();
     }
     catch ( std::bad_cast ) { return false; }
 

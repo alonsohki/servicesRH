@@ -31,13 +31,18 @@ CServer::~CServer ( )
     if ( pParent_ )
     {
         // Es un servidor de la red, no yo
-        CProtocol::GetSingleton ().GetMe ().m_clientManager.RemoveClient ( this );
+        CServer& me = CProtocol::GetSingleton ().GetMe ();
+        me.m_clientManager.RemoveClient ( this );
+
+        // Deslinkamos este servidor del padre
+        CServer* pParent = static_cast < CServer* > ( pParent_ );
+        pParent->m_children.remove ( this );
     }
 
     // Destruímos todos los servidores hijos linkados a este servidor
     for ( std::list < CServer* >::iterator i = m_children.begin ();
           i != m_children.end ();
-          ++i )
+          i = m_children.begin () )
     {
         delete *i;
     }
