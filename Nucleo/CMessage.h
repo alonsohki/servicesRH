@@ -38,8 +38,8 @@ private:
 class CMessage ## msg : public IMessage \
 { \
     public: \
-        CMessage ## msg ( ) { } \
-        ~ ## CMessage ## msg(); \
+        CMessage ## msg  ( ) { } \
+        ~CMessage ## msg ( ); \
 \
         IMessage*   Copy            ( ) const { return new CMessage ## msg ( ); } \
         const char* GetMessageName  ( ) const { return #msg ; }
@@ -48,9 +48,9 @@ class CMessage ## msg : public IMessage \
 class CMessage ## msg : public IMessage \
 { \
     public: \
-        CMessage ## msg ( ) { } \
-        CMessage ## msg ( __VA_ARGS__ ); \
-        ~ ## CMessage ## msg(); \
+        CMessage ## msg  ( ) { } \
+        CMessage ## msg  ( __VA_ARGS__ ); \
+        ~CMessage ## msg ( ); \
 \
         IMessage*   Copy            ( ) const { return new CMessage ## msg ( ); } \
         const char* GetMessageName  ( ) const { return #msg ; }

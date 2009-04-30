@@ -99,7 +99,7 @@ bool CProtocol::Process ( const CString& szLine )
     std::vector < CString > vec;
 
     // Separamos los tokens del comando
-    int iPos = szLine.find ( ':' );
+    size_t iPos = szLine.find ( ':' );
     if ( iPos != CString::npos )
     {
         bGotText = true;
@@ -124,7 +124,7 @@ bool CProtocol::Process ( const CString& szLine )
             ulNumeric = base64toint ( vec [ 6 ] );
 
             m_bGotServer = true;
-            CServer *pServer = new CServer ( &m_me, ulNumeric, vec [ 1 ], std::string ( vec [ 8 ], 1 ) );
+            new CServer ( &m_me, ulNumeric, vec [ 1 ], std::string ( vec [ 8 ], 1 ) );
             return true;
         }
 
@@ -255,6 +255,10 @@ int CProtocol::Send ( const IMessage& ircmessage, CClient* pSource )
                 szMessage.Format ( "%s ", szNumeric );
                 break;
             }
+            case CClient::USER:
+            {
+                break;
+            }
             case CClient::UNKNOWN:
             {
                 break;
@@ -280,6 +284,10 @@ int CProtocol::Send ( const IMessage& ircmessage, CClient* pSource )
                 szMessage.append ( szNumeric );
                 break;
             }
+            case CClient::USER:
+            {
+                break;
+            }
             case CClient::UNKNOWN:
             {
                 break;
@@ -303,7 +311,7 @@ void CProtocol::AddHandler ( const IMessage& pMessage, const PROTOCOL_CALLBACK& 
 
 void CProtocol::InternalAddHandler ( EHandlerStage eStage, const IMessage& message, const PROTOCOL_CALLBACK& callback )
 {
-    t_commandsMap* map;
+    t_commandsMap* map = 0;
 
     switch ( eStage )
     {
@@ -317,6 +325,9 @@ void CProtocol::InternalAddHandler ( EHandlerStage eStage, const IMessage& messa
             map = &m_commandsMapAfter;
             break;
     }
+
+    if ( !map )
+        return;
 
     std::vector < PROTOCOL_CALLBACK* >* pVector;
 

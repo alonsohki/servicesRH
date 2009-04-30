@@ -15,7 +15,9 @@
 //
 
 #pragma once
-#pragma message("Compilando encabezado precompilado...\n")
+#ifdef WIN32
+    #pragma message("Compilando encabezado precompilado...\n")
+#endif
 
 // Encabezados de C
 #include <assert.h>
@@ -40,6 +42,7 @@
     #include <netdb.h>
     #include <unistd.h>
     #include <sys/time.h>
+		#include <stdarg.h>
 #endif
 
 // Encabezados de C++
@@ -47,6 +50,7 @@
 #include <vector>
 #include <list>
 #include <map>
+#include <typeinfo>
 
 
 // sparse hash

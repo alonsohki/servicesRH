@@ -19,12 +19,12 @@
 
 // Parte no estática de la clase
 CSocket::CSocket ( )
-: m_socket ( -1 ), m_iErrno ( 0 ), m_bufferSize ( 0 )
+: m_socket ( -1 ), m_bufferSize ( 0 ), m_iErrno ( 0 )
 {
 }
 
 CSocket::CSocket ( const CSocket& copy )
-: m_socket ( -1 ), m_iErrno ( 0 ), m_bufferSize ( 0 )
+: m_socket ( -1 ), m_bufferSize ( 0 ), m_iErrno ( 0 )
 {
     m_iErrno = copy.m_iErrno;
     m_szError = copy.m_szError;
@@ -44,7 +44,7 @@ CSocket::CSocket ( const CSocket& copy )
 }
 
 CSocket::CSocket ( const CString& szHost, unsigned short usPort )
-: m_socket ( -1 ), m_iErrno ( 0 ), m_bufferSize ( 0 )
+: m_socket ( -1 ), m_bufferSize ( 0 ), m_iErrno ( 0 )
 {
     Connect ( szHost, usPort );
 }

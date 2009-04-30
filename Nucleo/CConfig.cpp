@@ -17,12 +17,12 @@
 #include "stdafx.h"
 
 CConfig::CConfig ( )
-: m_pSections ( 0 ), m_iErrno ( 0 )
+: m_iErrno ( 0 ), m_pSections ( 0 )
 {
 }
 
 CConfig::CConfig ( const CConfig& copy )
-: m_pSections ( 0 ), m_iErrno ( 0 )
+: m_iErrno ( 0 ), m_pSections ( 0 )
 {
     SIniSection* pSection;
     SIniEntry* pEntry;
@@ -89,7 +89,7 @@ CConfig& CConfig::operator= ( const CConfig& copy )
 }
 
 CConfig::CConfig ( const CString& szFilename )
-: m_pSections ( 0 ), m_iErrno ( 0 )
+: m_iErrno ( 0 ), m_pSections ( 0 )
 {
     SetFilename ( szFilename );
 }
@@ -106,7 +106,7 @@ bool CConfig::SetFilename ( const CString& szFilename )
     bool bInSection = false;
     size_t len;
     char *p;
-    SIniSection *pSection;
+    SIniSection *pSection = 0;
     SIniEntry *pEntry;
   
     // Si ya había un fichero cargado antes, bórralo.
@@ -220,7 +220,6 @@ void CConfig::Reset ( )
 
 bool CConfig::GetValue ( CString& szDest, const CString& szSection, const CString& szEntry )
 {
-    size_t len = 0;
     SIniSection* pSection;
     SIniEntry* pEntry;
 
