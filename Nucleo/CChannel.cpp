@@ -44,9 +44,47 @@ CChannel::CChannel ( ) { }
 CChannel::CChannel ( const CString& szName )
 : m_szName ( szName )
 {
-    printf("Creando canal con nombre %s\n", szName.c_str () );
 }
 
 CChannel::~CChannel ( )
 {
+}
+
+
+void CChannel::AddBan ( const CString& szBan )
+{
+    m_listBans.push_back ( szBan );
+}
+
+void CChannel::RemoveBan ( const CString& szBan )
+{
+    m_listBans.remove ( szBan );
+}
+
+
+void CChannel::AddMember ( CUser* pUser, unsigned long ulFlags )
+{
+    m_listMembers.push_back ( CMembership ( this, pUser, ulFlags ) );
+    pUser->AddMembership ( &( m_listMembers.back () ) );
+}
+
+void CChannel::RemoveMember ( CUser* pUser )
+{
+    for ( std::list < CMembership >::iterator i = m_listMembers.begin ();
+          i != m_listMembers.end ();
+          ++i )
+    {
+        if ( (*i).GetUser () == pUser )
+        {
+            pUser->RemoveMembership ( &(*i) );
+            m_listMembers.erase ( i );
+            break;
+        }
+    }
+
+    if ( m_listMembers.size () == 0 )
+    {
+        CChannelManager::GetSingleton ().RemoveChannel ( this );
+        delete this;
+    }
 }

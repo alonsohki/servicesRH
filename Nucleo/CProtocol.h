@@ -71,6 +71,10 @@ private:
     bool                    evtBurst            ( const IMessage& message );
     bool                    evtTburst           ( const IMessage& message );
     bool                    evtTopic            ( const IMessage& message );
+    bool                    evtCreate           ( const IMessage& message );
+    bool                    evtJoin             ( const IMessage& message );
+    bool                    evtPart             ( const IMessage& message );
+    bool                    evtKick             ( const IMessage& message );
 
 private:
     CSocket                 m_socket;

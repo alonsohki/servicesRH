@@ -50,41 +50,50 @@ public:
     static const unsigned long ms_ulUserModes [ 256 ];
 
 public:
-                            CUser           ( );
-                            CUser           ( CServer* pServer,
-                                              unsigned long ulNumeric,
-                                              const CString& szName,
-                                              const CString& szIdent,
-                                              const CString& szDesc,
-                                              const CString& szHost,
-                                              unsigned long ulAddress );
-    virtual                 ~CUser          ( );
+                            CUser               ( );
+                            CUser               ( CServer* pServer,
+                                                  unsigned long ulNumeric,
+                                                  const CString& szName,
+                                                  const CString& szIdent,
+                                                  const CString& szDesc,
+                                                  const CString& szHost,
+                                                  unsigned long ulAddress );
+    virtual                 ~CUser              ( );
 
-    void                    Create          ( CServer* pServer,
-                                              unsigned long ulNumeric,
-                                              const CString& szName,
-                                              const CString& szIdent,
-                                              const CString& szDesc,
-                                              const CString& szHost,
-                                              unsigned long ulAddress );
+    void                    Create              ( CServer* pServer,
+                                                  unsigned long ulNumeric,
+                                                  const CString& szName,
+                                                  const CString& szIdent,
+                                                  const CString& szDesc,
+                                                  const CString& szHost,
+                                                  unsigned long ulAddress );
 
-    void                    FormatNumeric   ( char* szDest ) const;
-    inline EType            GetType         ( ) const { return CClient::USER; }
+    void                    FormatNumeric       ( char* szDest ) const;
+    inline EType            GetType             ( ) const { return CClient::USER; }
 
-    void                    SetNick         ( const CString& szNick );
-    void                    SetModes        ( const CString& szModes );
-    inline void             SetModes        ( unsigned long ulModes ) { m_ulModes = ulModes; }
-    inline void             AddModes        ( unsigned long ulModes ) { m_ulModes |= ulModes; }
-    inline void             RemoveModes     ( unsigned long ulModes ) { m_ulModes &= ~ulModes; }
+    void                    SetNick             ( const CString& szNick );
+    void                    SetModes            ( const CString& szModes );
+    inline void             SetModes            ( unsigned long ulModes ) { m_ulModes = ulModes; }
+    inline void             AddModes            ( unsigned long ulModes ) { m_ulModes |= ulModes; }
+    inline void             RemoveModes         ( unsigned long ulModes ) { m_ulModes &= ~ulModes; }
 
-    inline const CString&   GetIdent        ( ) const { return m_szIdent; }
-    inline const CString&   GetHost         ( ) const { return m_szHost; }
-    inline unsigned long    GetAdddress     ( ) const { return m_ulAddress; }
-    inline unsigned long    GetModes        ( ) const { return m_ulModes; }
+    inline const CString&   GetIdent            ( ) const { return m_szIdent; }
+    inline const CString&   GetHost             ( ) const { return m_szHost; }
+    inline unsigned long    GetAdddress         ( ) const { return m_ulAddress; }
+    inline unsigned long    GetModes            ( ) const { return m_ulModes; }
+
+    // Membresía de canales
+    void                    AddMembership       ( CMembership* pMembership );
+    void                    RemoveMembership    ( CMembership* pMembership );
+    inline const std::list < CMembership* >
+                            GetMemberships      ( ) const { return m_listMemberships; }
 
 private:
-    CString         m_szIdent;
-    CString         m_szHost;
-    unsigned long   m_ulAddress;
-    unsigned long   m_ulModes;
+    CString                         m_szIdent;
+    CString                         m_szHost;
+    unsigned long                   m_ulAddress;
+    unsigned long                   m_ulModes;
+    std::list < CMembership* >      m_listMemberships;
+
+    bool                            m_bDeletingUser;
 };

@@ -572,3 +572,132 @@ bool CMessageTOPIC::ProcessMessage ( const CString& szLine, const std::vector < 
 
     return true;
 }
+
+
+////////////////////////////
+//         CREATE         //
+////////////////////////////
+CMessageCREATE::CMessageCREATE ( const CString& szName, time_t timeCreation )
+: m_szName ( szName ), m_timeCreation ( timeCreation )
+{
+}
+CMessageCREATE::~CMessageCREATE ( ) { }
+
+bool CMessageCREATE::BuildMessage ( SProtocolMessage& message ) const
+{
+    // TODO
+    return false;
+}
+
+bool CMessageCREATE::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
+{
+    if ( vec.size () < 4 )
+        return false;
+
+    m_szName = vec [ 2 ];
+    m_timeCreation = static_cast < time_t > ( atol ( vec [ 3 ] ) );
+
+    return true;
+}
+
+
+////////////////////////////
+//          JOIN          //
+////////////////////////////
+CMessageJOIN::CMessageJOIN ( CChannel* pChannel, time_t joinTime )
+: m_pChannel ( pChannel ), m_joinTime ( joinTime )
+{
+}
+CMessageJOIN::~CMessageJOIN ( ) { }
+
+bool CMessageJOIN::BuildMessage ( SProtocolMessage& message ) const
+{
+    // TODO
+    return false;
+}
+
+bool CMessageJOIN::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
+{
+    if ( vec.size () < 4 )
+        return false;
+
+    m_pChannel = CChannelManager::GetSingleton ().GetChannel ( vec [ 2 ] );
+    if ( !m_pChannel )
+        return false;
+    m_joinTime = static_cast < time_t > ( atol ( vec [ 3 ] ) );
+
+    return true;
+}
+
+
+////////////////////////////
+//          PART          //
+////////////////////////////
+CMessagePART::CMessagePART ( CChannel* pChannel, const CString& szMessage )
+: m_pChannel ( pChannel ), m_szMessage ( szMessage )
+{
+}
+CMessagePART::~CMessagePART ( ) { }
+
+bool CMessagePART::BuildMessage ( SProtocolMessage& message ) const
+{
+    // TODO
+    return false;
+}
+
+bool CMessagePART::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
+{
+    if ( vec.size () < 3 )
+        return false;
+
+    m_pChannel = CChannelManager::GetSingleton ().GetChannel ( vec [ 2 ] );
+    if ( !m_pChannel )
+        return false;
+
+    if ( vec.size () == 3 )
+    {
+        // No hay mensaje de salida
+        m_szMessage = "";
+    }
+    else
+        m_szMessage = vec [ 3 ];
+
+    return true;
+}
+
+
+////////////////////////////
+//          KICK          //
+////////////////////////////
+CMessageKICK::CMessageKICK ( CChannel* pChannel, CUser* pVictim, const CString& szReason )
+: m_pChannel ( pChannel ), m_pVictim ( pVictim ), m_szReason ( szReason )
+{
+}
+CMessageKICK::~CMessageKICK ( ) { }
+
+bool CMessageKICK::BuildMessage ( SProtocolMessage& message ) const
+{
+    // TODO
+    return false;
+}
+
+bool CMessageKICK::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
+{
+    if ( vec.size () < 4 )
+        return false;
+
+    m_pChannel = CChannelManager::GetSingleton ().GetChannel ( vec [ 2 ] );
+    if ( !m_pChannel )
+        return false;
+
+    m_pVictim = CProtocol::GetSingleton ().GetMe ().GetUserAnywhere ( base64toint ( vec [ 3 ] ) );
+    if ( !m_pVictim )
+        return false;
+
+    if ( vec.size () == 4 )
+        m_szReason = "";
+    else
+        m_szReason = vec [ 4 ];
+
+    return true;
+}

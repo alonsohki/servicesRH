@@ -69,15 +69,19 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
 
     // Registramos eventos
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageEND_OF_BURST(), PROTOCOL_CALLBACK ( &CProtocol::evtEndOfBurst, this ) );
-    InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessagePING(), PROTOCOL_CALLBACK ( &CProtocol::evtPing, this ) );
+    InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessagePING(),   PROTOCOL_CALLBACK ( &CProtocol::evtPing,   this ) );
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageSERVER(), PROTOCOL_CALLBACK ( &CProtocol::evtServer, this ) );
-    InternalAddHandler ( HANDLER_AFTER_CALLBACKS,  CMessageSQUIT(), PROTOCOL_CALLBACK ( &CProtocol::evtSquit, this ) );
-    InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageNICK(), PROTOCOL_CALLBACK ( &CProtocol::evtNick, this ) );
-    InternalAddHandler ( HANDLER_AFTER_CALLBACKS,  CMessageQUIT(), PROTOCOL_CALLBACK ( &CProtocol::evtQuit, this ) );
-    InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageMODE(), PROTOCOL_CALLBACK ( &CProtocol::evtUmode, this ) );
-    InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageBURST(), PROTOCOL_CALLBACK ( &CProtocol::evtBurst, this ) );
+    InternalAddHandler ( HANDLER_AFTER_CALLBACKS,  CMessageSQUIT(),  PROTOCOL_CALLBACK ( &CProtocol::evtSquit,  this ) );
+    InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageNICK(),   PROTOCOL_CALLBACK ( &CProtocol::evtNick,   this ) );
+    InternalAddHandler ( HANDLER_AFTER_CALLBACKS,  CMessageQUIT(),   PROTOCOL_CALLBACK ( &CProtocol::evtQuit,   this ) );
+    InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageMODE(),   PROTOCOL_CALLBACK ( &CProtocol::evtUmode,  this ) );
+    InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageBURST(),  PROTOCOL_CALLBACK ( &CProtocol::evtBurst,  this ) );
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageTBURST(), PROTOCOL_CALLBACK ( &CProtocol::evtTburst, this ) );
-    InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageTOPIC(), PROTOCOL_CALLBACK ( &CProtocol::evtTopic, this ) );
+    InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageTOPIC(),  PROTOCOL_CALLBACK ( &CProtocol::evtTopic,  this ) );
+    InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageCREATE(), PROTOCOL_CALLBACK ( &CProtocol::evtCreate, this ) );
+    InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageJOIN(),   PROTOCOL_CALLBACK ( &CProtocol::evtJoin,   this ) );
+    InternalAddHandler ( HANDLER_AFTER_CALLBACKS,  CMessagePART(),   PROTOCOL_CALLBACK ( &CProtocol::evtPart,   this ) );
+    InternalAddHandler ( HANDLER_AFTER_CALLBACKS,  CMessageKICK(),   PROTOCOL_CALLBACK ( &CProtocol::evtKick,   this ) );
 
     return true;
 }
@@ -495,12 +499,64 @@ bool CProtocol::evtBurst ( const IMessage& message_ )
     try
     {
         const CMessageBURST& message = dynamic_cast < const CMessageBURST& > ( message_ );
+
+        const std::vector < CString >& vecUsers = message.GetUsers ();
         CChannelManager& manager = CChannelManager::GetSingleton ();
         CChannel* pChannel = manager.GetChannel ( message.GetName () );
         if ( !pChannel )
         {
+            if ( vecUsers.size () == 0 )
+                return false;
             pChannel = new CChannel ( message.GetName () );
             CChannelManager::GetSingleton ().AddChannel ( pChannel );
+        }
+
+        // Agregamos los usuarios
+        if ( vecUsers.size () > 0 )
+        {
+            unsigned long ulFlags = 0;
+            unsigned long ulServerNumeric;
+            unsigned long ulNumeric;
+            CUser* pUser;
+            char szTemp [ 32 ];
+            char c;
+            unsigned int uiOffset;
+
+            for ( std::vector < CString >::const_iterator i = vecUsers.begin ();
+                  i != vecUsers.end ();
+                  ++i )
+            {
+                strcpy ( szTemp, (*i).c_str () );
+                char* p = strchr ( szTemp, ':' );
+
+                if ( p != NULL )
+                {
+                    // TODO: Procesar los flags
+                    *p = '\0';
+                    ++p;
+                }
+
+                pUser = m_me.GetUserAnywhere ( base64toint ( szTemp ) );
+                if ( !pUser )
+                {
+                    delete pChannel;
+                    return false;
+                }
+
+                pChannel->AddMember ( pUser, ulFlags );
+            }
+        }
+
+        // Agregamos la lista de bans
+        const std::vector < CString >& vecBans = message.GetBans ();
+        if ( vecBans.size () > 0 )
+        {
+            for ( std::vector < CString >::const_iterator i = vecBans.begin ();
+                  i != vecBans.end ();
+                  ++i )
+            {
+                pChannel->AddBan ( *i );
+            }
         }
     }
     catch ( std::bad_cast ) { return false; }
@@ -531,6 +587,68 @@ bool CProtocol::evtTopic ( const IMessage& message_ )
         pChannel->SetTopicSetter ( message.GetSource ()->GetName () );
         pChannel->SetTopicTime ( time ( 0 ) );
     }
+    catch ( std::bad_cast ) { return false; }
+    return true;
+}
+
+bool CProtocol::evtCreate ( const IMessage& message_ )
+{
+    try
+    {
+        const CMessageCREATE& message = dynamic_cast < const CMessageCREATE& > ( message_ );
+
+        CClient* pSource = message.GetSource ();
+        if ( pSource->GetType () != CClient::USER )
+            return false;
+
+        CChannelManager& manager = CChannelManager::GetSingleton ();
+        CChannel* pChannel = manager.GetChannel ( message.GetName () );
+        if ( !pChannel )
+        {
+            pChannel = new CChannel ( message.GetName () );
+            manager.AddChannel ( pChannel );
+        }
+
+        pChannel->AddMember ( static_cast < CUser* > ( pSource ), CChannel::CFLAG_OP );
+    }
+    catch ( std::bad_cast ) { return false; }
+    return true;
+}
+
+bool CProtocol::evtJoin ( const IMessage& message_ )
+{
+    try
+    {
+        const CMessageJOIN& message = dynamic_cast < const CMessageJOIN& > ( message_ );
+        if ( message.GetSource ()->GetType () != CClient::USER )
+            return false;
+        message.GetChannel ()->AddMember ( static_cast < CUser * > ( message.GetSource () ) );
+    }
+    catch ( std::bad_cast ) { return false; }
+    return true;
+}
+
+bool CProtocol::evtPart ( const IMessage& message_ )
+{
+    try
+    {
+        const CMessagePART& message = dynamic_cast < const CMessagePART& > ( message_ );
+        if ( message.GetSource ()->GetType () != CClient::USER )
+            return false;
+        message.GetChannel ()->RemoveMember ( static_cast < CUser * > ( message.GetSource () ) );
+    }
+    catch ( std::bad_cast ) { return false; }
+    return true;
+}
+
+bool CProtocol::evtKick ( const IMessage& message_ )
+{
+    try
+    {
+        const CMessageKICK& message = dynamic_cast < const CMessageKICK& > ( message_ );
+        message.GetChannel ()->RemoveMember ( message.GetVictim () );
+    }
+
     catch ( std::bad_cast ) { return false; }
     return true;
 }

@@ -70,6 +70,7 @@
 #include "CClient.h"
 #include "CClientManager.h"
 #include "CServer.h"
+#include "CMembership.h"
 #include "CUser.h"
 #include "CChannel.h"
 #include "CChannelManager.h"

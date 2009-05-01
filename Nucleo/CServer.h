@@ -41,6 +41,7 @@ public:
     CUser*                  GetUser         ( const CString& szName );
     CUser*                  GetUser         ( unsigned long ulNumeric );
     CUser*                  GetUserAnywhere ( const CString& szName );
+    CUser*                  GetUserAnywhere ( unsigned long ulNumeric );
 
     void                    AddUser         ( CUser* pUser );
     void                    RemoveUser      ( CUser* pUser );

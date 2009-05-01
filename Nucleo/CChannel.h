@@ -66,28 +66,41 @@ public:
     }
 
 public:
-                            CChannel        ( );
-                            CChannel        ( const CString& szName );
-    virtual                 ~CChannel       ( );
+                                    CChannel        ( );
+                                    CChannel        ( const CString& szName );
+    virtual                         ~CChannel       ( );
 
-    inline const CString&   GetName         ( ) const { return m_szName; }
-    inline const CString&   GetTopic        ( ) const { return m_szTopic; }
-    inline const CString&   GetTopicSetter  ( ) const { return m_szTopicSetter; }
-    inline time_t           GetTopicTime    ( ) const { return m_topicTime; }
-    inline const CString&   GetKey          ( ) const { return m_szKey; }
-    inline unsigned int     GetLimit        ( ) const { return m_uiLimit; }
+    void                            AddBan          ( const CString& szBan );
+    void                            RemoveBan       ( const CString& szBan );
+    inline const std::list < CString >&
+                                    GetBans         ( ) const { return m_listBans; }
 
-    inline void             SetTopic        ( const CString& szTopic ) { m_szTopic = szTopic; }
-    inline void             SetTopicSetter  ( const CString& szTopicSetter ) { m_szTopicSetter = szTopicSetter; }
-    inline void             SetTopicTime    ( time_t topicTime ) { m_topicTime = topicTime; }
-    inline void             SetKey          ( const CString& szKey ) { m_szKey = szKey; }
-    inline void             SetLimit        ( unsigned int uiLimit ) { m_uiLimit = uiLimit; }
+    void                            AddMember       ( CUser* pUser, unsigned long ulFlags = 0 );
+    void                            RemoveMember    ( CUser* pUser );
+    inline const std::list < CMembership >&
+                                    GetMembers      ( ) const { return m_listMembers; }
+
+    inline const CString&           GetName         ( ) const { return m_szName; }
+    inline const CString&           GetTopic        ( ) const { return m_szTopic; }
+    inline const CString&           GetTopicSetter  ( ) const { return m_szTopicSetter; }
+    inline time_t                   GetTopicTime    ( ) const { return m_topicTime; }
+    inline const CString&           GetKey          ( ) const { return m_szKey; }
+    inline unsigned int             GetLimit        ( ) const { return m_uiLimit; }
+
+    inline void                     SetTopic        ( const CString& szTopic ) { m_szTopic = szTopic; }
+    inline void                     SetTopicSetter  ( const CString& szTopicSetter ) { m_szTopicSetter = szTopicSetter; }
+    inline void                     SetTopicTime    ( time_t topicTime ) { m_topicTime = topicTime; }
+    inline void                     SetKey          ( const CString& szKey ) { m_szKey = szKey; }
+    inline void                     SetLimit        ( unsigned int uiLimit ) { m_uiLimit = uiLimit; }
 
 private:
-    CString         m_szName;
-    CString         m_szTopic;
-    time_t          m_topicTime;
-    CString         m_szTopicSetter;
-    CString         m_szKey;
-    unsigned int    m_uiLimit;
+    CString                     m_szName;
+    CString                     m_szTopic;
+    time_t                      m_topicTime;
+    CString                     m_szTopicSetter;
+    CString                     m_szKey;
+    unsigned int                m_uiLimit;
+
+    std::list < CString >       m_listBans;
+    std::list < CMembership >   m_listMembers;
 };

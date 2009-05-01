@@ -107,6 +107,31 @@ CUser* CServer::GetUserAnywhere ( const CString& szName )
     return pUser;
 }
 
+CUser* CServer::GetUserAnywhere ( unsigned long ulNumeric )
+{
+    unsigned long ulServerNumeric;
+    unsigned long ulUserNumeric;
+
+    if ( ulNumeric > 262143 )
+    {
+        // Numérico largo
+        ulServerNumeric = ulNumeric >> 18;
+        ulUserNumeric = ulNumeric & 262143;
+    }
+    else
+    {
+        // Numérico corto
+        ulServerNumeric = ulNumeric >> 12;
+        ulUserNumeric = ulNumeric & 4095;
+    }
+
+    CServer* pServer = GetServer ( ulServerNumeric );
+    if ( !pServer )
+        return NULL;
+
+    return pServer->GetUser ( ulUserNumeric );
+}
+
 void CServer::AddUser ( CUser* pUser )
 {
     m_clientManager.AddClient ( pUser );

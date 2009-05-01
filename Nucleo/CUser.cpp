@@ -42,6 +42,7 @@ const unsigned long CUser::ms_ulUserModes [ 256 ] = {
 
 CUser::CUser ( )
 {
+    m_bDeletingUser = false;
 }
 
 CUser::CUser ( CServer* pServer,
@@ -52,11 +53,21 @@ CUser::CUser ( CServer* pServer,
                const CString& szHost,
                unsigned long ulAddress )
 {
+    m_bDeletingUser = false;
     Create ( pServer, ulNumeric, szName, szIdent, szDesc, szHost, ulAddress );
 }
 
 CUser::~CUser ()
 {
+    m_bDeletingUser = true;
+
+    // Eliminamos al usuario de todos los canales a los que pertenezca
+    for ( std::list < CMembership* >::iterator i = m_listMemberships.begin ();
+          i != m_listMemberships.end ();
+          ++i )
+    {
+        (*i)->GetChannel ()->RemoveMember ( this );
+    }
 }
 
 void CUser::Create ( CServer* pServer,
@@ -138,4 +149,17 @@ void CUser::SetModes ( const CString& szModes )
 
         ++p;
     }
+}
+
+
+// Membresías a canales
+void CUser::AddMembership ( CMembership* pMembership )
+{
+    m_listMemberships.push_back ( pMembership );
+}
+
+void CUser::RemoveMembership ( CMembership* pMembership )
+{
+    if ( !m_bDeletingUser )
+        m_listMemberships.remove ( pMembership );
 }

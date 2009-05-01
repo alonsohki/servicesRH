@@ -249,11 +249,65 @@ END_MESSAGE_DECLARATION()
 ////////////////////////////
 BEGIN_MESSAGE_DECLARATION(TOPIC, CChannel* pChannel, const CString& szTopic)
 public:
-    CChannel*       GetChannel  ( ) const { return m_pChannel; }
-    const CString&  GetTopic    ( ) const { return m_szTopic; }
+    inline CChannel*        GetChannel  ( ) const { return m_pChannel; }
+    inline const CString&   GetTopic    ( ) const { return m_szTopic; }
 private:
     CChannel*       m_pChannel;
     CString         m_szTopic;
+END_MESSAGE_DECLARATION()
+
+
+////////////////////////////
+//         CREATE         //
+////////////////////////////
+BEGIN_MESSAGE_DECLARATION(CREATE, const CString& szName, time_t timeCreation = time(0))
+public:
+    inline const CString&   GetName     ( ) const { return m_szName; }
+    inline time_t           GetTime     ( ) const { return m_timeCreation; }
+private:
+    CString     m_szName;
+    time_t      m_timeCreation;
+END_MESSAGE_DECLARATION()
+
+
+////////////////////////////
+//          JOIN          //
+////////////////////////////
+BEGIN_MESSAGE_DECLARATION(JOIN, CChannel* pChannel, time_t joinTime = time(0))
+public:
+    inline CChannel*    GetChannel  ( ) const { return m_pChannel; }
+    inline time_t       GetTime     ( ) const { return m_joinTime; }
+private:
+    CChannel*       m_pChannel;
+    time_t          m_joinTime;
+END_MESSAGE_DECLARATION()
+
+
+////////////////////////////
+//          PART          //
+////////////////////////////
+BEGIN_MESSAGE_DECLARATION(PART, CChannel* pChannel, const CString& szMessage = "")
+public:
+    inline CChannel*        GetChannel  ( ) const { return m_pChannel; }
+    inline const CString&   GetMessage  ( ) const { return m_szMessage; }
+private:
+    CChannel*       m_pChannel;
+    CString         m_szMessage;
+END_MESSAGE_DECLARATION()
+
+
+////////////////////////////
+//          KICK          //
+////////////////////////////
+BEGIN_MESSAGE_DECLARATION(KICK, CChannel* pChannel, CUser* pVictim, const CString& szReason = "")
+public:
+    inline CChannel*        GetChannel  ( ) const { return m_pChannel; }
+    inline CUser*           GetVictim   ( ) const { return m_pVictim; }
+    inline const CString&   GetReason   ( ) const { return m_szReason; }
+private:
+    CChannel*       m_pChannel;
+    CUser*          m_pVictim;
+    CString         m_szReason;
 END_MESSAGE_DECLARATION()
 
 
