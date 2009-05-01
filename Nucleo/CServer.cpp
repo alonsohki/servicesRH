@@ -125,9 +125,15 @@ CUser* CServer::GetUserAnywhere ( unsigned long ulNumeric )
         ulUserNumeric = ulNumeric & 4095;
     }
 
-    CServer* pServer = GetServer ( ulServerNumeric );
-    if ( !pServer )
-        return NULL;
+    CServer* pServer;
+    if ( ulServerNumeric == GetNumeric () )
+        pServer = this;
+    else
+    {
+        pServer = GetServer ( ulServerNumeric );
+        if ( !pServer )
+            return NULL;
+    }
 
     return pServer->GetUser ( ulUserNumeric );
 }
