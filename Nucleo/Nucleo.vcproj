@@ -259,6 +259,18 @@
 					/>
 				</FileConfiguration>
 			</File>
+			<Filter
+				Name="Services"
+				>
+				<File
+					RelativePath=".\CNickserv.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\CService.cpp"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Archivos de encabezado"
@@ -341,6 +353,22 @@
 				RelativePath=".\stdafx.h"
 				>
 			</File>
+			<Filter
+				Name="Services"
+				>
+				<File
+					RelativePath=".\CNickserv.h"
+					>
+				</File>
+				<File
+					RelativePath=".\CService.h"
+					>
+				</File>
+				<File
+					RelativePath=".\services.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 	</Files>
 	<Globals>
