@@ -181,13 +181,17 @@ END_MESSAGE_DECLARATION()
 ////////////////////////////
 //          MODE          //
 ////////////////////////////
-BEGIN_MESSAGE_DECLARATION(MODE, CUser* pUser, const CString& szModes)
+BEGIN_MESSAGE_DECLARATION(MODE, CUser* pUser, CChannel* pChannel, const CString& szModes, const std::vector < CString >& vecModeParams)
 public:
-    inline CUser*           GetUser     ( ) const { return m_pUser; }
-    inline const CString&   GetModes    ( ) const { return m_szModes; }
+    inline CUser*                           GetUser         ( ) const { return m_pUser; }
+    inline CChannel*                        GetChannel      ( ) const { return m_pChannel; }
+    inline const CString&                   GetModes        ( ) const { return m_szModes; }
+    inline const std::vector < CString >    GetModeParams   ( ) const { return m_vecModeParams; }
 private:
-    CUser*      m_pUser;
-    CString     m_szModes;
+    CUser*                      m_pUser;
+    CChannel*                   m_pChannel;
+    CString                     m_szModes;
+    std::vector < CString >     m_vecModeParams;
 END_MESSAGE_DECLARATION()
 
 

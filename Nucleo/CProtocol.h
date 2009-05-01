@@ -67,7 +67,7 @@ private:
     bool                    evtSquit            ( const IMessage& message );
     bool                    evtNick             ( const IMessage& message );
     bool                    evtQuit             ( const IMessage& message );
-    bool                    evtUmode            ( const IMessage& message );
+    bool                    evtMode             ( const IMessage& message );
     bool                    evtBurst            ( const IMessage& message );
     bool                    evtTburst           ( const IMessage& message );
     bool                    evtTopic            ( const IMessage& message );

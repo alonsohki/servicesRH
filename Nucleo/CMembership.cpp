@@ -32,17 +32,17 @@ CMembership::~CMembership ( ) { }
 
 bool CMembership::IsOwner ( ) const
 {
-    return m_ulFlags & CChannel::CFLAG_OWNER;
+    return !!(m_ulFlags & CChannel::CFLAG_OWNER);
 }
 bool CMembership::IsOp ( ) const
 {
-    return m_ulFlags & CChannel::CFLAG_OP;
+    return !!(m_ulFlags & CChannel::CFLAG_OP);
 }
 bool CMembership::IsHalfop ( ) const
 {
-    return m_ulFlags & CChannel::CFLAG_HALFOP;
+    return !!(m_ulFlags & CChannel::CFLAG_HALFOP);
 }
 bool CMembership::IsVoice ( ) const
 {
-    return m_ulFlags & CChannel::CFLAG_VOICE;
+    return !!(m_ulFlags & CChannel::CFLAG_VOICE);
 }

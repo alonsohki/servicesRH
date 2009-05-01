@@ -42,7 +42,10 @@ const unsigned long CChannel::ms_ulChannelModes [ 256 ] = {
 CChannel::CChannel ( ) { }
 
 CChannel::CChannel ( const CString& szName )
-: m_szName ( szName )
+: m_szName ( szName ),
+  m_topicTime ( 0 ),
+  m_uiLimit ( 0 ),
+  m_ulModes ( 0 )
 {
 }
 
@@ -86,5 +89,135 @@ void CChannel::RemoveMember ( CUser* pUser )
     {
         CChannelManager::GetSingleton ().RemoveChannel ( this );
         delete this;
+    }
+}
+
+CMembership* CChannel::GetMembership ( CUser* pUser )
+{
+    for ( std::list < CMembership >::iterator i = m_listMembers.begin ();
+          i != m_listMembers.end ();
+          ++i )
+    {
+        CMembership& cur = (*i);
+        if ( cur.GetUser ( ) == pUser )
+            return &cur;
+    }
+
+    return NULL;
+}
+
+
+void CChannel::SetModes ( const CString& szModes, const std::vector < CString >& vecModeParams )
+{
+    unsigned int uiParamIndex = 0;
+    enum { ADD, DEL } eDirection = ADD;
+    CServer& me = CProtocol::GetSingleton ().GetMe ();
+
+    const char* p = szModes.c_str ();
+    while ( *p != '\0' )
+    {
+        switch ( *p )
+        {
+            case '+':
+            {
+                eDirection = ADD;
+                break;
+            }
+            case '-':
+            {
+                eDirection = DEL;
+                break;
+            }
+            default:
+            {
+                unsigned long ulMode = ms_ulChannelModes [ (unsigned char)*p ];
+                if ( ulMode != 0 )
+                {
+                    if ( ulMode < CMODE_PARAMSMAX )
+                    {
+                        if ( eDirection == ADD )
+                            m_ulModes |= ulMode;
+                        else
+                            m_ulModes &= ~ulMode;
+
+                        if ( ulMode >= CMODE_MAX )
+                        {
+                            // El modo lleva parámetros
+                            switch ( ulMode )
+                            {
+                                case CMODE_KEY:
+                                    if ( eDirection == ADD )
+                                        SetKey ( vecModeParams [ uiParamIndex ] );
+                                    else
+                                        SetKey ( "" );
+                                    ++uiParamIndex;
+                                    break;
+                                case CMODE_LIMIT:
+                                    if ( eDirection == ADD )
+                                    {
+                                        SetLimit ( atoi ( vecModeParams [ uiParamIndex ] ) );
+                                        ++uiParamIndex;
+                                    }
+                                    else
+                                        SetLimit ( 0 );
+                                    break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Cambiamos flags de usuarios o bans
+                        if ( ulMode == CFLAG_BAN )
+                        {
+                            if ( eDirection == ADD )
+                                AddBan ( vecModeParams [ uiParamIndex ] );
+                            else
+                                RemoveBan ( vecModeParams [ uiParamIndex ] );
+                            ++uiParamIndex;
+                        }
+                        else
+                        {
+                            CUser* pUser = me.GetUserAnywhere ( base64toint ( vecModeParams [ uiParamIndex ] ) );
+                            ++uiParamIndex;
+
+                            if ( pUser )
+                            {
+                                CMembership* pMembership = GetMembership ( pUser );
+                                if ( pMembership )
+                                {
+                                    unsigned long ulCurFlags = pMembership->GetFlags ();
+                                    if ( eDirection == ADD )
+                                        pMembership->SetFlags ( ulCurFlags | ulMode );
+                                    else
+                                        pMembership->SetFlags ( ulCurFlags & ~ulMode );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        ++p;
+    }
+}
+
+void CChannel::SetModes ( unsigned long ulModes, const std::vector < CString >& vecModeParams )
+{
+    unsigned int uiParamIndex = 0;
+    m_ulModes = ulModes;
+
+    // Ojo con el órden límite - clave
+    // El ircu nos manda siempre antes el límite que
+    // la clave en el caso de que ambos estén presentes.
+    // Esto es ligeramente chapucero, pero funciona.
+    if ( m_ulModes & CMODE_LIMIT )
+    {
+        SetLimit ( atoi ( vecModeParams [ uiParamIndex ] ) );
+        ++uiParamIndex;
+    }
+    if ( m_ulModes & CMODE_KEY )
+    {
+        SetKey ( vecModeParams [ uiParamIndex ] );
+        ++uiParamIndex;
     }
 }

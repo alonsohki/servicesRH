@@ -344,8 +344,8 @@ bool CMessageQUIT::ProcessMessage ( const CString& szLine, const std::vector < C
 ////////////////////////////
 //          MODE          //
 ////////////////////////////
-CMessageMODE::CMessageMODE ( CUser* pUser, const CString& szModes )
-: m_pUser ( pUser ), m_szModes ( szModes )
+CMessageMODE::CMessageMODE ( CUser* pUser, CChannel* pChannel, const CString& szModes, const std::vector < CString >& vecModeParams )
+: m_pUser ( pUser ), m_pChannel ( pChannel ), m_szModes ( szModes ), m_vecModeParams ( vecModeParams )
 {
 }
 CMessageMODE::~CMessageMODE ( ) { }
@@ -365,10 +365,18 @@ bool CMessageMODE::ProcessMessage ( const CString& szLine, const std::vector < C
     {
         // Cambio de modo de canales
         m_pUser = 0;
+        m_pChannel = CChannelManager::GetSingleton ().GetChannel ( vec [ 2 ] );
+        if ( !m_pChannel )
+            return false;
+        m_szModes = vec [ 3 ];
+        m_vecModeParams.clear ();
+        m_vecModeParams.assign ( vec.begin () + 4, vec.end () );
     }
     else
     {
         // Cambio de modo de usuarios
+        m_pChannel = 0;
+        m_vecModeParams.clear ();
         m_pUser = CProtocol::GetSingleton ().GetMe ().GetUserAnywhere ( vec [ 2 ] );
         if ( ! m_pUser )
             return false;

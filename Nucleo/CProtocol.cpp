@@ -74,7 +74,7 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
     InternalAddHandler ( HANDLER_AFTER_CALLBACKS,  CMessageSQUIT(),  PROTOCOL_CALLBACK ( &CProtocol::evtSquit,  this ) );
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageNICK(),   PROTOCOL_CALLBACK ( &CProtocol::evtNick,   this ) );
     InternalAddHandler ( HANDLER_AFTER_CALLBACKS,  CMessageQUIT(),   PROTOCOL_CALLBACK ( &CProtocol::evtQuit,   this ) );
-    InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageMODE(),   PROTOCOL_CALLBACK ( &CProtocol::evtUmode,  this ) );
+    InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageMODE(),   PROTOCOL_CALLBACK ( &CProtocol::evtMode,   this ) );
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageBURST(),  PROTOCOL_CALLBACK ( &CProtocol::evtBurst,  this ) );
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageTBURST(), PROTOCOL_CALLBACK ( &CProtocol::evtTburst, this ) );
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageTOPIC(),  PROTOCOL_CALLBACK ( &CProtocol::evtTopic,  this ) );
@@ -478,16 +478,22 @@ bool CProtocol::evtQuit ( const IMessage& message_ )
     catch ( std::bad_cast ) { return false; }
 }
 
-bool CProtocol::evtUmode ( const IMessage& message_ )
+bool CProtocol::evtMode ( const IMessage& message_ )
 {
     try
     {
         const CMessageMODE& message = dynamic_cast < const CMessageMODE& > ( message_ );
         CUser* pUser = message.GetUser ();
+        CChannel* pChannel = message.GetChannel ( );
         if ( pUser )
         {
             // Cambio de modos de usuario
             pUser->SetModes ( message.GetModes () );
+        }
+        else if ( pChannel )
+        {
+            // Cambio de modos de canal
+            pChannel->SetModes ( message.GetModes (), message.GetModeParams () );
         }
     }
     catch ( std::bad_cast ) { return false; }
@@ -509,6 +515,13 @@ bool CProtocol::evtBurst ( const IMessage& message_ )
                 return false;
             pChannel = new CChannel ( message.GetName () );
             CChannelManager::GetSingleton ().AddChannel ( pChannel );
+        }
+
+        // Establecemos los modos
+        unsigned long ulModes = message.GetModes ();
+        if ( ulModes != 0 )
+        {
+            pChannel->SetModes ( ulModes, message.GetModeParams () );
         }
 
         // Agregamos los usuarios

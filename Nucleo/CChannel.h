@@ -92,6 +92,7 @@ public:
 
     void                            AddMember       ( CUser* pUser, unsigned long ulFlags = 0 );
     void                            RemoveMember    ( CUser* pUser );
+    CMembership*                    GetMembership   ( CUser* pUser );
     inline const std::list < CMembership >&
                                     GetMembers      ( ) const { return m_listMembers; }
 
@@ -101,12 +102,16 @@ public:
     inline time_t                   GetTopicTime    ( ) const { return m_topicTime; }
     inline const CString&           GetKey          ( ) const { return m_szKey; }
     inline unsigned int             GetLimit        ( ) const { return m_uiLimit; }
+    inline unsigned long            GetModes        ( ) const { return m_ulModes; }
 
     inline void                     SetTopic        ( const CString& szTopic ) { m_szTopic = szTopic; }
     inline void                     SetTopicSetter  ( const CString& szTopicSetter ) { m_szTopicSetter = szTopicSetter; }
     inline void                     SetTopicTime    ( time_t topicTime ) { m_topicTime = topicTime; }
     inline void                     SetKey          ( const CString& szKey ) { m_szKey = szKey; }
     inline void                     SetLimit        ( unsigned int uiLimit ) { m_uiLimit = uiLimit; }
+
+    void                            SetModes        ( const CString& szModes, const std::vector < CString >& vecModeParams );
+    void                            SetModes        ( unsigned long ulModes, const std::vector < CString >& vecModeParams );
 
 private:
     CString                     m_szName;
@@ -115,6 +120,7 @@ private:
     CString                     m_szTopicSetter;
     CString                     m_szKey;
     unsigned int                m_uiLimit;
+    unsigned long               m_ulModes;
 
     std::list < CString >       m_listBans;
     std::list < CMembership >   m_listMembers;

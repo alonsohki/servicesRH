@@ -41,6 +41,7 @@ const unsigned long CUser::ms_ulUserModes [ 256 ] = {
 };
 
 CUser::CUser ( )
+: m_ulModes ( 0 )
 {
     m_bDeletingUser = false;
 }
@@ -52,6 +53,7 @@ CUser::CUser ( CServer* pServer,
                const CString& szDesc,
                const CString& szHost,
                unsigned long ulAddress )
+: m_ulModes ( 0 )
 {
     m_bDeletingUser = false;
     Create ( pServer, ulNumeric, szName, szIdent, szDesc, szHost, ulAddress );
