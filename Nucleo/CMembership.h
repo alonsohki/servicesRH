@@ -34,6 +34,11 @@ public:
     inline void             SetUser         ( CUser* pUser ) { m_pUser = pUser; }
     inline void             SetFlags        ( unsigned long ulFlags ) { m_ulFlags = ulFlags; }
 
+    bool                    IsOwner         ( ) const;
+    bool                    IsOp            ( ) const;
+    bool                    IsHalfop        ( ) const;
+    bool                    IsVoice         ( ) const;
+
 private:
     CChannel*       m_pChannel;
     CUser*          m_pUser;

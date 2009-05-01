@@ -28,3 +28,21 @@ CMembership::CMembership ( CChannel* pChannel, CUser* pUser, unsigned long ulFla
 }
 
 CMembership::~CMembership ( ) { }
+
+
+bool CMembership::IsOwner ( ) const
+{
+    return m_ulFlags & CChannel::CFLAG_OWNER;
+}
+bool CMembership::IsOp ( ) const
+{
+    return m_ulFlags & CChannel::CFLAG_OP;
+}
+bool CMembership::IsHalfop ( ) const
+{
+    return m_ulFlags & CChannel::CFLAG_HALFOP;
+}
+bool CMembership::IsVoice ( ) const
+{
+    return m_ulFlags & CChannel::CFLAG_VOICE;
+}
