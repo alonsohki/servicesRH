@@ -57,12 +57,27 @@ public:
 
     static const unsigned long ms_ulChannelModes [ 256 ];
 
-    static inline bool      HasModeParams   ( char c )
+    static inline bool              HasModeParams   ( char c )
     {
         unsigned long ulMode = ms_ulChannelModes [ (unsigned char)c ];
         if ( ulMode )
             return ( ulMode >= CMODE_MAX && ulMode < CMODE_PARAMSMAX );
         return false;
+    }
+
+    static inline unsigned long     GetUserFlags    ( const char* szFlags )
+    {
+        unsigned long ulFlags = 0;
+
+        while ( *szFlags )
+        {
+            unsigned long ulFlag = ms_ulChannelModes [ (unsigned char)*szFlags ];
+            if ( ulFlag && ulFlag >= CMODE_PARAMSMAX && ulFlag != CFLAG_BAN )
+                ulFlags |= ulFlag;
+            ++szFlags;
+        }
+
+        return ulFlags;
     }
 
 public:

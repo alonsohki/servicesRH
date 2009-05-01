@@ -515,12 +515,8 @@ bool CProtocol::evtBurst ( const IMessage& message_ )
         if ( vecUsers.size () > 0 )
         {
             unsigned long ulFlags = 0;
-            unsigned long ulServerNumeric;
-            unsigned long ulNumeric;
             CUser* pUser;
             char szTemp [ 32 ];
-            char c;
-            unsigned int uiOffset;
 
             for ( std::vector < CString >::const_iterator i = vecUsers.begin ();
                   i != vecUsers.end ();
@@ -531,9 +527,10 @@ bool CProtocol::evtBurst ( const IMessage& message_ )
 
                 if ( p != NULL )
                 {
-                    // TODO: Procesar los flags
+                    // Procesamos los flags del usuario en el canal
                     *p = '\0';
                     ++p;
+                    ulFlags = CChannel::GetUserFlags ( p );
                 }
 
                 pUser = m_me.GetUserAnywhere ( base64toint ( szTemp ) );
