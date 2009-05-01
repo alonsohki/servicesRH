@@ -188,6 +188,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CChannel.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CChannelManager.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CClientManager.cpp"
 				>
 			</File>
@@ -259,6 +267,14 @@
 			</File>
 			<File
 				RelativePath=".\CCallback.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CChannel.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CChannelManager.h"
 				>
 			</File>
 			<File

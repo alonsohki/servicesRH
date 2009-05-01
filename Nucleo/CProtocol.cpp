@@ -74,7 +74,8 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
     InternalAddHandler ( HANDLER_AFTER_CALLBACKS,  CMessageSQUIT(), PROTOCOL_CALLBACK ( &CProtocol::evtSquit, this ) );
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageNICK(), PROTOCOL_CALLBACK ( &CProtocol::evtNick, this ) );
     InternalAddHandler ( HANDLER_AFTER_CALLBACKS,  CMessageQUIT(), PROTOCOL_CALLBACK ( &CProtocol::evtQuit, this ) );
-    InternalAddHandler ( HANDLER_AFTER_CALLBACKS,  CMessageMODE(), PROTOCOL_CALLBACK ( &CProtocol::evtUmode, this ) );
+    InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageMODE(), PROTOCOL_CALLBACK ( &CProtocol::evtUmode, this ) );
+    InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageBURST(), PROTOCOL_CALLBACK ( &CProtocol::evtBurst, this ) );
 
     return true;
 }
@@ -103,7 +104,7 @@ bool CProtocol::Process ( const CString& szLine )
     if ( iPos != CString::npos )
     {
         bGotText = true;
-        szLine.Split ( vec, ' ', iPos - 1 );
+        szLine.Split ( vec, ' ', 0, iPos - 1 );
         vec [ vec.size () - 1 ] = std::string ( szLine, iPos + 1 );
     }
     else
@@ -481,6 +482,23 @@ bool CProtocol::evtUmode ( const IMessage& message_ )
         {
             // Cambio de modos de usuario
             pUser->SetModes ( message.GetModes () );
+        }
+    }
+    catch ( std::bad_cast ) { return false; }
+    return true;
+}
+
+bool CProtocol::evtBurst ( const IMessage& message_ )
+{
+    try
+    {
+        const CMessageBURST& message = dynamic_cast < const CMessageBURST& > ( message_ );
+        CChannelManager& manager = CChannelManager::GetSingleton ();
+        CChannel* pChannel = manager.GetChannel ( message.GetName () );
+        if ( !pChannel )
+        {
+            pChannel = new CChannel ( message.GetName () );
+            CChannelManager::GetSingleton ().AddChannel ( pChannel );
         }
     }
     catch ( std::bad_cast ) { return false; }

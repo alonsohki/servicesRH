@@ -178,10 +178,10 @@ public:
 
     }
 
-    void Split ( std::vector < CString >& dest, char cSeparator = ' ', unsigned int uiMax = (unsigned int)-1 ) const
+    void Split ( std::vector < CString >& dest, char cSeparator = ' ', unsigned int uiOffset = 0, unsigned int uiMax = (unsigned int)-1 ) const
     {
-        size_t iPos = 0;
-        size_t iPos2 = 0;
+        size_t iPos = uiOffset;
+        size_t iPos2 = uiOffset;
         while ( ( iPos = find ( cSeparator, iPos ) ) != npos )
         {
             if ( static_cast < unsigned int > ( iPos ) > uiMax )

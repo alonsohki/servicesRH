@@ -42,7 +42,7 @@
     #include <netdb.h>
     #include <unistd.h>
     #include <sys/time.h>
-		#include <stdarg.h>
+    #include <stdarg.h>
 #endif
 
 // Encabezados de C++
@@ -74,3 +74,5 @@
 #include "SProtocolMessage.h"
 #include "CMessage.h"
 #include "CProtocol.h"
+#include "CChannel.h"
+#include "CChannelManager.h"

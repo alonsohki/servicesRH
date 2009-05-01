@@ -206,6 +206,26 @@ private:
 END_MESSAGE_DECLARATION()
 
 
+////////////////////////////
+//          BURST         //
+////////////////////////////
+BEGIN_MESSAGE_DECLARATION(BURST, const CString& szName, time_t creation, unsigned long ulModes, const std::vector < CString >& vecModeParams, const std::vector < CString >& vecUsers, const std::vector < CString >& vecBans)
+public:
+    inline const CString&                   GetName             ( ) const { return m_szName; }
+    inline time_t                           GetCreationTime     ( ) const { return m_creation; }
+    inline unsigned long                    GetModes            ( ) const { return m_ulModes; }
+    inline const std::vector < CString >&   GetModeParams       ( ) const { return m_vecModeParams; }
+    inline const std::vector < CString >&   GetUsers            ( ) const { return m_vecUsers; }
+    inline const std::vector < CString >&   GetBans             ( ) const { return m_vecBans; }
+private:
+    CString                     m_szName;
+    time_t                      m_creation;
+    unsigned long               m_ulModes;
+    std::vector < CString >     m_vecModeParams;
+    std::vector < CString >     m_vecUsers;
+    std::vector < CString >     m_vecBans;
+END_MESSAGE_DECLARATION()
+
 
 #undef BEGIN_MESSAGE_DECLARATION
 #undef END_MESSAGE_DECLARATION

@@ -409,3 +409,99 @@ bool CMessageSQUIT::ProcessMessage ( const CString& szLine, const std::vector < 
 
     return true;
 }
+
+
+////////////////////////////
+//          BURST         //
+////////////////////////////
+CMessageBURST::CMessageBURST ( const CString& szName,
+                               time_t creation,
+                               unsigned long ulModes,
+                               const std::vector < CString >& vecModeParams,
+                               const std::vector < CString >& vecUsers,
+                               const std::vector < CString >& vecBans )
+: m_szName ( szName ),
+  m_creation ( creation ),
+  m_ulModes ( ulModes ),
+  m_vecModeParams ( vecModeParams ),
+  m_vecUsers ( vecUsers ),
+  m_vecBans ( vecBans )
+{
+}
+CMessageBURST::~CMessageBURST ( ) { }
+
+bool CMessageBURST::BuildMessage ( SProtocolMessage& message ) const
+{
+    // NO lo vamos a necesitar
+    return false;
+}
+
+bool CMessageBURST::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
+{
+    if ( vec.size () < 5 )
+        return false;
+
+    // Aquí no nos sirve para nada el vector de strings del parámetro.
+    // Este es un mensaje totalmente distinto a los demás.
+    // Formato: (<requerido> [opcional])
+    // <origen> BURST <#canal> <fechaCreacion> [+modos [parámetros de los modos]] [usuarios] [:%bans]
+
+    m_szName = vec [ 2 ];
+    m_creation = static_cast < time_t > ( atol ( vec [ 3 ] ) );
+    m_ulModes = 0;
+    m_vecModeParams.clear ();
+    m_vecUsers.clear ();
+    m_vecBans.clear ();
+
+    std::vector < CString > vec2;
+    size_t iPos = szLine.rfind ( ':' );
+    size_t iSkipLength = vec [ 0 ].length () + vec [ 1 ].length () + m_szName.length () + vec [ 3 ].length () + 4;
+    if ( iPos != CString::npos && szLine.at ( iPos + 1 ) == '%' )
+    {
+        // Hemos encontrado una lista de bans
+        szLine.Split ( m_vecBans, ' ', iPos + 2 );
+        szLine.Split ( vec2, ' ', iSkipLength, iPos - 1 );
+        vec2.resize ( vec2.size () - 1 );
+    }
+    else
+        szLine.Split ( vec2, ' ', iSkipLength );
+
+    if ( vec2.size () > 0 )
+    {
+        size_t iIndex = 0;
+        if ( vec2 [ 0 ].at ( 0 ) == '+' )
+        {
+            // Nos envían los modos del canal
+            const char* p = vec2 [ 0 ].c_str () + 1;
+            char c;
+
+            iIndex = 1;
+
+            while ( ( c = *p ) != '\0' )
+            {
+                unsigned long ulMode = CChannel::ms_ulChannelModes [ (unsigned char)c ];
+                if ( !ulMode || ulMode >= CChannel::CMODE_PARAMSMAX )
+                    return false;
+
+                m_ulModes |= ulMode;
+
+                if ( CChannel::HasModeParams ( c ) )
+                {
+                    if ( iIndex == vec2.size () )
+                        return false;
+                    m_vecModeParams.push_back ( vec2 [ iIndex ] );
+                    ++iIndex;
+                }
+                ++p;
+            }
+        }
+
+        if ( iIndex < vec2.size () )
+        {
+            // Usuarios del canal
+            vec2 [ iIndex ].Split ( m_vecUsers, ',' );
+        }
+    }
+
+    return true;
+}
