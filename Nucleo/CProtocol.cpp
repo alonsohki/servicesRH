@@ -76,6 +76,8 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
     InternalAddHandler ( HANDLER_AFTER_CALLBACKS,  CMessageQUIT(), PROTOCOL_CALLBACK ( &CProtocol::evtQuit, this ) );
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageMODE(), PROTOCOL_CALLBACK ( &CProtocol::evtUmode, this ) );
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageBURST(), PROTOCOL_CALLBACK ( &CProtocol::evtBurst, this ) );
+    InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageTBURST(), PROTOCOL_CALLBACK ( &CProtocol::evtTburst, this ) );
+    InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageTOPIC(), PROTOCOL_CALLBACK ( &CProtocol::evtTopic, this ) );
 
     return true;
 }
@@ -500,6 +502,34 @@ bool CProtocol::evtBurst ( const IMessage& message_ )
             pChannel = new CChannel ( message.GetName () );
             CChannelManager::GetSingleton ().AddChannel ( pChannel );
         }
+    }
+    catch ( std::bad_cast ) { return false; }
+    return true;
+}
+
+bool CProtocol::evtTburst ( const IMessage& message_ )
+{
+    try
+    {
+        const CMessageTBURST& message = dynamic_cast < const CMessageTBURST& > ( message_ );
+        CChannel* pChannel = message.GetChannel ();
+        pChannel->SetTopic ( message.GetTopic () );
+        pChannel->SetTopicSetter ( message.GetSetter () );
+        pChannel->SetTopicTime ( message.GetTime () );
+    }
+    catch ( std::bad_cast ) { return false; }
+    return true;
+}
+
+bool CProtocol::evtTopic ( const IMessage& message_ )
+{
+    try
+    {
+        const CMessageTOPIC& message = dynamic_cast < const CMessageTOPIC& > ( message_ );
+        CChannel* pChannel = message.GetChannel ();
+        pChannel->SetTopic ( message.GetTopic () );
+        pChannel->SetTopicSetter ( message.GetSource ()->GetName () );
+        pChannel->SetTopicTime ( time ( 0 ) );
     }
     catch ( std::bad_cast ) { return false; }
     return true;

@@ -69,6 +69,8 @@ private:
     bool                    evtQuit             ( const IMessage& message );
     bool                    evtUmode            ( const IMessage& message );
     bool                    evtBurst            ( const IMessage& message );
+    bool                    evtTburst           ( const IMessage& message );
+    bool                    evtTopic            ( const IMessage& message );
 
 private:
     CSocket                 m_socket;

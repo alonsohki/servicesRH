@@ -227,5 +227,36 @@ private:
 END_MESSAGE_DECLARATION()
 
 
+////////////////////////////
+//         TBURST         //
+////////////////////////////
+BEGIN_MESSAGE_DECLARATION(TBURST, CChannel* pChannel, time_t timeset, const CString& szSetter, const CString& szTopic)
+public:
+    inline CChannel*        GetChannel      ( ) const { return m_pChannel; }
+    inline time_t           GetTime         ( ) const { return m_timeset; }
+    inline const CString&   GetSetter       ( ) const { return m_szSetter; }
+    inline const CString&   GetTopic        ( ) const { return m_szTopic; }
+private:
+    CChannel*       m_pChannel;
+    time_t          m_timeset;
+    CString         m_szSetter;
+    CString         m_szTopic;
+END_MESSAGE_DECLARATION()
+
+
+////////////////////////////
+//         TOPIC          //
+////////////////////////////
+BEGIN_MESSAGE_DECLARATION(TOPIC, CChannel* pChannel, const CString& szTopic)
+public:
+    CChannel*       GetChannel  ( ) const { return m_pChannel; }
+    const CString&  GetTopic    ( ) const { return m_szTopic; }
+private:
+    CChannel*       m_pChannel;
+    CString         m_szTopic;
+END_MESSAGE_DECLARATION()
+
+
+
 #undef BEGIN_MESSAGE_DECLARATION
 #undef END_MESSAGE_DECLARATION

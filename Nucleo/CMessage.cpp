@@ -505,3 +505,70 @@ bool CMessageBURST::ProcessMessage ( const CString& szLine, const std::vector < 
 
     return true;
 }
+
+
+////////////////////////////
+//         TBURST         //
+////////////////////////////
+CMessageTBURST::CMessageTBURST ( CChannel* pChannel,
+                                 time_t timeset,
+                                 const CString& szSetter,
+                                 const CString& szTopic )
+: m_pChannel ( pChannel ),
+  m_timeset ( timeset ),
+  m_szSetter ( szSetter ),
+  m_szTopic ( szTopic )
+{
+}
+CMessageTBURST::~CMessageTBURST ( ) { }
+
+bool CMessageTBURST::BuildMessage ( SProtocolMessage& message ) const
+{
+    // No lo vamos a necesitar
+    return false;
+}
+
+bool CMessageTBURST::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
+{
+    if ( vec.size () < 6 )
+        return false;
+
+    m_pChannel = CChannelManager::GetSingleton ().GetChannel ( vec [ 2 ] );
+    if ( !m_pChannel )
+        return false;
+    m_timeset = static_cast < time_t > ( atol ( vec [ 3 ] ) );
+    m_szSetter = vec [ 4 ];
+    m_szTopic = vec [ 5 ];
+
+    return true;
+}
+
+
+////////////////////////////
+//         TOPIC          //
+////////////////////////////
+CMessageTOPIC::CMessageTOPIC ( CChannel* pChannel, const CString& szTopic )
+: m_pChannel ( pChannel ), m_szTopic ( szTopic )
+{
+}
+CMessageTOPIC::~CMessageTOPIC ( ) { }
+
+bool CMessageTOPIC::BuildMessage ( SProtocolMessage& message ) const
+{
+    // TODO
+    return false;
+}
+
+bool CMessageTOPIC::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
+{
+    if ( vec.size () < 4 )
+        return false;
+
+    m_pChannel = CChannelManager::GetSingleton ().GetChannel ( vec [ 2 ] );
+    if ( !m_pChannel )
+        return false;
+
+    m_szTopic = vec [ 3 ];
+
+    return true;
+}
