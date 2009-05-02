@@ -396,7 +396,7 @@ bool CMessageMODE::BuildMessage ( SProtocolMessage& message ) const
     }
     else if ( m_pChannel )
     {
-        message.szExtraInfo.Format ( "%s %s", m_pChannel->GetName ().c_str (), m_szModes );
+        message.szExtraInfo.Format ( "%s %s", m_pChannel->GetName ().c_str (), m_szModes.c_str () );
         for ( std::vector < CString >::const_iterator i = m_vecModeParams.begin ();
               i != m_vecModeParams.end ();
               ++i )

@@ -17,8 +17,8 @@
 #ifdef WIN32
     #pragma once
     #pragma message("Compilando encabezado precompilado...\n")
-#else
-    #warning "Compilando encabezado precompilado..."
+//#else
+//    #warning "Compilando encabezado precompilado..."
 #endif
 
 // Encabezados de C

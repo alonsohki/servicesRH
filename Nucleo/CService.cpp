@@ -27,7 +27,6 @@ void CService::RegisterServices ( const CConfig& config )
         ms_ulFreeNumerics [ ulIter ] = 4095 - ulIter;
     }
 
-    CServer& me = CProtocol::GetSingleton ().GetMe ();
     CService* pService;
 
 #define LOAD_SERVICE(cl, name) do { \
@@ -81,7 +80,6 @@ CService::CService ( const CString& szServiceName, const CConfig& config )
 
 #undef SAFE_LOAD
 
-    CServer& me = m_protocol.GetMe ();
     CLocalUser::Create ( ulNumeric, szNick, szIdent, szDesc,
                          szHost, 2130706433, szModes ); // 2130706433 = 127.0.0.1
     m_bIsOk = true;

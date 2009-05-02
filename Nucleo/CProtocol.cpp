@@ -315,12 +315,12 @@ void CProtocol::TriggerMessageHandlers ( unsigned long ulStage, const IMessage& 
     }
 }
 
-int CProtocol::Send ( IMessage& ircmessage, CClient* pSource )
+int CProtocol::Send ( const IMessage& ircmessage, CClient* pSource )
 {
     SProtocolMessage message;
     message.pSource = pSource;
     message.szCommand = ircmessage.GetMessageName ( );
-    ircmessage.SetSource ( pSource );
+    const_cast < IMessage& > ( ircmessage ).SetSource ( pSource );
     if ( ircmessage.BuildMessage ( message ) == false )
         return 0;
 
@@ -384,7 +384,6 @@ int CProtocol::Send ( IMessage& ircmessage, CClient* pSource )
     int iRet = m_socket.WriteString ( szMessage );
     if ( iRet > 0 )
     {
-        const_cast < IMessage& > ( ircmessage ).SetSource ( pSource );
         TriggerMessageHandlers ( HANDLER_BEFORE_CALLBACKS | HANDLER_AFTER_CALLBACKS, ircmessage );
     }
     return iRet;
