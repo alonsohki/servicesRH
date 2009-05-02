@@ -144,3 +144,20 @@ CUser* CClientManager::GetUser ( unsigned long ulNumeric )
         return (*iter).second;
     return NULL;
 }
+
+bool CClientManager::ForEachUser ( const FOREACH_USER_CALLBACK& callback, void* userdata ) const
+{
+    SForeachInfo < CUser* > info;
+    info.userdata = userdata;
+
+    for ( t_mapUsersByName::const_iterator i = m_mapUsersByName.begin ();
+          i != m_mapUsersByName.end ();
+          ++i )
+    {
+        info.cur = (*i).second;
+        if ( !callback ( info ) )
+            return false;
+    }
+
+    return true;
+}

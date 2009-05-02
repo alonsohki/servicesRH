@@ -29,5 +29,6 @@ CNickserv::~CNickserv ( )
 bool CNickserv::cmdHelp ( const SCommandInfo& info )
 {
     Msg ( info.pSource, "¡Aún no hay ayuda disponible! :(" );
+
     return true;
 }

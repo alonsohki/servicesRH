@@ -49,6 +49,12 @@ public:
 
     bool                    IsConnectedTo   ( const CServer* pServer ) const;
 
+    unsigned long           GetNumUsers     ( bool bGoInDepth = true ) const;
+    unsigned long           GetNumServers   ( bool bGoInDepth = true ) const;
+
+    bool                    ForEachUser     ( const FOREACH_USER_CALLBACK& cbk, void* userdata, bool bGoInDepth = true ) const;
+    bool                    ForEachServer   ( const FOREACH_SERVER_CALLBACK& cbk, void* userdata, bool bGoInDepth = false ) const;
+
 private:
     CClientManager          m_clientManager;
     std::list < CServer* >  m_children;

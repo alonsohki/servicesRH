@@ -19,6 +19,15 @@
 class CUser;
 class CServer;
 
+template < class T >
+struct SForeachInfo
+{
+    T       cur;
+    void*   userdata;
+};
+#define FOREACH_USER_CALLBACK CCallback < bool, SForeachInfo < CUser* >& >
+#define FOREACH_SERVER_CALLBACK CCallback < bool, SForeachInfo < CServer* >& >
+
 class CClientManager
 {
 public:
@@ -38,6 +47,11 @@ public:
 
     CUser*                      GetUser             ( unsigned long ulNumeric );
     CUser*                      GetUser             ( const CString& szName );
+
+    inline unsigned long        GetNumUsers         ( ) const { return m_mapUsersByName.size (); }
+    inline unsigned long        GetNumServers       ( ) const { return m_mapServersByName.size (); }
+
+    bool                        ForEachUser         ( const FOREACH_USER_CALLBACK&, void* userdata ) const;
 
 private:
     typedef google::dense_hash_map < char*, CServer*, SStringHasher, SStringEquals > t_mapServersByName;

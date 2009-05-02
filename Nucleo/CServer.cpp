@@ -164,3 +164,84 @@ bool CServer::IsConnectedTo ( const CServer* pServer ) const
     }
     return false;
 }
+
+unsigned long CServer::GetNumUsers ( bool bGoInDepth ) const
+{
+    unsigned long ulUsers = m_clientManager.GetNumUsers ();
+
+    if ( bGoInDepth )
+    {
+        for ( std::list < CServer* >::const_iterator i = m_children.begin ();
+              i != m_children.end ();
+              ++i )
+        {
+            ulUsers += (*i)->GetNumUsers ( true );
+        }
+    }
+
+    return ulUsers;
+}
+
+unsigned long CServer::GetNumServers ( bool bGoInDepth ) const
+{
+    unsigned long ulNumServers = m_children.size ();
+
+    if ( bGoInDepth )
+    {
+        for ( std::list < CServer* >::const_iterator i = m_children.begin ();
+              i != m_children.end ();
+              ++i )
+        {
+            ulNumServers += (*i)->GetNumServers ( true );
+        }
+    }
+
+    if ( !GetParent () )
+        ulNumServers++;
+
+    return ulNumServers;
+}
+
+bool CServer::ForEachUser ( const FOREACH_USER_CALLBACK& cbk, void* userdata, bool bGoInDepth ) const
+{
+    if ( m_clientManager.ForEachUser ( cbk, userdata ) )
+    {
+        if ( bGoInDepth )
+        {
+            for ( std::list < CServer* >::const_iterator i = m_children.begin ();
+                  i != m_children.end ();
+                  ++i )
+            {
+                if ( !(*i)->ForEachUser ( cbk, userdata, true ) )
+                    return false;
+            }
+        }
+        return true;
+    }
+    else
+        return false;
+}
+
+bool CServer::ForEachServer ( const FOREACH_SERVER_CALLBACK& cbk, void* userdata, bool bGoInDepth ) const
+{
+    SForeachInfo < CServer* > info;
+    info.userdata = userdata;
+    info.cur = const_cast < CServer* > ( this );
+
+    if ( cbk ( info ) )
+    {
+        if ( bGoInDepth )
+        {
+            for ( std::list < CServer* >::const_iterator i = m_children.begin ();
+                  i != m_children.end ();
+                  ++i )
+            {
+                if ( !(*i)->ForEachServer ( cbk, userdata, true ) )
+                    return false;
+            }
+        }
+        return true;
+    }
+    else
+        return false;
+}
