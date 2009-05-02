@@ -49,7 +49,7 @@ public:
     virtual bool            Initialize          ( const CSocket& socket, const CConfig& config );
     virtual int             Loop                ( );
     virtual bool            Process             ( const CString& szLine );
-    virtual int             Send                ( const IMessage& ircmessage, CClient* pSource = NULL );
+    virtual int             Send                ( IMessage& ircmessage, CClient* pSource = NULL );
 
     inline CServer&         GetMe               ( ) { return m_me; }
     inline const CServer&   GetMe               ( ) const { return m_me; }
