@@ -9,16 +9,17 @@
 //
 // (C) RedHispana.Org 2009
 //
-// Archivo:     CLanguage.h
+// Archivo:     CLanguage.cpp
 // Propósito:   Idiomas
 // Autores:     Alberto Alonso <rydencillo@gmail.com>
 //
 
-#pragma once
+#include "stdafx.h"
 
-class CLanguage
+CLanguage::CLanguage ( const CString& szLangName )
 {
-public:
-                CLanguage       ( const CString& szLangName );
-    virtual     ~CLanguage      ( );
-};
+}
+
+CLanguage::~CLanguage ( )
+{
+}

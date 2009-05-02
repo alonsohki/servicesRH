@@ -19,5 +19,20 @@
 class CLanguageManager
 {
 public:
+    static CLanguageManager&    GetSingleton    ( );
+    static CLanguageManager*    GetSingletonPtr ( );
+private:
+    static CLanguageManager     ms_instance;
 
+private:
+                    CLanguageManager    ( );
+public:
+    virtual         ~CLanguageManager   ( );
+
+    void            LoadLanguages   ( );
+    CLanguage*      GetLanguage         ( const CString& szLangName );
+
+private:
+    typedef google::dense_hash_map < const char*, CLanguage* > t_langMap;
+    t_langMap       m_langMap;
 };

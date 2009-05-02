@@ -52,6 +52,9 @@ int main( int argc, const char* argv[], const char* envp[] )
         return EXIT_FAILURE;
     }
 
+    // Inicializamos los idiomas
+    CLanguageManager::GetSingleton ().LoadLanguages ( );
+
     // Inicializamos el protocolo
     CProtocol& protocol = CProtocol::GetSingleton ( );
     if ( ! protocol.Initialize ( socket, config ) )
