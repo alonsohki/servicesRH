@@ -92,7 +92,7 @@ CDirectory::CIterator CDirectory::End ( )
 /* Iteradores */
 CString CDirectory::CIterator::GetName ( ) const
 {
-    CString szRet ( m_pDirent->d_name );
+    CString szRet = m_pDirent->d_name;
     return szRet;
 }
 
