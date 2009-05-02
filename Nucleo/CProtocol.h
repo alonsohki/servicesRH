@@ -35,7 +35,7 @@ private:
     typedef google::dense_hash_map < const char*, SCommandCallbacks, SStringHasher, SStringEquals > t_commandsMap;
 
 private:
-    static CProtocol        ms_instance;
+    static CProtocol*       ms_pInstance;
 
 public:
     static CProtocol&       GetSingleton        ( );

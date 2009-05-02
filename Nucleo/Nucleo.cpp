@@ -65,6 +65,7 @@ int main( int argc, const char* argv[], const char* envp[] )
     while ( protocol.Loop () > 0 );
 
     // Finalizamos
+    delete CProtocol::GetSingletonPtr ();
     socket.Close ();
     CSocket::CleanupNetworking ();
     CPortability::Pause ();

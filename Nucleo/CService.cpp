@@ -109,7 +109,16 @@ CService::CService ( const CString& szServiceName, const CConfig& config )
 
 CService::~CService ( )
 {
-    CService::ms_listServices.remove ( this );
+    for ( std::list < CService* >::iterator i = CService::ms_listServices.begin ();
+          i != CService::ms_listServices.end ();
+          ++i )
+    {
+        if ( (*i) == this )
+        {
+            CService::ms_listServices.erase ( i );
+            break;
+        }
+    }
     CService::ms_ulFreeNumerics.push_back ( GetNumeric () );
 
     for ( t_commandsMap::iterator i = m_commandsMap.begin ();

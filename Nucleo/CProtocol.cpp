@@ -30,8 +30,49 @@ CProtocol::CProtocol ( )
 
 CProtocol::~CProtocol ( )
 {
-}
+    // Eliminamos las listas de callbacks
+    for ( t_commandsMap::iterator i = m_commandsMap.begin ();
+          i != m_commandsMap.end ();
+          ++i )
+    {
+        SCommandCallbacks& cur = (*i).second;
+        delete cur.pMessage;
+        for ( std::vector < PROTOCOL_CALLBACK* >::iterator j = cur.vecCallbacks.begin ();
+              j != cur.vecCallbacks.end ();
+              ++j )
+        {
+            delete (*j);
+        }
+    }
 
+    for ( t_commandsMap::iterator i = m_commandsMapBefore.begin ();
+          i != m_commandsMapBefore.end ();
+          ++i )
+    {
+        SCommandCallbacks& cur = (*i).second;
+        delete cur.pMessage;
+        for ( std::vector < PROTOCOL_CALLBACK* >::iterator j = cur.vecCallbacks.begin ();
+              j != cur.vecCallbacks.end ();
+              ++j )
+        {
+            delete (*j);
+        }
+    }
+
+    for ( t_commandsMap::iterator i = m_commandsMapAfter.begin ();
+          i != m_commandsMapAfter.end ();
+          ++i )
+    {
+        SCommandCallbacks& cur = (*i).second;
+        delete cur.pMessage;
+        for ( std::vector < PROTOCOL_CALLBACK* >::iterator j = cur.vecCallbacks.begin ();
+              j != cur.vecCallbacks.end ();
+              ++j )
+        {
+            delete (*j);
+        }
+    }
+}
 
 bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
 {
@@ -353,16 +394,18 @@ void CProtocol::InternalAddHandler ( EHandlerStage eStage, const IMessage& messa
 }
 
 // Parte estática
-CProtocol CProtocol::ms_instance;
+CProtocol* CProtocol::ms_pInstance = 0;
 
 CProtocol& CProtocol::GetSingleton ( )
 {
-    return ms_instance;
+    return *GetSingletonPtr ();
 }
 
 CProtocol* CProtocol::GetSingletonPtr ( )
 {
-    return &GetSingleton ();
+    if ( ms_pInstance == 0 )
+        ms_pInstance = new CProtocol ();
+    return ms_pInstance;
 }
 
 
