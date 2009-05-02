@@ -152,7 +152,12 @@ void CService::ProcessCommands ( CUser* pSource, const CString& szMessage )
     SCommandInfo info;
 
     info.pSource = pSource;
-    szMessage.Split ( info.vecParams );
+
+    // Quitamos los espacios al principio de la línea
+    unsigned int uiOffset = 0;
+    for ( ; szMessage.at ( uiOffset ) == ' '; ++uiOffset );
+
+    szMessage.Split ( info.vecParams, ' ', uiOffset );
 
     t_commandsMap::iterator find = m_commandsMap.find ( info.vecParams [ 0 ].c_str () );
     if ( find != m_commandsMap.end () )
