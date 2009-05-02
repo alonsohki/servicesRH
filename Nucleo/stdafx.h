@@ -14,9 +14,11 @@
 // Autores:     Alberto Alonso <rydencillo@gmail.com>
 //
 
-#pragma once
 #ifdef WIN32
+    #pragma once
     #pragma message("Compilando encabezado precompilado...\n")
+#else
+    #warning "Compilando encabezado precompilado..."
 #endif
 
 // Encabezados de C
