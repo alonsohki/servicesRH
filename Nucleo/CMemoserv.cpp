@@ -9,17 +9,18 @@
 //
 // (C) RedHispana.Org 2009
 //
-// Archivo:     CNickserv.h
-// Propósito:   Registro de nicks.
+// Archivo:     CMemoserv.cpp
+// Propósito:   Mensajería entre usuarios
 // Autores:     Alberto Alonso <rydencillo@gmail.com>
 //
 
-#pragma once
+#include "stdafx.h"
 
-class CNickserv : public CService
+CMemoserv::CMemoserv ( const CConfig& config )
+: CService ( "memoserv", config )
 {
-public:
-                CNickserv   ( const CConfig& config );
-    virtual     ~CNickserv  ( );
-private:
-};
+}
+
+CMemoserv::~CMemoserv ( )
+{
+}

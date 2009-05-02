@@ -263,12 +263,36 @@
 				Name="Services"
 				>
 				<File
+					RelativePath=".\CChanserv.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\CMemoserv.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\CNickserv.cpp"
 					>
 				</File>
 				<File
 					RelativePath=".\CService.cpp"
 					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							UsePrecompiledHeader="2"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							UsePrecompiledHeader="2"
+						/>
+					</FileConfiguration>
 				</File>
 			</Filter>
 		</Filter>
@@ -356,6 +380,14 @@
 			<Filter
 				Name="Services"
 				>
+				<File
+					RelativePath=".\CChanserv.h"
+					>
+				</File>
+				<File
+					RelativePath=".\CMemoserv.h"
+					>
+				</File>
 				<File
 					RelativePath=".\CNickserv.h"
 					>

@@ -79,7 +79,7 @@ public:
 
     inline const CString&   GetIdent            ( ) const { return m_szIdent; }
     inline const CString&   GetHost             ( ) const { return m_szHost; }
-    inline unsigned long    GetAdddress         ( ) const { return m_ulAddress; }
+    inline unsigned long    GetAddress          ( ) const { return m_ulAddress; }
     inline unsigned long    GetModes            ( ) const { return m_ulModes; }
 
     // Membresía de canales

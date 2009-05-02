@@ -256,7 +256,39 @@ CMessageNICK::~CMessageNICK ( ) { }
 
 bool CMessageNICK::BuildMessage ( SProtocolMessage& message ) const
 {
-    // TODO
+    if ( m_pServer )
+    {
+        // Nuevo usuario desde un servidor
+        char szIP [ 8 ];
+        inttobase64 ( szIP, m_ulAddress, 6 );
+
+        char szServerNumeric [ 4 ];
+        unsigned long ulServerNumeric = m_pServer->GetNumeric ();
+        m_pServer->FormatNumeric ( szServerNumeric );
+
+        char szNumeric [ 4 ];
+        if ( ulServerNumeric > 4095 )
+            inttobase64 ( szNumeric, m_ulNumeric, 3 );
+        else
+            inttobase64 ( szNumeric, m_ulNumeric, 2 );
+
+        message.szExtraInfo.Format ( "%s %u %lu %s %s %s %s %s%s",
+                                     m_szNick.c_str (),
+                                     m_uiDepth,
+                                     static_cast < unsigned long > ( m_timestamp ),
+                                     m_szIdent.c_str (),
+                                     m_szHost.c_str (),
+                                     m_szModes.c_str (),
+                                     szIP,
+                                     szServerNumeric, szNumeric );
+        message.szText = m_szDesc;
+    }
+    else
+    {
+        // Cambio de nick
+        message.szExtraInfo.Format ( "%s %lu", m_szNick.c_str (), static_cast < unsigned long > ( m_timestamp ) );
+    }
+
     return true;
 }
 
@@ -328,7 +360,7 @@ CMessageQUIT::~CMessageQUIT ( ) { }
 bool CMessageQUIT::BuildMessage ( SProtocolMessage& message ) const
 {
     // TODO
-    return true;
+    return false;
 }
 
 bool CMessageQUIT::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
@@ -353,7 +385,7 @@ CMessageMODE::~CMessageMODE ( ) { }
 bool CMessageMODE::BuildMessage ( SProtocolMessage& message ) const
 {
     // TODO
-    return true;
+    return false;
 }
 
 bool CMessageMODE::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
@@ -400,7 +432,7 @@ CMessageSQUIT::~CMessageSQUIT ( ) { }
 bool CMessageSQUIT::BuildMessage ( SProtocolMessage& message ) const
 {
     // TODO
-    return true;
+    return false;
 }
 
 bool CMessageSQUIT::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
@@ -706,6 +738,56 @@ bool CMessageKICK::ProcessMessage ( const CString& szLine, const std::vector < C
         m_szReason = "";
     else
         m_szReason = vec [ 4 ];
+
+    return true;
+}
+
+////////////////////////////
+//        PRIVMSG         //
+////////////////////////////
+CMessagePRIVMSG::CMessagePRIVMSG ( CUser* pUser, CChannel* pChannel, const CString& szMessage )
+: m_pUser ( pUser ), m_pChannel ( pChannel ), m_szMessage ( szMessage )
+{
+}
+CMessagePRIVMSG::~CMessagePRIVMSG ( ) { }
+
+bool CMessagePRIVMSG::BuildMessage ( SProtocolMessage& message ) const
+{
+    if ( !m_pUser && !m_pChannel )
+        return false;
+
+    if ( m_pUser )
+        message.pDest = m_pUser;
+    else if ( m_pChannel )
+        message.szExtraInfo = m_pChannel->GetName ();
+
+    message.szText = m_szMessage;
+    return true;
+}
+
+bool CMessagePRIVMSG::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
+{
+    if ( vec.size () < 4 )
+        return false;
+
+    if ( vec [ 2 ].at ( 0 ) == '#' )
+    {
+        // Es un mensaje a un canal
+        m_pUser = 0;
+        m_pChannel = CChannelManager::GetSingleton ().GetChannel ( vec [ 2 ] );
+        if ( !m_pChannel )
+            return false;
+    }
+    else
+    {
+        // Es un mensaje a un usuario
+        m_pChannel = 0;
+        m_pUser = CProtocol::GetSingleton ().GetMe ().GetUserAnywhere ( base64toint ( vec [ 2 ] ) );
+        if ( !m_pUser )
+            return false;
+    }
+
+    m_szMessage = vec [ 3 ];
 
     return true;
 }

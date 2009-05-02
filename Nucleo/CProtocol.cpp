@@ -83,6 +83,9 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
     InternalAddHandler ( HANDLER_AFTER_CALLBACKS,  CMessagePART(),   PROTOCOL_CALLBACK ( &CProtocol::evtPart,   this ) );
     InternalAddHandler ( HANDLER_AFTER_CALLBACKS,  CMessageKICK(),   PROTOCOL_CALLBACK ( &CProtocol::evtKick,   this ) );
 
+
+    // Inicializamos los servicios
+    CService::RegisterServices ( m_config );
     return true;
 }
 

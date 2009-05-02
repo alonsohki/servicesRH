@@ -17,3 +17,5 @@
 #pragma once
 
 #include "CNickserv.h"
+#include "CChanserv.h"
+#include "CMemoserv.h"

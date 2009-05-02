@@ -9,17 +9,18 @@
 //
 // (C) RedHispana.Org 2009
 //
-// Archivo:     CNickserv.h
-// Propósito:   Registro de nicks.
+// Archivo:     CChanserv.cpp
+// Propósito:   Registro de canales
 // Autores:     Alberto Alonso <rydencillo@gmail.com>
 //
 
-#pragma once
+#include "stdafx.h"
 
-class CNickserv : public CService
+CChanserv::CChanserv ( const CConfig& config )
+: CService ( "chanserv", config )
 {
-public:
-                CNickserv   ( const CConfig& config );
-    virtual     ~CNickserv  ( );
-private:
-};
+}
+
+CChanserv::~CChanserv ( )
+{
+}

@@ -218,7 +218,7 @@ void CConfig::Reset ( )
     m_szError = "";
 }
 
-bool CConfig::GetValue ( CString& szDest, const CString& szSection, const CString& szEntry )
+bool CConfig::GetValue ( CString& szDest, const CString& szSection, const CString& szEntry ) const
 {
     SIniSection* pSection;
     SIniEntry* pEntry;

@@ -15,3 +15,12 @@
 //
 
 #include "stdafx.h"
+
+CNickserv::CNickserv ( const CConfig& config )
+: CService ( "nickserv", config )
+{
+}
+
+CNickserv::~CNickserv ( )
+{
+}

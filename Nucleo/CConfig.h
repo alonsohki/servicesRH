@@ -42,7 +42,7 @@ public:
     CConfig&        operator=       ( const CConfig& copy );
 
     bool            SetFilename     ( const CString& szFilename );
-    bool            GetValue        ( CString& szDest, const CString& szSection, const CString& szEntry );
+    bool            GetValue        ( CString& szDest, const CString& szSection, const CString& szEntry ) const;
 
     bool            IsOk            ( ) const;
     int             Errno           ( ) const;

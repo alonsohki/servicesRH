@@ -315,6 +315,19 @@ private:
 END_MESSAGE_DECLARATION()
 
 
+////////////////////////////
+//        PRIVMSG         //
+////////////////////////////
+BEGIN_MESSAGE_DECLARATION(PRIVMSG, CUser* pUser, CChannel* pChannel, const CString& szMessage)
+public:
+    inline CUser*           GetUser     ( ) const { return m_pUser; }
+    inline CChannel*        GetChannel  ( ) const { return m_pChannel; }
+    inline const CString&   GetMessage  ( ) const { return m_szMessage; }
+private:
+    CUser*      m_pUser;
+    CChannel*   m_pChannel;
+    CString     m_szMessage;
+END_MESSAGE_DECLARATION()
 
 #undef BEGIN_MESSAGE_DECLARATION
 #undef END_MESSAGE_DECLARATION
