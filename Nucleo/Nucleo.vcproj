@@ -212,6 +212,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CLanguage.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CLanguageManager.cpp"
 				>
 			</File>
@@ -446,6 +450,10 @@
 				</File>
 				<File
 					RelativePath=".\services.h"
+					>
+				</File>
+				<File
+					RelativePath=".\SServicesData.h"
 					>
 				</File>
 			</Filter>

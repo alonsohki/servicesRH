@@ -9,26 +9,12 @@
 //
 // (C) RedHispana.Org 2009
 //
-// Archivo:     CNickserv.cpp
-// Propósito:   Registro de nicks.
+// Archivo:     SServicesData.h
+// Propósito:   Datos de los servicios para un usuario.
 // Autores:     Alberto Alonso <rydencillo@gmail.com>
 //
 
-#include "stdafx.h"
-
-CNickserv::CNickserv ( const CConfig& config )
-: CService ( "nickserv", config )
+struct SServicesData
 {
-    RegisterCommand ( "help", COMMAND_CALLBACK ( &CNickserv::cmdHelp, this ) );
-}
-
-CNickserv::~CNickserv ( )
-{
-}
-
-bool CNickserv::cmdHelp ( SCommandInfo& info )
-{
-    LangMsg ( info.pSource, "HELP" );
-
-    return true;
-}
+    CString     szLang;
+};

@@ -53,7 +53,19 @@ int main( int argc, const char* argv[], const char* envp[] )
     }
 
     // Inicializamos los idiomas
-    CLanguageManager::GetSingleton ().LoadLanguages ( );
+    CString szDefaultLang;
+    if ( !config.GetValue ( szDefaultLang, "bots", "idioma" ) )
+    {
+        puts ( "Error al leer el idioma por defecto de la configuración" );
+        CPortability::Pause ();
+        return EXIT_FAILURE;
+    }
+    if ( ! CLanguageManager::GetSingleton ().LoadLanguages ( szDefaultLang ) )
+    {
+        puts ( "Error cargando los idiomas" );
+        CPortability::Pause ();
+        return EXIT_FAILURE;
+    }
 
     // Inicializamos el protocolo
     CProtocol& protocol = CProtocol::GetSingleton ( );

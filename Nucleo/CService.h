@@ -34,6 +34,7 @@ public:
     const CString&  GetError        ( ) const { return m_szError; }
 
     void            Msg             ( CUser* pDest, const CString& szMessage );
+    void            LangMsg         ( CUser* pDest, const CString& szTopic, ... );
 
 protected:
     void            RegisterCommand ( const char* szCommand, const COMMAND_CALLBACK& pCallback );
@@ -44,10 +45,14 @@ private:
 
 private:
     typedef google::dense_hash_map < const char*, COMMAND_CALLBACK*, SStringHasher, SStringEquals > t_commandsMap;
-    t_commandsMap   m_commandsMap;
-    bool            m_bIsOk;
-    CString         m_szError;
+    t_commandsMap       m_commandsMap;
+    bool                m_bIsOk;
+    CString             m_szError;
+    CString             m_szServiceName;
+
 protected:
-    CProtocol&      m_protocol;
+    CProtocol&          m_protocol;
+    CLanguageManager&   m_langManager;
 private:
 };
+

@@ -29,10 +29,13 @@ private:
 public:
     virtual         ~CLanguageManager   ( );
 
-    void            LoadLanguages   ( );
+    bool            LoadLanguages       ( const CString& szDefaultLang );
+    CLanguage*      GetDefaultLanguage  ( );
     CLanguage*      GetLanguage         ( const CString& szLangName );
+    void            GetLanguageList     ( std::vector < CString >& dest );
 
 private:
-    typedef google::dense_hash_map < const char*, CLanguage* > t_langMap;
+    typedef google::dense_hash_map < const char*, CLanguage*, SStringHasher, SStringEquals > t_langMap;
     t_langMap       m_langMap;
+    CLanguage*      m_pDefaultLang;
 };

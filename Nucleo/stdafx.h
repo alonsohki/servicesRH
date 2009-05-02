@@ -74,6 +74,7 @@
 #include "CClientManager.h"
 #include "CServer.h"
 #include "CMembership.h"
+#include "SServicesData.h"
 #include "CUser.h"
 #include "CLocalUser.h"
 #include "CChannel.h"

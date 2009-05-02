@@ -48,7 +48,10 @@ void CService::RegisterServices ( const CConfig& config )
 
 
 CService::CService ( const CString& szServiceName, const CConfig& config )
-: m_bIsOk ( false ), m_protocol ( CProtocol::GetSingleton () )
+: m_bIsOk ( false ),
+  m_szServiceName ( szServiceName ),
+  m_protocol ( CProtocol::GetSingleton () ),
+  m_langManager ( CLanguageManager::GetSingleton () )
 {
     CService::ms_listServices.push_back ( this );
     unsigned long ulNumeric = CService::ms_ulFreeNumerics.back ( );
@@ -113,6 +116,41 @@ CService::~CService ( )
 void CService::Msg ( CUser* pDest, const CString& szMessage )
 {
     m_protocol.Send ( CMessagePRIVMSG ( pDest, 0, szMessage ), this );
+}
+
+void CService::LangMsg ( CUser* pDest, const CString& szTopic, ... )
+{
+    va_list vl;
+
+    CLanguage* pLanguage = 0;
+    SServicesData& data = pDest->GetServicesData ();
+
+    if ( data.szLang.size () > 0 )
+        pLanguage = m_langManager.GetLanguage ( data.szLang );
+    if ( !pLanguage )
+        pLanguage = m_langManager.GetDefaultLanguage ();
+
+    CString szMessage = pLanguage->GetTopic ( m_szServiceName, szTopic );
+    if ( szMessage.length () > 0 )
+    {
+        // Ponemos el nombre del bot en el mensaje
+        size_t iPos = 0;
+        while ( ( iPos = szMessage.find ( "%N", iPos ) ) != CString::npos )
+            szMessage.replace ( iPos, 2, GetName () );
+
+        va_start ( vl, szTopic );
+        szMessage.vFormat ( szMessage, vl );
+        va_end ( vl );
+
+        // Enviamos línea a línea
+        size_t iPrevPos = -1;
+        iPos = 0;
+        while ( ( iPos = szMessage.find ( '\n', iPrevPos + 1 ) ) != CString::npos )
+        {
+            Msg ( pDest, szMessage.substr ( iPrevPos + 1, iPos ) );
+            iPrevPos = iPos;
+        }
+    }
 }
 
 void CService::RegisterCommand ( const char* szCommand, const COMMAND_CALLBACK& callback )

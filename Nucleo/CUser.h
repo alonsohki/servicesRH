@@ -88,6 +88,9 @@ public:
     inline const std::list < CMembership* >
                             GetMemberships      ( ) const { return m_listMemberships; }
 
+    // Servicios
+    inline SServicesData&   GetServicesData     ( ) { return m_servicesData; }
+
 private:
     CString                         m_szIdent;
     CString                         m_szHost;
@@ -96,4 +99,5 @@ private:
     std::list < CMembership* >      m_listMemberships;
 
     bool                            m_bDeletingUser;
+    SServicesData                   m_servicesData;
 };

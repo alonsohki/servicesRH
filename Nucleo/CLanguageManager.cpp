@@ -32,16 +32,22 @@ CLanguageManager* CLanguageManager::GetSingletonPtr ( )
 
 // Parte no estática
 CLanguageManager::CLanguageManager ( )
+: m_pDefaultLang ( NULL )
 {
+    m_langMap.set_deleted_key ( (const char *)HASH_STRING_DELETED );
+    m_langMap.set_empty_key ( (const char *)HASH_STRING_EMPTY );
 }
 
 CLanguageManager::~CLanguageManager ( )
 {
 }
 
-void CLanguageManager::LoadLanguages ( )
+bool CLanguageManager::LoadLanguages ( const CString& szDefaultLang )
 {
     CDirectory dir ( "../lang/" );
+
+    if ( !dir.IsOk () )
+        return false;
 
     for ( CDirectory::CIterator iter = dir.Begin ();
           iter != dir.End ();
@@ -53,7 +59,47 @@ void CLanguageManager::LoadLanguages ( )
             if ( szDir.at ( 0 ) != '.' )
             {
                 CLanguage* pLanguage = new CLanguage ( szDir );
+                if ( !pLanguage->IsOk () )
+                    delete pLanguage;
+                else
+                    m_langMap.insert ( t_langMap::value_type ( pLanguage->GetName ().c_str (), pLanguage ) );
             }
         }
+    }
+
+    if ( m_langMap.size () > 0 )
+    {
+        t_langMap::iterator find = m_langMap.find ( const_cast < char* > ( szDefaultLang.c_str () ) );
+        if ( find == m_langMap.end () )
+        {
+            m_pDefaultLang = (*(m_langMap.begin ())).second;
+        }
+        else
+            m_pDefaultLang = (*find).second;
+    }
+
+    return true;
+}
+
+CLanguage* CLanguageManager::GetLanguage ( const CString& szLangName )
+{
+    t_langMap::iterator find = m_langMap.find ( szLangName.c_str () );
+    if ( find != m_langMap.end () )
+        return (*find).second;
+    return NULL;
+}
+
+CLanguage* CLanguageManager::GetDefaultLanguage ( )
+{
+    return m_pDefaultLang;
+}
+
+void CLanguageManager::GetLanguageList ( std::vector < CString >& dest )
+{
+    for ( t_langMap::const_iterator iter = m_langMap.begin ();
+          iter != m_langMap.end ();
+          ++iter )
+    {
+        dest.push_back ( (*iter).first );
     }
 }
