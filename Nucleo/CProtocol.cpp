@@ -282,12 +282,11 @@ bool CProtocol::Process ( const CString& szLine )
     return true;
 }
 
-int CProtocol::Send ( IMessage& ircmessage, CClient* pSource )
+int CProtocol::Send ( const IMessage& ircmessage, CClient* pSource )
 {
     SProtocolMessage message;
     message.pSource = pSource;
     message.szCommand = ircmessage.GetMessageName ( );
-    ircmessage.SetSource ( pSource );
     if ( ircmessage.BuildMessage ( message ) == false )
         return 0;
 

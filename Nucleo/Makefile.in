@@ -50,7 +50,9 @@ am_services_OBJECTS = base64.$(OBJEXT) CChannel.$(OBJEXT) \
 	CConfig.$(OBJEXT) chattr.tab.$(OBJEXT) CMembership.$(OBJEXT) \
 	CMessage.$(OBJEXT) CProtocol.$(OBJEXT) CServer.$(OBJEXT) \
 	CSocket.$(OBJEXT) CUser.$(OBJEXT) hash.$(OBJEXT) \
-	Nucleo.$(OBJEXT) stdafx.$(OBJEXT)
+	Nucleo.$(OBJEXT) CService.$(OBJEXT) CNickserv.$(OBJEXT) \
+	CChanserv.$(OBJEXT) CMemoserv.$(OBJEXT) COperserv.$(OBJEXT) \
+	stdafx.$(OBJEXT)
 services_OBJECTS = $(am_services_OBJECTS)
 services_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
@@ -180,7 +182,9 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 services_SOURCES = base64.cpp CChannel.cpp CChannelManager.cpp CClientManager.cpp CConfig.cpp \
     chattr.tab.cpp CMembership.cpp CMessage.cpp CProtocol.cpp CServer.cpp CSocket.cpp \
-    CUser.cpp hash.cpp Nucleo.cpp stdafx.cpp
+    CUser.cpp hash.cpp Nucleo.cpp \
+	CService.cpp CNickserv.cpp CChanserv.cpp CMemoserv.cpp COperserv.cpp \
+	stdafx.cpp
 
 all: all-am
 
@@ -255,12 +259,17 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CChannel.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CChannelManager.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CChanserv.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CClientManager.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CConfig.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CMembership.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CMemoserv.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CMessage.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CNickserv.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/COperserv.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CProtocol.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CServer.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CService.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CSocket.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CUser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Nucleo.Po@am__quote@

@@ -807,7 +807,7 @@ bool CMessageKILL::BuildMessage ( SProtocolMessage& message ) const
     if ( !m_pVictim )
         return false;
     message.pDest = m_pVictim;
-    CClient* pSource = GetSource ();
+    CClient* pSource = message.pSource;
     if ( !pSource )
         pSource = &CProtocol::GetSingleton ().GetMe ();
     message.szText.Format ( "%s (%s)", pSource->GetName ().c_str (), m_szReason.c_str () );
