@@ -21,5 +21,8 @@ class CNickserv : public CService
 public:
                 CNickserv   ( const CConfig& config );
     virtual     ~CNickserv  ( );
+
 private:
+    // Comandos
+    bool        cmdHelp     ( const SCommandInfo& info );
 };

@@ -19,8 +19,15 @@
 CNickserv::CNickserv ( const CConfig& config )
 : CService ( "nickserv", config )
 {
+    RegisterCommand ( "help", COMMAND_CALLBACK ( &CNickserv::cmdHelp, this ) );
 }
 
 CNickserv::~CNickserv ( )
 {
+}
+
+bool CNickserv::cmdHelp ( const SCommandInfo& info )
+{
+    Msg ( info.pSource, "¡Aún no hay ayuda disponible! :(" );
+    return true;
 }

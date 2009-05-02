@@ -52,11 +52,16 @@ void CService::RegisterServices ( const CConfig& config )
 
 
 CService::CService ( const CString& szServiceName, const CConfig& config )
-: m_bIsOk ( false )
+: m_bIsOk ( false ), m_protocol ( CProtocol::GetSingleton () )
 {
     CService::ms_listServices.push_back ( this );
     unsigned long ulNumeric = CService::ms_ulFreeNumerics.back ( );
     CService::ms_ulFreeNumerics.pop_back ( );
+
+    // Inicializamos la tabla hash
+    m_commandsMap.set_deleted_key ( (const char*)HASH_STRING_DELETED );
+    m_commandsMap.set_empty_key ( (const char*)HASH_STRING_EMPTY );
+
 
 #define SAFE_LOAD(dest,var) do { \
     if ( !config.GetValue ( (dest), szServiceName, (var) ) ) \
@@ -79,28 +84,80 @@ CService::CService ( const CString& szServiceName, const CConfig& config )
 
 #undef SAFE_LOAD
 
-    CProtocol& protocol = CProtocol::GetSingleton ();
-    CServer& me = protocol.GetMe ();
+    CServer& me = m_protocol.GetMe ();
     CUser::Create ( &me,
                     ulNumeric, szNick, szIdent, szDesc,
                     szHost, 2130706433 ); // 2130706433 = 127.0.0.1
     m_bIsOk = true;
 
-    protocol.Send ( CMessageNICK ( GetName (),
-                                   time ( 0 ),
-                                   &me,
-                                   1,
-                                   GetIdent (),
-                                   GetHost (),
-                                   szModes,
-                                   GetAddress (),
-                                   GetNumeric (),
-                                   GetDesc ()
-                                 ), &me );
+    m_protocol.Send ( CMessageNICK ( GetName (),
+                                     time ( 0 ),
+                                     &me,
+                                     1,
+                                     GetIdent (),
+                                     GetHost (),
+                                     szModes,
+                                     GetAddress (),
+                                     GetNumeric (),
+                                     GetDesc ()
+                                   ), &me );
+
+    // Registramos el evento para recibir comandos
+    m_protocol.AddHandler ( CMessagePRIVMSG (), PROTOCOL_CALLBACK ( &CService::evtPrivmsg, this ) );
 }
 
 CService::~CService ( )
 {
     CService::ms_listServices.remove ( this );
     CService::ms_ulFreeNumerics.push_back ( GetNumeric () );
+
+    for ( t_commandsMap::iterator i = m_commandsMap.begin ();
+          i != m_commandsMap.end ();
+          ++i )
+    {
+        delete (*i).second;
+    }
+}
+
+void CService::Msg ( CUser* pDest, const CString& szMessage )
+{
+    m_protocol.Send ( CMessagePRIVMSG ( pDest, 0, szMessage ), this );
+}
+
+void CService::RegisterCommand ( const char* szCommand, const COMMAND_CALLBACK& callback )
+{
+    COMMAND_CALLBACK* pCallback = new COMMAND_CALLBACK ( callback );
+    m_commandsMap.insert ( t_commandsMap::value_type ( szCommand, pCallback ) );
+}
+
+
+bool CService::evtPrivmsg ( const IMessage& message_ )
+{
+    try
+    {
+        const CMessagePRIVMSG& message = dynamic_cast < const CMessagePRIVMSG& > ( message_ );
+        if ( message.GetUser () == this && message.GetSource ()->GetType () == CClient::USER )
+        {
+            ProcessCommands ( static_cast < CUser* > ( message.GetSource () ), message.GetMessage () );
+            return false;
+        }
+    }
+    catch ( std::bad_cast ) { return false; }
+
+    return true;
+}
+
+void CService::ProcessCommands ( CUser* pSource, const CString& szMessage )
+{
+    SCommandInfo info;
+
+    info.pSource = pSource;
+    szMessage.Split ( info.vecParams );
+
+    t_commandsMap::iterator find = m_commandsMap.find ( info.vecParams [ 0 ].c_str () );
+    if ( find != m_commandsMap.end () )
+    {
+        COMMAND_CALLBACK* pCallback = (*find).second;
+        (*pCallback) ( info );
+    }
 }
