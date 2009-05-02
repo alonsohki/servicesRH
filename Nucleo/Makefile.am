@@ -2,7 +2,7 @@ bin_PROGRAMS=services
 services_SOURCES=base64.cpp CChannel.cpp CChannelManager.cpp CClientManager.cpp CConfig.cpp \
     chattr.tab.cpp CMembership.cpp CMessage.cpp CProtocol.cpp CServer.cpp CSocket.cpp \
     CUser.cpp hash.cpp Nucleo.cpp \
-	CService.cpp CNickserv.cpp CChanserv.cpp CMemoserv.cpp \
+	CService.cpp CNickserv.cpp CChanserv.cpp CMemoserv.cpp COperserv.cpp \
 	stdafx.cpp
 CFLAGS=-g -O3 -Wall -Igoogle/sparsehash-1.4/src/
 CXXFLAGS=${CFLAGS}

@@ -46,6 +46,7 @@ void CService::RegisterServices ( const CConfig& config )
     LOAD_SERVICE(CNickserv, "nickserv");
     LOAD_SERVICE(CChanserv, "chanserv");
     LOAD_SERVICE(CMemoserv, "memoserv");
+    LOAD_SERVICE(COperserv, "operserv");
 
 #undef LOAD_SERVICE
 }

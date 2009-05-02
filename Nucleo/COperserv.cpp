@@ -9,14 +9,18 @@
 //
 // (C) RedHispana.Org 2009
 //
-// Archivo:     services.h
-// Propósito:   Inclusión de todos los servicios presentes.
+// Archivo:     COperserv.cpp
+// Propósito:   Servicio para operadores
 // Autores:     Alberto Alonso <rydencillo@gmail.com>
 //
 
-#pragma once
+#include "stdafx.h"
 
-#include "CNickserv.h"
-#include "CChanserv.h"
-#include "CMemoserv.h"
-#include "COperserv.h"
+COperserv::COperserv ( const CConfig& config )
+: CService ( "operserv", config )
+{
+}
+
+COperserv::~COperserv ( )
+{
+}
