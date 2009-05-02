@@ -364,8 +364,8 @@ CMessageQUIT::~CMessageQUIT ( ) { }
 
 bool CMessageQUIT::BuildMessage ( SProtocolMessage& message ) const
 {
-    // TODO
-    return false;
+    message.szText = m_szMessage;
+    return true;
 }
 
 bool CMessageQUIT::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
@@ -453,8 +453,12 @@ CMessageSQUIT::~CMessageSQUIT ( ) { }
 
 bool CMessageSQUIT::BuildMessage ( SProtocolMessage& message ) const
 {
-    // TODO
-    return false;
+    if ( !m_pServer )
+        return false;
+    message.szExtraInfo.Format ( "%s %lu", m_pServer->GetName ().c_str (), static_cast < unsigned long > ( m_timestamp ) );
+    message.szText = m_szMessage;
+
+    return true;
 }
 
 bool CMessageSQUIT::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
@@ -651,8 +655,8 @@ CMessageCREATE::~CMessageCREATE ( ) { }
 
 bool CMessageCREATE::BuildMessage ( SProtocolMessage& message ) const
 {
-    // TODO
-    return false;
+    message.szExtraInfo.Format ( "%s %lu", m_szName.c_str (), static_cast < unsigned long > ( m_timeCreation ) );
+    return true;
 }
 
 bool CMessageCREATE::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
@@ -678,8 +682,10 @@ CMessageJOIN::~CMessageJOIN ( ) { }
 
 bool CMessageJOIN::BuildMessage ( SProtocolMessage& message ) const
 {
-    // TODO
-    return false;
+    if ( !m_pChannel )
+        return false;
+    message.szExtraInfo.Format ( "%s %lu", m_pChannel->GetName ().c_str (), static_cast < unsigned long > ( m_joinTime ) );
+    return true;
 }
 
 bool CMessageJOIN::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
@@ -707,8 +713,12 @@ CMessagePART::~CMessagePART ( ) { }
 
 bool CMessagePART::BuildMessage ( SProtocolMessage& message ) const
 {
-    // TODO
-    return false;
+    if ( !m_pChannel )
+        return false;
+
+    message.szExtraInfo = m_pChannel->GetName ().c_str ();
+    message.szText = m_szMessage;
+    return true;
 }
 
 bool CMessagePART::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
@@ -743,8 +753,17 @@ CMessageKICK::~CMessageKICK ( ) { }
 
 bool CMessageKICK::BuildMessage ( SProtocolMessage& message ) const
 {
-    // TODO
-    return false;
+    if ( !m_pChannel || !m_pVictim )
+        return false;
+
+    message.szExtraInfo = m_pChannel->GetName ();
+    message.pDest = m_pVictim;
+    if ( m_szReason.length () == 0 )
+        message.szText = GetSource ()->GetName ();
+    else
+        message.szText = m_szReason;
+
+    return true;
 }
 
 bool CMessageKICK::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
