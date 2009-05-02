@@ -77,5 +77,6 @@
 #include "SProtocolMessage.h"
 #include "CMessage.h"
 #include "CProtocol.h"
+#include "SCommandInfo.h"
 #include "CService.h"
 #include "services.h"

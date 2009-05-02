@@ -374,6 +374,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\SCommandInfo.h"
+				>
+			</File>
+			<File
 				RelativePath=".\SProtocolMessage.h"
 				>
 			</File>

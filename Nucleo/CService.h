@@ -16,12 +16,7 @@
 
 #pragma once
 
-#define COMMAND_CALLBACK CCallback < bool, const SCommandInfo& >
-struct SCommandInfo
-{
-    CUser*                  pSource;
-    std::vector < CString > vecParams;
-};
+#define COMMAND_CALLBACK CCallback < bool, SCommandInfo& >
 
 class CService : public CUser
 {

@@ -24,5 +24,5 @@ public:
 
 private:
     // Comandos
-    bool        cmdHelp     ( const SCommandInfo& info );
+    bool        cmdHelp     ( SCommandInfo& info );
 };
