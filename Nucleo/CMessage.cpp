@@ -272,13 +272,18 @@ bool CMessageNICK::BuildMessage ( SProtocolMessage& message ) const
         else
             inttobase64 ( szNumeric, m_ulNumeric, 2 );
 
-        message.szExtraInfo.Format ( "%s %u %lu %s %s %s %s %s%s",
+        char szModesPrefix [ 2 ];
+        memset ( szModesPrefix, 0, sizeof ( szModesPrefix ) );
+        if ( m_szModes.length () == 0 || m_szModes.at ( 0 ) != '+' )
+            szModesPrefix [ 0 ] = '+';
+
+        message.szExtraInfo.Format ( "%s %u %lu %s %s %s%s %s %s%s",
                                      m_szNick.c_str (),
                                      m_uiDepth,
                                      static_cast < unsigned long > ( m_timestamp ),
                                      m_szIdent.c_str (),
                                      m_szHost.c_str (),
-                                     m_szModes.c_str (),
+                                     szModesPrefix, m_szModes.c_str (),
                                      szIP,
                                      szServerNumeric, szNumeric );
         message.szText = m_szDesc;
@@ -384,8 +389,25 @@ CMessageMODE::~CMessageMODE ( ) { }
 
 bool CMessageMODE::BuildMessage ( SProtocolMessage& message ) const
 {
-    // TODO
-    return false;
+    if ( m_pUser )
+    {
+        message.szExtraInfo = m_pUser->GetName ();
+        message.szText = m_szModes;
+    }
+    else if ( m_pChannel )
+    {
+        message.szExtraInfo.Format ( "%s %s", m_pChannel->GetName ().c_str (), m_szModes );
+        for ( std::vector < CString >::const_iterator i = m_vecModeParams.begin ();
+              i != m_vecModeParams.end ();
+              ++i )
+        {
+            message.szExtraInfo.append ( " " );
+            message.szExtraInfo.append ( (*i) );
+        }
+    }
+    else
+        return false;
+    return true;
 }
 
 bool CMessageMODE::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
@@ -595,8 +617,12 @@ CMessageTOPIC::~CMessageTOPIC ( ) { }
 
 bool CMessageTOPIC::BuildMessage ( SProtocolMessage& message ) const
 {
-    // TODO
-    return false;
+    if ( !m_pChannel )
+        return false;
+    message.szExtraInfo = m_pChannel->GetName ();
+    message.szText = m_szTopic;
+
+    return true;
 }
 
 bool CMessageTOPIC::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )

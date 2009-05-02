@@ -18,7 +18,7 @@
 
 #define COMMAND_CALLBACK CCallback < bool, SCommandInfo& >
 
-class CService : public CUser
+class CService : public CLocalUser
 {
 public:
     static void     RegisterServices        ( const CConfig& config );

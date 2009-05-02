@@ -37,10 +37,6 @@ void CService::RegisterServices ( const CConfig& config )
         printf ( "Error cargando el servicio '%s': %s\n", (name), pService->GetError ().c_str () ); \
         return; \
     } \
-    else \
-    { \
-        me.AddUser ( pService ); \
-    } \
 } while ( 0 )
 
     LOAD_SERVICE(CNickserv, "nickserv");
@@ -86,22 +82,9 @@ CService::CService ( const CString& szServiceName, const CConfig& config )
 #undef SAFE_LOAD
 
     CServer& me = m_protocol.GetMe ();
-    CUser::Create ( &me,
-                    ulNumeric, szNick, szIdent, szDesc,
-                    szHost, 2130706433 ); // 2130706433 = 127.0.0.1
+    CLocalUser::Create ( ulNumeric, szNick, szIdent, szDesc,
+                         szHost, 2130706433, szModes ); // 2130706433 = 127.0.0.1
     m_bIsOk = true;
-
-    m_protocol.Send ( CMessageNICK ( GetName (),
-                                     time ( 0 ),
-                                     &me,
-                                     1,
-                                     GetIdent (),
-                                     GetHost (),
-                                     szModes,
-                                     GetAddress (),
-                                     GetNumeric (),
-                                     GetDesc ()
-                                   ), &me );
 
     // Registramos el evento para recibir comandos
     m_protocol.AddHandler ( CMessagePRIVMSG (), PROTOCOL_CALLBACK ( &CService::evtPrivmsg, this ) );

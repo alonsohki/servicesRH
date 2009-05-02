@@ -106,7 +106,6 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
 
     Send ( CMessagePASS ( szPass ) );
     Send ( CMessageSERVER ( szHost, 1, time ( 0 ), "J10", atol ( szNumeric ), ulMaxusers, "hs", szDesc ) );
-    Send ( CMessageEND_OF_BURST (), &m_me );
 
     // Registramos eventos
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageEND_OF_BURST(), PROTOCOL_CALLBACK ( &CProtocol::evtEndOfBurst, this ) );
@@ -128,6 +127,10 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
 
     // Inicializamos los servicios
     CService::RegisterServices ( m_config );
+
+    // Finalizamos el negociado
+    Send ( CMessageEND_OF_BURST (), &m_me );
+
     return true;
 }
 
@@ -219,13 +222,49 @@ bool CProtocol::Process ( const CString& szLine )
     if ( !pSource )
         return false;
 
-    // Ejecutamos los pre-eventos
+    IMessage* pMessage = 0;
+    unsigned long ulStage = 0;
     t_commandsMap::iterator iterBefore = m_commandsMapBefore.find ( vec [ 1 ].c_str () );
+    t_commandsMap::iterator iterIn = m_commandsMap.find ( vec [ 1 ].c_str () );
+    t_commandsMap::iterator iterAfter = m_commandsMapAfter.find ( vec [ 1 ].c_str () );
+
     if ( iterBefore != m_commandsMapBefore.end () )
     {
-        IMessage* pMessage = ((*iterBefore).second).pMessage;
-        pMessage->SetSource ( pSource );
-        if ( pMessage->ProcessMessage ( szLine, vec ) )
+        pMessage = (*iterBefore).second.pMessage;
+        ulStage |= HANDLER_BEFORE_CALLBACKS;
+    }
+    if ( iterIn != m_commandsMap.end () )
+    {
+        pMessage = (*iterIn).second.pMessage;
+        ulStage |= HANDLER_IN_CALLBACKS;
+    }
+    if ( iterAfter != m_commandsMapAfter.end () )
+    {
+        pMessage = (*iterAfter).second.pMessage;
+        ulStage |= HANDLER_AFTER_CALLBACKS;
+    }
+
+    if ( ulStage == 0 )
+    {
+        // No hay ningún callback para este mensaje
+        return false;
+    }
+
+    pMessage->SetSource ( pSource );
+    if ( ! pMessage->ProcessMessage ( szLine, vec ) )
+        return false;
+
+    TriggerMessageHandlers ( ulStage, *pMessage );
+    return true;
+}
+
+void CProtocol::TriggerMessageHandlers ( unsigned long ulStage, const IMessage& message )
+{
+    // Ejecutamos los pre-eventos
+    if ( ulStage & HANDLER_BEFORE_CALLBACKS )
+    {
+        t_commandsMap::iterator iterBefore = m_commandsMapBefore.find ( message.GetMessageName () );
+        if ( iterBefore != m_commandsMapBefore.end () )
         {
             std::vector < PROTOCOL_CALLBACK* >& callbacks = ((*iterBefore).second).vecCallbacks;
             for ( std::vector < PROTOCOL_CALLBACK* >::const_iterator iter = callbacks.begin ();
@@ -233,19 +272,17 @@ bool CProtocol::Process ( const CString& szLine )
                   ++iter )
             {
                 PROTOCOL_CALLBACK* pCallback = *iter;
-                if ( ! (*pCallback)( *pMessage ) )
+                if ( ! (*pCallback)( message ) )
                     break;
             }
         }
     }
 
     // Ejecutamos los eventos
-    t_commandsMap::iterator iterIn = m_commandsMap.find ( vec [ 1 ].c_str () );
-    if ( iterIn != m_commandsMap.end () )
+    if ( ulStage & HANDLER_IN_CALLBACKS )
     {
-        IMessage* pMessage = ((*iterIn).second).pMessage;
-        pMessage->SetSource ( pSource );
-        if ( pMessage->ProcessMessage ( szLine, vec ) )
+        t_commandsMap::iterator iterIn = m_commandsMap.find ( message.GetMessageName () );
+        if ( iterIn != m_commandsMap.end () )
         {
             std::vector < PROTOCOL_CALLBACK* >& callbacks = ((*iterIn).second).vecCallbacks;
             for ( std::vector < PROTOCOL_CALLBACK* >::const_iterator iter = callbacks.begin ();
@@ -253,19 +290,17 @@ bool CProtocol::Process ( const CString& szLine )
                   ++iter )
             {
                 PROTOCOL_CALLBACK* pCallback = *iter;
-                if ( ! (*pCallback)( *pMessage ) )
+                if ( ! (*pCallback)( message ) )
                     break;
             }
         }
     }
 
     // Ejecutamos los post-eventos
-    t_commandsMap::iterator iterAfter = m_commandsMapAfter.find ( vec [ 1 ].c_str () );
-    if ( iterAfter != m_commandsMapAfter.end () )
+    if ( ulStage & HANDLER_AFTER_CALLBACKS )
     {
-        IMessage* pMessage = ((*iterAfter).second).pMessage;
-        pMessage->SetSource ( pSource );
-        if ( pMessage->ProcessMessage ( szLine, vec ) )
+        t_commandsMap::iterator iterAfter = m_commandsMapAfter.find ( message.GetMessageName () );
+        if ( iterAfter != m_commandsMapAfter.end () )
         {
             std::vector < PROTOCOL_CALLBACK* >& callbacks = ((*iterAfter).second).vecCallbacks;
             for ( std::vector < PROTOCOL_CALLBACK* >::const_iterator iter = callbacks.begin ();
@@ -273,20 +308,19 @@ bool CProtocol::Process ( const CString& szLine )
                   ++iter )
             {
                 PROTOCOL_CALLBACK* pCallback = *iter;
-                if ( ! (*pCallback)( *pMessage ) )
+                if ( ! (*pCallback)( message ) )
                     break;
             }
         }
     }
-
-    return true;
 }
 
-int CProtocol::Send ( const IMessage& ircmessage, CClient* pSource )
+int CProtocol::Send ( IMessage& ircmessage, CClient* pSource )
 {
     SProtocolMessage message;
     message.pSource = pSource;
     message.szCommand = ircmessage.GetMessageName ( );
+    ircmessage.SetSource ( pSource );
     if ( ircmessage.BuildMessage ( message ) == false )
         return 0;
 
@@ -347,7 +381,13 @@ int CProtocol::Send ( const IMessage& ircmessage, CClient* pSource )
         szMessage.append ( message.szText );
     }
 
-    return m_socket.WriteString ( szMessage );
+    int iRet = m_socket.WriteString ( szMessage );
+    if ( iRet > 0 )
+    {
+        const_cast < IMessage& > ( ircmessage ).SetSource ( pSource );
+        TriggerMessageHandlers ( HANDLER_BEFORE_CALLBACKS | HANDLER_AFTER_CALLBACKS, ircmessage );
+    }
+    return iRet;
 }
 
 void CProtocol::AddHandler ( const IMessage& pMessage, const PROTOCOL_CALLBACK& callback )
@@ -355,33 +395,25 @@ void CProtocol::AddHandler ( const IMessage& pMessage, const PROTOCOL_CALLBACK& 
     InternalAddHandler ( HANDLER_IN_CALLBACKS, pMessage, callback );
 }
 
-void CProtocol::InternalAddHandler ( EHandlerStage eStage, const IMessage& message, const PROTOCOL_CALLBACK& callback )
+void CProtocol::InternalAddHandler ( unsigned long ulStage, const IMessage& message, const PROTOCOL_CALLBACK& callback )
 {
-    t_commandsMap* map = 0;
+    if ( ulStage & HANDLER_BEFORE_CALLBACKS )
+        InternalAddHandler ( m_commandsMapBefore, message, callback );
+    if ( ulStage & HANDLER_IN_CALLBACKS )
+        InternalAddHandler ( m_commandsMap, message, callback );
+    if ( ulStage & HANDLER_AFTER_CALLBACKS )
+        InternalAddHandler ( m_commandsMapAfter, message, callback );
+}
 
-    switch ( eStage )
-    {
-        case HANDLER_BEFORE_CALLBACKS:
-            map = &m_commandsMapBefore;
-            break;
-        case HANDLER_IN_CALLBACKS:
-            map = &m_commandsMap;
-            break;
-        case HANDLER_AFTER_CALLBACKS:
-            map = &m_commandsMapAfter;
-            break;
-    }
-
-    if ( !map )
-        return;
-
+void CProtocol::InternalAddHandler ( t_commandsMap& map, const IMessage& message, const PROTOCOL_CALLBACK& callback )
+{
     std::vector < PROTOCOL_CALLBACK* >* pVector;
 
-    t_commandsMap::iterator find = map->find ( message.GetMessageName () );
-    if ( find == map->end () )
+    t_commandsMap::iterator find = map.find ( message.GetMessageName () );
+    if ( find == map.end () )
     {
         std::pair < t_commandsMap::iterator, bool > pair =
-            map->insert ( t_commandsMap::value_type ( message.GetMessageName (), SCommandCallbacks () ) );
+            map.insert ( t_commandsMap::value_type ( message.GetMessageName (), SCommandCallbacks () ) );
         find = pair.first;
         SCommandCallbacks& s = (*find).second;
         s.pMessage = message.Copy ();
@@ -447,9 +479,12 @@ bool CProtocol::evtServer ( const IMessage& message_ )
     try
     {
         const CMessageSERVER& message = dynamic_cast < const CMessageSERVER& > ( message_ );
-        new CServer ( static_cast < CServer* > ( message.GetSource () ),
-                      message.GetNumeric (), message.GetHost (),
-                      message.GetDesc () );
+        if ( message.GetNumeric () != m_me.GetNumeric () )
+        {
+            new CServer ( static_cast < CServer* > ( message.GetSource () ),
+                          message.GetNumeric (), message.GetHost (),
+                          message.GetDesc () );
+        }
     }
     catch ( std::bad_cast ) { return false; }
 
@@ -473,6 +508,9 @@ bool CProtocol::evtNick ( const IMessage& message_ )
     try
     {
         const CMessageNICK& message = dynamic_cast < const CMessageNICK& > ( message_ );
+        if ( message.GetSource () == &m_me )
+            return true;
+
         if ( message.GetServer () )
         {
             // Nuevo usuario desde un servidor

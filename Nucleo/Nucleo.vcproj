@@ -208,6 +208,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CLocalUser.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CMembership.cpp"
 				>
 			</File>
@@ -331,6 +335,10 @@
 			</File>
 			<File
 				RelativePath=".\CConfig.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CLocalUser.h"
 				>
 			</File>
 			<File

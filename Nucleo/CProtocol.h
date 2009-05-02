@@ -28,9 +28,10 @@ private:
     };
     enum EHandlerStage
     {
-        HANDLER_BEFORE_CALLBACKS,
-        HANDLER_IN_CALLBACKS,
-        HANDLER_AFTER_CALLBACKS
+        HANDLER_BEFORE_CALLBACKS        = 0x0001,
+        HANDLER_IN_CALLBACKS            = 0x0002,
+        HANDLER_AFTER_CALLBACKS         = 0x0004,
+        HANDLER_ALL_CALLBACKS           = HANDLER_BEFORE_CALLBACKS | HANDLER_IN_CALLBACKS | HANDLER_AFTER_CALLBACKS
     };
     typedef google::dense_hash_map < const char*, SCommandCallbacks, SStringHasher, SStringEquals > t_commandsMap;
 
@@ -49,16 +50,24 @@ public:
     virtual bool            Initialize          ( const CSocket& socket, const CConfig& config );
     virtual int             Loop                ( );
     virtual bool            Process             ( const CString& szLine );
-    virtual int             Send                ( const IMessage& ircmessage, CClient* pSource = NULL );
+    virtual int             Send                ( IMessage& ircmessage, CClient* pSource = NULL );
 
     inline CServer&         GetMe               ( ) { return m_me; }
     inline const CServer&   GetMe               ( ) const { return m_me; }
 
     void                    AddHandler          ( const IMessage& message, const PROTOCOL_CALLBACK& callback );
+
 private:
-    void                    InternalAddHandler  ( EHandlerStage eStage,
-                                                  const IMessage& message,
-                                                  const PROTOCOL_CALLBACK& callback );
+    void                    InternalAddHandler      ( unsigned long ulStage,
+                                                      const IMessage& message,
+                                                      const PROTOCOL_CALLBACK& callback );
+    void                    InternalAddHandler      ( t_commandsMap& map,
+                                                      const IMessage& message,
+                                                      const PROTOCOL_CALLBACK& callback );
+
+    void                    TriggerMessageHandlers  ( unsigned long ulStage,
+                                                      const IMessage& message );
+
 private:
     // Eventos
     bool                    evtEndOfBurst       ( const IMessage& message );

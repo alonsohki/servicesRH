@@ -74,6 +74,7 @@
 #include "CServer.h"
 #include "CMembership.h"
 #include "CUser.h"
+#include "CLocalUser.h"
 #include "CChannel.h"
 #include "CChannelManager.h"
 #include "SProtocolMessage.h"

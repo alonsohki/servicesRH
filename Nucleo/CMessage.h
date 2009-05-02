@@ -181,7 +181,7 @@ END_MESSAGE_DECLARATION()
 ////////////////////////////
 //          MODE          //
 ////////////////////////////
-BEGIN_MESSAGE_DECLARATION(MODE, CUser* pUser, CChannel* pChannel, const CString& szModes, const std::vector < CString >& vecModeParams)
+BEGIN_MESSAGE_DECLARATION(MODE, CUser* pUser, CChannel* pChannel, const CString& szModes, const std::vector < CString >& vecModeParams = std::vector < CString > ( ))
 public:
     inline CUser*                           GetUser         ( ) const { return m_pUser; }
     inline CChannel*                        GetChannel      ( ) const { return m_pChannel; }
