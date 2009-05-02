@@ -115,6 +115,7 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
     InternalAddHandler ( HANDLER_AFTER_CALLBACKS,  CMessageSQUIT(),  PROTOCOL_CALLBACK ( &CProtocol::evtSquit,  this ) );
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageNICK(),   PROTOCOL_CALLBACK ( &CProtocol::evtNick,   this ) );
     InternalAddHandler ( HANDLER_AFTER_CALLBACKS,  CMessageQUIT(),   PROTOCOL_CALLBACK ( &CProtocol::evtQuit,   this ) );
+    InternalAddHandler ( HANDLER_AFTER_CALLBACKS,  CMessageKILL(),   PROTOCOL_CALLBACK ( &CProtocol::evtKill,   this ) );
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageMODE(),   PROTOCOL_CALLBACK ( &CProtocol::evtMode,   this ) );
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageBURST(),  PROTOCOL_CALLBACK ( &CProtocol::evtBurst,  this ) );
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageTBURST(), PROTOCOL_CALLBACK ( &CProtocol::evtTburst, this ) );
@@ -514,6 +515,25 @@ bool CProtocol::evtQuit ( const IMessage& message_ )
             }
         }
         return false;
+    }
+    catch ( std::bad_cast ) { return false; }
+}
+
+bool CProtocol::evtKill ( const IMessage& message_ )
+{
+    try
+    {
+        const CMessageKILL& message = dynamic_cast < const CMessageKILL& > ( message_ );
+        CUser* pVictim = message.GetVictim ();
+        CServer* pServer = static_cast < CServer* > ( pVictim->GetParent ( ) );
+
+        if ( pServer )
+        {
+            pServer->RemoveUser ( pVictim );
+            return true;
+        }
+        else
+            return false;
     }
     catch ( std::bad_cast ) { return false; }
 }

@@ -329,5 +329,19 @@ private:
     CString     m_szMessage;
 END_MESSAGE_DECLARATION()
 
+
+////////////////////////////
+//          KILL          //
+////////////////////////////
+BEGIN_MESSAGE_DECLARATION(KILL, CUser* pVictim, const CString& szReason)
+public:
+    inline CUser*           GetVictim   ( ) const { return m_pVictim; }
+    inline const CString&   GetReason   ( ) const { return m_szReason; }
+private:
+    CUser*      m_pVictim;
+    CString     m_szReason;
+END_MESSAGE_DECLARATION()
+
+
 #undef BEGIN_MESSAGE_DECLARATION
 #undef END_MESSAGE_DECLARATION

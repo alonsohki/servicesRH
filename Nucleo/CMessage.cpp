@@ -791,3 +791,37 @@ bool CMessagePRIVMSG::ProcessMessage ( const CString& szLine, const std::vector 
 
     return true;
 }
+
+
+////////////////////////////
+//          KILL          //
+////////////////////////////
+CMessageKILL::CMessageKILL ( CUser* pVictim, const CString& szReason )
+: m_pVictim ( pVictim ), m_szReason ( szReason )
+{
+}
+CMessageKILL::~CMessageKILL ( ) { }
+
+bool CMessageKILL::BuildMessage ( SProtocolMessage& message ) const
+{
+    if ( !m_pVictim )
+        return false;
+    message.pDest = m_pVictim;
+    message.szText = m_szReason;
+    return true;
+}
+
+bool CMessageKILL::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
+{
+    if ( vec.size () < 3 )
+        return false;
+
+    m_pVictim = CProtocol::GetSingleton ().GetMe ().GetUserAnywhere ( base64toint ( vec [ 2 ] ) );
+    if ( !m_pVictim )
+        return false;
+    if ( vec.size () > 3 )
+        m_szReason = vec [ 3 ];
+    else
+        m_szReason = "";
+    return true;
+}
