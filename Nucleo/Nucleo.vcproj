@@ -204,6 +204,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CDirectory_win32.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\chattr.tab.cpp"
 				>
 			</File>
@@ -335,6 +339,26 @@
 			</File>
 			<File
 				RelativePath=".\CConfig.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CDirectory.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CDirectory_posix.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CDirectory_win32.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CLanguage.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CLanguageManager.h"
 				>
 			</File>
 			<File

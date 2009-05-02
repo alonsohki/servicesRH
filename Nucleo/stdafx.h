@@ -62,6 +62,7 @@
 
 // Encabezados propios
 #include "CString.h"
+#include "CDirectory.h"
 #include "ircd_chattr.h"
 #include "base64.h"
 #include "hash.h"
@@ -81,5 +82,7 @@
 #include "CMessage.h"
 #include "CProtocol.h"
 #include "SCommandInfo.h"
+#include "CLanguage.h"
+#include "CLanguageManager.h"
 #include "CService.h"
 #include "services.h"
