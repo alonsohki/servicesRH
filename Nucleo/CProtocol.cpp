@@ -259,14 +259,11 @@ int CProtocol::Send ( const IMessage& ircmessage, CClient* pSource )
     {
         switch ( message.pSource->GetType () )
         {
+            case CClient::USER:
             case CClient::SERVER:
             {
                 message.pSource->FormatNumeric ( szNumeric );
                 szMessage.Format ( "%s ", szNumeric );
-                break;
-            }
-            case CClient::USER:
-            {
                 break;
             }
             case CClient::UNKNOWN:
@@ -287,15 +284,12 @@ int CProtocol::Send ( const IMessage& ircmessage, CClient* pSource )
     {
         switch ( message.pDest->GetType () )
         {
+            case CClient::USER:
             case CClient::SERVER:
             {
                 message.pDest->FormatNumeric ( szNumeric );
                 szMessage.append ( " " );
                 szMessage.append ( szNumeric );
-                break;
-            }
-            case CClient::USER:
-            {
                 break;
             }
             case CClient::UNKNOWN:
