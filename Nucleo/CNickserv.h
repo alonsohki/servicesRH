@@ -19,10 +19,12 @@
 class CNickserv : public CService
 {
 public:
-                CNickserv   ( const CConfig& config );
-    virtual     ~CNickserv  ( );
+                CNickserv       ( const CConfig& config );
+    virtual     ~CNickserv      ( );
 
-private:
     // Comandos
-    bool        cmdHelp     ( SCommandInfo& info );
+protected:
+    void        UnknownCommand  ( SCommandInfo& info );
+private:
+    bool        cmdHelp         ( SCommandInfo& info );
 };

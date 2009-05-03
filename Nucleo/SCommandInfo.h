@@ -32,6 +32,11 @@ public:
         szEmptyParam = "";
     }
 
+    inline void ResetParamCounter ( )
+    {
+        uiCurParam = 0;
+    }
+
     inline CString& GetNextParam ( )
     {
         while ( uiCurParam < vecParams.size () && vecParams [ uiCurParam ].length () == 0 )

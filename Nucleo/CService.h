@@ -34,10 +34,11 @@ public:
     const CString&  GetError        ( ) const { return m_szError; }
 
     void            Msg             ( CUser* pDest, const CString& szMessage );
-    void            LangMsg         ( CUser* pDest, const CString& szTopic, ... );
+    void            LangMsg         ( CUser* pDest, const char* szTopic, ... );
 
 protected:
     void            RegisterCommand ( const char* szCommand, const COMMAND_CALLBACK& pCallback );
+    virtual void    UnknownCommand  ( SCommandInfo& info ) { }
 
 private:
     void            ProcessCommands ( CUser* pSource, const CString& szMessage );

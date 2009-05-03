@@ -26,6 +26,13 @@ CNickserv::~CNickserv ( )
 {
 }
 
+// Comandos
+void CNickserv::UnknownCommand ( SCommandInfo& info )
+{
+    info.ResetParamCounter ();
+    LangMsg ( info.pSource, "UNKNOWN_COMMAND", info.GetNextParam ().c_str () );
+}
+
 bool CNickserv::cmdHelp ( SCommandInfo& info )
 {
     LangMsg ( info.pSource, "HELP" );

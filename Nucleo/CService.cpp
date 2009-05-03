@@ -118,7 +118,7 @@ void CService::Msg ( CUser* pDest, const CString& szMessage )
     m_protocol.Send ( CMessagePRIVMSG ( pDest, 0, szMessage ), this );
 }
 
-void CService::LangMsg ( CUser* pDest, const CString& szTopic, ... )
+void CService::LangMsg ( CUser* pDest, const char* szTopic, ... )
 {
     va_list vl;
 
@@ -138,16 +138,17 @@ void CService::LangMsg ( CUser* pDest, const CString& szTopic, ... )
         while ( ( iPos = szMessage.find ( "%N", iPos ) ) != CString::npos )
             szMessage.replace ( iPos, 2, GetName () );
 
+        CString szMessage2;
         va_start ( vl, szTopic );
-        szMessage.vFormat ( szMessage, vl );
+        szMessage2.vFormat ( szMessage.c_str (), vl );
         va_end ( vl );
 
         // Enviamos línea a línea
         size_t iPrevPos = -1;
         iPos = 0;
-        while ( ( iPos = szMessage.find ( '\n', iPrevPos + 1 ) ) != CString::npos )
+        while ( ( iPos = szMessage2.find ( '\n', iPrevPos + 1 ) ) != CString::npos )
         {
-            Msg ( pDest, szMessage.substr ( iPrevPos + 1, iPos ) );
+            Msg ( pDest, szMessage2.substr ( iPrevPos + 1, iPos ) );
             iPrevPos = iPos;
         }
     }
@@ -191,6 +192,10 @@ void CService::ProcessCommands ( CUser* pSource, const CString& szMessage )
         {
             COMMAND_CALLBACK* pCallback = (*find).second;
             (*pCallback) ( info );
+        }
+        else
+        {
+            UnknownCommand ( info );
         }
     }
 }
