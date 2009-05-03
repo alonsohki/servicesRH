@@ -53,8 +53,10 @@ bool CLanguageManager::LoadLanguages ( const CString& szDefaultLang )
           iter != dir.End ();
           ++iter )
     {
+#ifdef WIN32
         if ( iter.GetType () == CDirectory::ENTRY_DIRECTORY )
         {
+#endif
             CString szDir = iter.GetName ();
             if ( szDir.at ( 0 ) != '.' )
             {
@@ -64,7 +66,9 @@ bool CLanguageManager::LoadLanguages ( const CString& szDefaultLang )
                 else
                     m_langMap.insert ( t_langMap::value_type ( pLanguage->GetName ().c_str (), pLanguage ) );
             }
+#ifdef WIN32
         }
+#endif
     }
 
     if ( m_langMap.size () > 0 )
