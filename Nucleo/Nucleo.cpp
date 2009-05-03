@@ -30,6 +30,31 @@ int main( int argc, const char* argv[], const char* envp[] )
         return EXIT_FAILURE;
     }
 
+    // Inicializamos la conexión a la base de datos
+    CString szHost;
+    CString szPort;
+    CString szUser;
+    CString szPass;
+    CString szDB;
+    if ( ! config.GetValue ( szHost, "database", "host" ) ||
+         ! config.GetValue ( szPort, "database", "puerto" ) ||
+         ! config.GetValue ( szUser, "database", "usuario" ) ||
+         ! config.GetValue ( szPass, "database", "clave" ) ||
+         ! config.GetValue ( szDB, "database", "db" ) )
+    {
+        puts ( "Error cargando la configuración de la base de datos" );
+        CPortability::Pause ();
+        return EXIT_FAILURE;
+    }
+    CDatabase& database = CDatabase::GetSingleton ( );
+    if ( ! database.Connect ( szHost, atoi ( szPort ), szUser, szPass, szDB ) )
+    {
+        printf ( "Error conectando a la base de datos (%d): %s\n", database.Errno (), database.Error ().c_str () );
+        CPortability::Pause ();
+        return EXIT_FAILURE;
+    }
+
+
     // Inicializamos la conexión
     if ( CSocket::StartupNetworking () == false )
     {
@@ -39,10 +64,13 @@ int main( int argc, const char* argv[], const char* envp[] )
     }
 
     // Conectamos
-    CString szHost;
-    CString szPort;
-    config.GetValue ( szHost, "servidor", "host" );
-    config.GetValue ( szPort, "servidor", "puerto" );
+    if ( ! config.GetValue ( szHost, "servidor", "host" ) ||
+         ! config.GetValue ( szPort, "servidor", "puerto" ) )
+    {
+        puts ( "Error cargando la información de conexión al servidor de IRC" );
+        CPortability::Pause ();
+        return EXIT_FAILURE;
+    }
 
     CSocket socket;
     if ( socket.Connect ( szHost, atoi ( szPort ) ) == false )

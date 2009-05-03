@@ -60,6 +60,10 @@
 #include "google/sparse_hash_map"
 
 
+// MySQL
+#include <mysql.h>
+
+
 // Encabezados propios
 #include "CString.h"
 #include "CDirectory.h"
@@ -85,5 +89,6 @@
 #include "SCommandInfo.h"
 #include "CLanguage.h"
 #include "CLanguageManager.h"
+#include "CDatabase.h"
 #include "CService.h"
 #include "services.h"
