@@ -61,7 +61,7 @@ bool CLanguage::Load ( const CString& szLangName )
           ++iter )
     {
         CString szCur = iter.GetName ();
-        int iExt = szCur.rfind ( '.' );
+        size_t iExt = szCur.rfind ( '.' );
         if ( iExt != CString::npos )
         {
             if ( szCur.substr ( iExt ) == ".txt" )
