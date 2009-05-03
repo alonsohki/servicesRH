@@ -14,6 +14,8 @@
 // Autores:     Alberto Alonso <rydencillo@gmail.com>
 //
 
+#pragma once
+
 struct SServicesData
 {
     CString     szLang;
