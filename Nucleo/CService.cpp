@@ -135,6 +135,9 @@ void CService::LangMsg ( CUser* pDest, const char* szTopic, ... )
     if ( !pLanguage )
         pLanguage = m_langManager.GetDefaultLanguage ();
 
+    if ( pLanguage == NULL )
+        return;
+
     CString szMessage = pLanguage->GetTopic ( m_szServiceName, szTopic );
     if ( szMessage.length () > 0 )
     {
