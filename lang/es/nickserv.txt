@@ -1,0 +1,9 @@
+%HELP%
+Ayuda de 12%N
+
+12%N es el servicio encargado del registro de nicks.
+%%
+
+%UNKNOWN_COMMAND%
+Comando 12%s desconocido. Escribe 12/msg %N HELP para recibir ayuda.
+%%

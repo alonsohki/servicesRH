@@ -56,6 +56,7 @@ public:
     inline const CServer&   GetMe               ( ) const { return m_me; }
 
     void                    AddHandler          ( const IMessage& message, const PROTOCOL_CALLBACK& callback );
+    void                    RemoveHandler       ( const IMessage& message, const PROTOCOL_CALLBACK& callback );
 
 private:
     void                    InternalAddHandler      ( unsigned long ulStage,

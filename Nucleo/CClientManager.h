@@ -33,6 +33,7 @@ class CClientManager
 public:
                                 CClientManager      ( );
     virtual                     ~CClientManager     ( );
+    void                        Destroy             ( );
 
     void                        AddClient           ( CServer* pServer );
     void                        AddClient           ( CUser* pUser );

@@ -30,6 +30,9 @@ CProtocol::CProtocol ( )
 
 CProtocol::~CProtocol ( )
 {
+    // Destruímos el servidor local
+    m_me.Destroy ();
+
     // Eliminamos las listas de callbacks
     for ( t_commandsMap::iterator i = m_commandsMap.begin ();
           i != m_commandsMap.end ();
@@ -389,9 +392,32 @@ int CProtocol::Send ( const IMessage& ircmessage, CClient* pSource )
     return iRet;
 }
 
-void CProtocol::AddHandler ( const IMessage& pMessage, const PROTOCOL_CALLBACK& callback )
+void CProtocol::RemoveHandler ( const IMessage& message, const PROTOCOL_CALLBACK& callback )
 {
-    InternalAddHandler ( HANDLER_IN_CALLBACKS, pMessage, callback );
+    t_commandsMap::iterator find = m_commandsMap.find ( message.GetMessageName () );
+    if ( find != m_commandsMap.end () )
+    {
+        SCommandCallbacks& callbacks = (*find).second;
+        for ( std::vector < PROTOCOL_CALLBACK* >::iterator i = callbacks.vecCallbacks.begin ();
+              i != callbacks.vecCallbacks.end ();
+              ++i )
+        {
+            if ( *(*i) == callback )
+            {
+                delete (*i);
+                callbacks.vecCallbacks.erase ( i );
+                break;
+            }
+        }
+
+        if ( callbacks.vecCallbacks.size () == 0 )
+            m_commandsMap.erase ( find );
+    }
+}
+
+void CProtocol::AddHandler ( const IMessage& message, const PROTOCOL_CALLBACK& callback )
+{
+    InternalAddHandler ( HANDLER_IN_CALLBACKS, message, callback );
 }
 
 void CProtocol::InternalAddHandler ( unsigned long ulStage, const IMessage& message, const PROTOCOL_CALLBACK& callback )

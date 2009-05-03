@@ -93,6 +93,10 @@ CService::CService ( const CString& szServiceName, const CConfig& config )
 
 CService::~CService ( )
 {
+    // Desregistramos los eventos
+    m_protocol.RemoveHandler ( CMessagePRIVMSG (), PROTOCOL_CALLBACK ( &CService::evtPrivmsg, this ) );
+
+    // Desregistramos el servicio
     for ( std::list < CService* >::iterator i = CService::ms_listServices.begin ();
           i != CService::ms_listServices.end ();
           ++i )
@@ -105,6 +109,7 @@ CService::~CService ( )
     }
     CService::ms_ulFreeNumerics.push_back ( GetNumeric () );
 
+    // Eliminamos los comandos
     for ( t_commandsMap::iterator i = m_commandsMap.begin ();
           i != m_commandsMap.end ();
           ++i )

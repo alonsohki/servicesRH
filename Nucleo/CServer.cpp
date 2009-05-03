@@ -27,6 +27,11 @@ CServer::CServer ( CServer* pParent, unsigned long ulNumeric, const CString& szN
 
 CServer::~CServer ( )
 {
+    Destroy ();
+}
+
+void CServer::Destroy ( )
+{
     CClient* pParent_ = CClient::GetParent ();
     if ( pParent_ )
     {
@@ -47,6 +52,8 @@ CServer::~CServer ( )
         delete *i;
     }
     m_children.clear ();
+
+    m_clientManager.Destroy ();
 }
 
 void CServer::Create ( CServer* pParent, unsigned long ulNumeric, const CString& szName, const CString& szDesc )

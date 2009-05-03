@@ -26,7 +26,8 @@ public:
                                               unsigned long ulNumeric,
                                               const CString& szName,
                                               const CString& szDesc = "" );
-                            ~CServer        ( );
+    virtual                 ~CServer        ( );
+    void                    Destroy         ( );
 
     void                    Create          ( CServer* pParent,
                                               unsigned long ulNumeric,

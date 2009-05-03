@@ -31,6 +31,11 @@ CClientManager::CClientManager ( )
 
 CClientManager::~CClientManager ( )
 {
+    Destroy ();
+}
+
+void CClientManager::Destroy ( )
+{
     for ( t_mapUsersByName::iterator i = m_mapUsersByName.begin ();
           i != m_mapUsersByName.end ();
           ++i )
