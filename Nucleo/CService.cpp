@@ -156,7 +156,10 @@ void CService::LangMsg ( CUser* pDest, const char* szTopic, ... )
         iPos = 0;
         while ( ( iPos = szMessage2.find ( '\n', iPrevPos + 1 ) ) != CString::npos )
         {
-            Msg ( pDest, szMessage2.substr ( iPrevPos + 1, iPos ) );
+            if ( iPrevPos + 1 == iPos )
+                Msg ( pDest, "\xA0" );
+            else
+                Msg ( pDest, szMessage2.substr ( iPrevPos + 1, iPos ) );
             iPrevPos = iPos;
         }
     }
