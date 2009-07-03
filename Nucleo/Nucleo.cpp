@@ -54,7 +54,6 @@ int main( int argc, const char* argv[], const char* envp[] )
         return EXIT_FAILURE;
     }
 
-
     // Inicializamos la conexión
     if ( CSocket::StartupNetworking () == false )
     {

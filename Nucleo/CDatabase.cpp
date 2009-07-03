@@ -65,7 +65,18 @@ bool CDatabase::Connect ( const CString& szHost,
         return false;
     }
 
-    return false;
+    my_bool bReconnect = true;
+    mysql_options ( &m_handler, MYSQL_OPT_RECONNECT, &bReconnect );
+
+    if ( ! mysql_real_connect ( &m_handler, szHost.c_str (), szUser.c_str (), szPass.c_str (), szDb.c_str (), usPort, "", 0 ) )
+    {
+        m_iErrno = mysql_errno ( &m_handler );
+        m_szError = mysql_error ( &m_handler );
+        return false;
+    }
+
+    m_bIsOk = true;
+    return true;
 }
 
 void CDatabase::Close ( )
@@ -75,4 +86,31 @@ void CDatabase::Close ( )
     m_bIsOk = false;
     m_iErrno = 0;
     m_szError = "";
+
+    for ( std::vector < CDBStatement* >::iterator i = m_vecStatements.begin ();
+          i != m_vecStatements.end ();
+          ++i )
+    {
+        delete (*i);
+    }
+    m_vecStatements.clear ();
+}
+
+CDBStatement* CDatabase::PrepareStatement ( const CString& szStatement )
+{
+    if ( !m_bIsOk )
+        return NULL;
+
+    CDBStatement* pStatement = new CDBStatement ( &m_handler );
+    if ( !pStatement->Prepare ( szStatement ) )
+    {
+        m_iErrno = pStatement->Errno ();
+        m_szError = pStatement->Error ();
+        delete pStatement;
+        return NULL;
+    }
+
+    m_vecStatements.push_back ( pStatement );
+
+    return pStatement;
 }

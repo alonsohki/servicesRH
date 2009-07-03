@@ -89,6 +89,7 @@
 #include "SCommandInfo.h"
 #include "CLanguage.h"
 #include "CLanguageManager.h"
+#include "CDBStatement.h"
 #include "CDatabase.h"
 #include "CService.h"
 #include "services.h"
