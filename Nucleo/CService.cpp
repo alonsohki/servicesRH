@@ -159,7 +159,7 @@ void CService::LangMsg ( CUser* pDest, const char* szTopic, ... )
             if ( iPrevPos + 1 == iPos )
                 Msg ( pDest, "\xA0" );
             else
-                Msg ( pDest, szMessage2.substr ( iPrevPos + 1, iPos ) );
+                Msg ( pDest, szMessage2.substr ( iPrevPos + 1, iPos - iPrevPos - 1 ) );
             iPrevPos = iPos;
         }
     }
