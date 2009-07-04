@@ -54,6 +54,20 @@ unsigned long long CNickserv::GetAccountID ( const CString& szName )
         }
     }
 
+    // Generamos la consulta SQL para obtener el ID desde un nick agrupado
+    static CDBStatement* SQLGroupID = 0;
+    if ( !SQLGroupID )
+    {
+        SQLGroupID = CDatabase::GetSingleton ().PrepareStatement (
+              "SELECT id FROM groups WHERE name=?"
+            );
+        if ( !SQLGroupID )
+        {
+            ReportBrokenDB ( 0, 0, "Generando nickserv.SQLGroupID" );
+            return 0ULL;
+        }
+    }
+
     // Ejecutamos la consulta
     if ( ! SQLAccountID->Execute ( "s", szName.c_str () ) )
     {
@@ -64,7 +78,19 @@ unsigned long long CNickserv::GetAccountID ( const CString& szName )
     // Obtenemos y retornamos el ID conseguido de la base de datos
     unsigned long long ID;
     if ( SQLAccountID->Fetch ( 0, 0, "Q", &ID ) != CDBStatement::FETCH_OK )
-        ID = 0ULL;
+    {
+        // Lo intentamos con el grupo
+        if ( ! SQLGroupID->Execute ( "s", szName.c_str () ) )
+        {
+            ReportBrokenDB ( 0, 0, "Ejecutando nickserv.SQLGroupID" );
+            return 0ULL;
+        }
+
+        if ( SQLGroupID->Fetch ( 0, 0, "Q", &ID ) != CDBStatement::FETCH_OK )
+            ID = 0ULL;
+
+        SQLGroupID->FreeResult ();
+    }
 
     SQLAccountID->FreeResult ();
     return ID;
