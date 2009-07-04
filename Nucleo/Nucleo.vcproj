@@ -264,6 +264,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CTimer.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CTimerManager.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CUser.cpp"
 				>
 			</File>
@@ -435,6 +443,14 @@
 			</File>
 			<File
 				RelativePath=".\CString.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CTimer.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CTimerManager.h"
 				>
 			</File>
 			<File

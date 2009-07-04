@@ -66,14 +66,16 @@
 
 // Encabezados propios
 #include "CString.h"
+#include "CPortability.h"
+#include "CCallback.h"
 #include "CDate.h"
 #include "CDirectory.h"
 #include "CLogger.h"
+#include "CTimer.h"
+#include "CTimerManager.h"
 #include "ircd_chattr.h"
 #include "base64.h"
 #include "hash.h"
-#include "CPortability.h"
-#include "CCallback.h"
 #include "CConfig.h"
 #include "CSocket.h"
 #include "SProtocolMessage.h"

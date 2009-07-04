@@ -44,6 +44,9 @@ public:
     int             ReadLine            ( CString& szDest );
     int             WriteString         ( const CString& szString );
 
+    void            SetTimeout          ( unsigned int ulMiliseconds ) { m_uiTimeout = ulMiliseconds; }
+    unsigned int    GetTimeout          ( ) const { return m_uiTimeout; }
+
     bool            IsOk                ( ) const;
     int             Errno               ( ) const;
     const CString&  Error               ( ) const;
@@ -57,4 +60,5 @@ private:
     size_t          m_bufferSize;
     int             m_iErrno;
     CString         m_szError;
+    unsigned int    m_uiTimeout;
 };

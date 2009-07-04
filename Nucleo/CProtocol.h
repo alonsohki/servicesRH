@@ -52,6 +52,8 @@ public:
     virtual bool            Process             ( const CString& szLine );
     virtual int             Send                ( const IMessage& message, CClient* pSource = NULL );
 
+    CSocket&                GetSocket           () { return m_socket; }
+
     inline CServer&         GetMe               ( ) { return m_me; }
     inline const CServer&   GetMe               ( ) const { return m_me; }
 

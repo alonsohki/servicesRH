@@ -104,7 +104,28 @@ int main( int argc, const char* argv[], const char* envp[] )
     }
 
     // Bucle
-    while ( protocol.Loop () > 0 );
+    int iRet;
+    CTimerManager& timerManager = CTimerManager::GetSingleton ();
+
+    do
+    {
+        // Establecemos el timeout para los timers
+        unsigned int uiTimeout;
+        if ( timerManager.GetCount () > 0 )
+            uiTimeout = timerManager.GetTimeForNextExec ();
+        else
+            uiTimeout = 0;
+        protocol.GetSocket ().SetTimeout ( uiTimeout );
+
+        // Procesamos el socket
+        iRet = protocol.Loop ();
+
+        // Ejecutamos los timers
+        timerManager.Execute ();
+    }
+    while ( iRet >= 0 );
+
+
 
     // Finalizamos
     delete CProtocol::GetSingletonPtr ();

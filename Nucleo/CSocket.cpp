@@ -19,12 +19,12 @@
 
 // Parte no estática de la clase
 CSocket::CSocket ( )
-: m_socket ( -1 ), m_bufferSize ( 0 ), m_iErrno ( 0 )
+: m_socket ( -1 ), m_bufferSize ( 0 ), m_iErrno ( 0 ), m_uiTimeout ( 0 )
 {
 }
 
 CSocket::CSocket ( const CSocket& copy )
-: m_socket ( -1 ), m_bufferSize ( 0 ), m_iErrno ( 0 )
+: m_socket ( -1 ), m_bufferSize ( 0 ), m_iErrno ( 0 ), m_uiTimeout ( 0 )
 {
     m_iErrno = copy.m_iErrno;
     m_szError = copy.m_szError;
@@ -41,10 +41,12 @@ CSocket::CSocket ( const CSocket& copy )
 
     memcpy ( m_buffer, copy.m_buffer, copy.m_bufferSize );
     m_bufferSize = copy.m_bufferSize;
+
+    m_uiTimeout = copy.m_uiTimeout;
 }
 
 CSocket::CSocket ( const CString& szHost, unsigned short usPort )
-: m_socket ( -1 ), m_bufferSize ( 0 ), m_iErrno ( 0 )
+: m_socket ( -1 ), m_bufferSize ( 0 ), m_iErrno ( 0 ), m_uiTimeout ( 0 )
 {
     Connect ( szHost, usPort );
 }
@@ -130,6 +132,9 @@ bool CSocket::Connect ( const CString& szHost, unsigned short usPort )
         return false;
     }
 
+    // Hacemos el socket no bloqueante para poder establecer timeouts
+    CPortability::SetBlockingSocket ( m_socket, false );
+
     return true;
 }
 
@@ -186,10 +191,40 @@ int CSocket::ReadLine ( CString& szDest )
             }
         }
 
-        iSize = recv ( m_socket, m_buffer + m_bufferSize, BUFFER_SIZE - m_bufferSize, 0 );
-        if ( iSize > 0 )
+        // Llamamos a select para establecer un timeout
+        fd_set fds [ 1 ];
+        FD_ZERO ( fds );
+        FD_SET ( m_socket, fds );
+
+        struct timeval* tvTimeout = 0;
+        struct timeval __tvTimeout;
+        if ( m_uiTimeout > 0 )
         {
-            m_bufferSize += iSize;
+            __tvTimeout.tv_sec = m_uiTimeout / 1000;
+            __tvTimeout.tv_usec = (m_uiTimeout - ( __tvTimeout.tv_sec * 1000 )) * 1000;
+            tvTimeout = &__tvTimeout;
+        }
+
+        int nChanged = select ( 1, fds, NULL, NULL, tvTimeout );
+
+        // Comprobamos que todo ha ido bien en el select
+        if ( nChanged == -1 )
+        {
+            m_iErrno = errno;
+            m_szError = strerror ( errno );
+            InternalClose ( true );
+            return -1;
+        }
+        else if ( nChanged == 0 )
+            return 0;
+        else
+        {
+            // Leemos datos desde el socket
+            iSize = recv ( m_socket, m_buffer + m_bufferSize, BUFFER_SIZE - m_bufferSize, 0 );
+            if ( iSize > 0 )
+            {
+                m_bufferSize += iSize;
+            }
         }
     } while ( iSize > 0 );
 

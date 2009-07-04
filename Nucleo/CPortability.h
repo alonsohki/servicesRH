@@ -17,6 +17,8 @@
 #pragma once
 
 #ifdef WIN32
+    #include <sys/timeb.h>
+    #define EPOCHFILETIME (116444736000000000i64)
     #define va_copy(dest, orig) (dest) = (orig)
     #define close(a) _close(a)
     #define dup(a) _dup(a)
@@ -85,12 +87,52 @@ public:
 #endif
     }
 
+    static inline void SetBlockingSocket ( sock_t socket, bool bBlocking )
+    {
+#ifdef WIN32
+        u_long mode = bBlocking ? 0 : 1;
+        ioctlsocket ( socket, FIONBIO, &mode );
+#else
+        unsigned int uiFlags = fcntl ( socket, F_GETFL );
+        if ( bBlocking )
+            uiFlags &= ~O_NONBLOCK;
+        else
+            ulFlags |= O_NONBLOCK;
+        fcntl ( socket, F_SETFL, ulFlags );
+#endif
+    }
+
     static inline int CompareNoCase ( const char* s1, const char* s2 )
     {
 #ifdef WIN32
         return stricmp ( s1, s2 );
 #else
         return strcasecmp ( s1, s2 );
+#endif
+    }
+
+    static inline int gettimeofday ( struct timeval* tv, struct timezone* tz )
+    {
+#ifndef WIN32
+        return gettimeofday ( tv, tz );
+#else
+        FILETIME        ft;
+        LARGE_INTEGER   li;
+        __int64         t;
+
+        if (tv)
+        {
+            GetSystemTimeAsFileTime(&ft);
+            li.LowPart  = ft.dwLowDateTime;
+            li.HighPart = ft.dwHighDateTime;
+            t  = li.QuadPart;       /* In 100-nanosecond intervals */
+            t -= EPOCHFILETIME;     /* Offset to the Epoch time */
+            t /= 10;                /* In microseconds */
+            tv->tv_sec  = (long)(t / 1000000);
+            tv->tv_usec = (long)(t % 1000000);
+        }
+
+        return 0;
 #endif
     }
 };
