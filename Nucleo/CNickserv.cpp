@@ -369,6 +369,8 @@ bool CNickserv::evtNick ( const IMessage& msg_ )
                 }
                 break;
             }
+
+            case CClient::UNKNOWN: { break; }
         }
     }
     catch ( std::bad_cast ) { return false; }

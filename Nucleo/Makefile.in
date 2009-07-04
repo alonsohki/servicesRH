@@ -47,11 +47,13 @@ am_services_OBJECTS = base64.$(OBJEXT) CChannel.$(OBJEXT) \
 	CChannelManager.$(OBJEXT) CClientManager.$(OBJEXT) \
 	CConfig.$(OBJEXT) chattr.tab.$(OBJEXT) CMembership.$(OBJEXT) \
 	CMessage.$(OBJEXT) CProtocol.$(OBJEXT) CServer.$(OBJEXT) \
-	CSocket.$(OBJEXT) CLocalUser.$(OBJEXT) CUser.$(OBJEXT) \
-	hash.$(OBJEXT) Nucleo.$(OBJEXT) CDirectory_posix.$(OBJEXT) \
-	CLanguageManager.$(OBJEXT) CLanguage.$(OBJEXT) \
-	CDatabase.$(OBJEXT) CService.$(OBJEXT) CNickserv.$(OBJEXT) \
-	CChanserv.$(OBJEXT) CMemoserv.$(OBJEXT) COperserv.$(OBJEXT)
+	CSocket.$(OBJEXT) CClient.$(OBJEXT) CLocalUser.$(OBJEXT) \
+	CUser.$(OBJEXT) hash.$(OBJEXT) Nucleo.$(OBJEXT) \
+	CDirectory_posix.$(OBJEXT) CLanguageManager.$(OBJEXT) \
+	CLanguage.$(OBJEXT) CDatabase.$(OBJEXT) CDBStatement.$(OBJEXT) \
+	CDate.$(OBJEXT) CLogger.$(OBJEXT) CService.$(OBJEXT) \
+	CNickserv.$(OBJEXT) CChanserv.$(OBJEXT) CMemoserv.$(OBJEXT) \
+	COperserv.$(OBJEXT)
 services_OBJECTS = $(am_services_OBJECTS)
 services_DEPENDENCIES =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
@@ -157,8 +159,8 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 services_SOURCES = base64.cpp CChannel.cpp CChannelManager.cpp CClientManager.cpp CConfig.cpp \
     chattr.tab.cpp CMembership.cpp CMessage.cpp CProtocol.cpp CServer.cpp CSocket.cpp \
-    CLocalUser.cpp CUser.cpp hash.cpp Nucleo.cpp CDirectory_posix.cpp CLanguageManager.cpp \
-    CLanguage.cpp CDatabase.cpp \
+    CClient.cpp CLocalUser.cpp CUser.cpp hash.cpp Nucleo.cpp CDirectory_posix.cpp \
+    CLanguageManager.cpp CLanguage.cpp CDatabase.cpp CDBStatement.cpp CDate.cpp CLogger.cpp \
     CService.cpp CNickserv.cpp CChanserv.cpp CMemoserv.cpp COperserv.cpp
 
 services_LDADD = -lmysqlclient
@@ -231,13 +233,17 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CChannel.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CChannelManager.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CChanserv.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CClient.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CClientManager.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CConfig.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CDBStatement.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CDatabase.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CDate.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CDirectory_posix.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CLanguage.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CLanguageManager.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CLocalUser.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CLogger.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CMembership.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CMemoserv.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CMessage.Po@am__quote@

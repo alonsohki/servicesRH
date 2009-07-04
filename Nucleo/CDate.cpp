@@ -54,7 +54,6 @@ CDate::~CDate ()
 inline void CDate::GetTimeStruct ( struct tm* pTm ) const
 {
     struct tm temp;
-    struct tm& myTime = *pTm;
 
     memset ( &temp, 0, sizeof ( struct tm ) );
 
