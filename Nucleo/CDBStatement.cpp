@@ -441,3 +441,8 @@ unsigned long long CDBStatement::InsertID ( )
 {
     return mysql_stmt_insert_id ( m_pStatement );
 }
+
+unsigned long long CDBStatement::NumRows ( )
+{
+    return mysql_stmt_num_rows ( m_pStatement );
+}

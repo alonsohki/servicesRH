@@ -19,24 +19,29 @@
 class CNickserv : public CService
 {
 public:
-                CNickserv       ( const CConfig& config );
-    virtual     ~CNickserv      ( );
+                    CNickserv       ( const CConfig& config );
+    virtual         ~CNickserv      ( );
+
+    unsigned long long
+                    GetAccountID    ( const CString& szName );
 
     // Eventos
 private:
-    bool        evtQuit         ( const IMessage& msg );
+    bool            evtQuit         ( const IMessage& msg );
+    bool            evtNick         ( const IMessage& msg );
 
     // Verificación de acceso a comandos
 private:
-    bool        verifyAll       ( SCommandInfo& info );
-    bool        verifyOperator  ( SCommandInfo& info );
+    bool            verifyAll       ( SCommandInfo& info );
+    bool            verifyOperator  ( SCommandInfo& info );
 
     // Comandos
 protected:
-    void        UnknownCommand  ( SCommandInfo& info );
+    void            UnknownCommand  ( SCommandInfo& info );
 private:
 #define COMMAND(x) bool cmd ## x ( SCommandInfo& info )
     COMMAND ( Help );
     COMMAND ( Register );
+    COMMAND ( Identify );
 #undef COMMAND
 };

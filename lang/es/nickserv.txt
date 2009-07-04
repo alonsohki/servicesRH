@@ -22,6 +22,9 @@ Ayuda de 12%N
 Lista de comandos disponibles:
 
     12REGISTER             Registro de un nick
+    12IDENTIFY             Identificación de un nick registrado
+
+Para obtener ayuda detallada sobre cualquier comando, escribe 12/msg %N HELP <comando>.
 %%
 
 %UNKNOWN_COMMAND%
@@ -64,6 +67,41 @@ recuperar tu contraseña si en el futuro la olvidas.
 
 %REGISTER_COMPLETE%
 Tu nick ha sido registrado con la contraseña 12%s.
+%%
+
+%REGISTER_ACCOUNT_EXISTS%
+04Error: Este nick ya está registrado.
+%%
+#
+############################
+
+
+
+############################
+# IDENTIFY
+%SYNTAX_IDENTIFY%
+Sintaxis: 12IDENTIFY <contraseña>
+%%
+
+%HELP_IDENTIFY%
+Te identifica como el legítimo dueño de este nick frente a los servicios.
+%%
+
+%IDENTIFY_UNREGISTERED%
+Tu nick no está registrado.
+Si deseas saber cómo registrarlo, escribe 12/msg %N HELP REGISTER.
+%%
+
+%IDENTIFY_WRONG_PASSWORD%
+04¡Contraseña incorrecta!
+%%
+
+%IDENTIFY_SUCCESS%
+03Contraseña aceptada, bienvenid@ ;-)
+%%
+
+%IDENTIFY_IDENTIFIED%
+Ya estás autentificado.
 %%
 #
 ############################

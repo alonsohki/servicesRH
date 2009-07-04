@@ -171,19 +171,21 @@ bool CService::LangMsg ( CUser* pDest, const char* szTopic, ... )
     return false;
 }
 
-void CService::SendSyntax ( CUser* pDest, const char* szCommand )
+bool CService::SendSyntax ( CUser* pDest, const char* szCommand )
 {
     CString szLangTopic ( "SYNTAX_%s", szCommand );
     LangMsg ( pDest, szLangTopic );
     LangMsg ( pDest, "HELP_FOR_MORE_INFORMATION", szCommand );
+    return false;
 }
 
-void CService::AccessDenied ( CUser* pDest )
+bool CService::AccessDenied ( CUser* pDest )
 {
     LangMsg ( pDest, "ACCESS_DENIED" );
+    return false;
 }
 
-void CService::ReportBrokenDB ( CUser* pDest, CDBStatement* pStatement, const CString& szExtraInfo )
+bool CService::ReportBrokenDB ( CUser* pDest, CDBStatement* pStatement, const CString& szExtraInfo )
 {
     if ( pDest )
         LangMsg ( pDest, "BROKEN_DB" );
@@ -196,9 +198,11 @@ void CService::ReportBrokenDB ( CUser* pDest, CDBStatement* pStatement, const CS
 
     CDatabase& db = CDatabase::GetSingleton ();
     if ( pStatement )
-        CLogger::Log ( CString ( szMessage.c_str (), "consulta precompilada", pStatement->Errno (), pStatement->Error () ) );
+        CLogger::Log ( CString ( szMessage.c_str (), "consulta precompilada", pStatement->Errno (), pStatement->Error ().c_str () ) );
     else
-        CLogger::Log ( CString ( szMessage.c_str (), "base de datos", db.Errno (), db.Error () ) );
+        CLogger::Log ( CString ( szMessage.c_str (), "base de datos", db.Errno (), db.Error ().c_str () ) );
+
+    return false;
 }
 
 

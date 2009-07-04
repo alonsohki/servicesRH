@@ -23,17 +23,51 @@ CNickserv::CNickserv ( const CConfig& config )
 #define REGISTER(x,ver) RegisterCommand ( #x, COMMAND_CALLBACK ( &CNickserv::cmd ## x , this ), COMMAND_CALLBACK ( &CNickserv::verify ## ver , this ) )
     REGISTER ( Help,        All );
     REGISTER ( Register,    All );
+    REGISTER ( Identify,    All );
 #undef REGISTER
 
     // Registramos los eventos
     CProtocol& protocol = CProtocol::GetSingleton ();
     protocol.AddHandler ( CMessageQUIT (), PROTOCOL_CALLBACK ( &CNickserv::evtQuit, this ) );
+    protocol.AddHandler ( CMessageNICK (), PROTOCOL_CALLBACK ( &CNickserv::evtNick, this ) );
 }
 
 CNickserv::~CNickserv ( )
 {
 }
 
+
+unsigned long long CNickserv::GetAccountID ( const CString& szName )
+{
+    // Generamos la consulta SQL para obtener el ID dado un nick
+    static CDBStatement* SQLAccountID = 0;
+    if ( !SQLAccountID )
+    {
+        SQLAccountID = CDatabase::GetSingleton ().PrepareStatement (
+              "SELECT id FROM account WHERE name=?"
+            );
+        if ( !SQLAccountID )
+        {
+            ReportBrokenDB ( 0, 0, "Generando nickserv.SQLAccountID" );
+            return 0ULL;
+        }
+    }
+
+    // Ejecutamos la consulta
+    if ( ! SQLAccountID->Execute ( "s", szName.c_str () ) )
+    {
+        ReportBrokenDB ( 0, 0, "Ejecutando nickserv.SQLAccountID" );
+        return 0ULL;
+    }
+
+    // Obtenemos y retornamos el ID conseguido de la base de datos
+    unsigned long long ID;
+    if ( SQLAccountID->Fetch ( 0, 0, "Q", &ID ) != CDBStatement::FETCH_OK )
+        ID = 0ULL;
+
+    SQLAccountID->FreeResult ();
+    return ID;
+}
 
 
 
@@ -67,6 +101,8 @@ bool CNickserv::evtQuit ( const IMessage& msg_ )
             CDate now;
             if ( ! SQLUpdateLastSeen->Execute ( "TQ", &now, data.ID ) )
                 ReportBrokenDB ( 0, SQLUpdateLastSeen, "Executing SQLUpdateLastSeen" );
+
+            SQLUpdateLastSeen->FreeResult ();
         }
     }
     catch ( std::bad_cast ) { return false; }
@@ -74,7 +110,27 @@ bool CNickserv::evtQuit ( const IMessage& msg_ )
     return true;
 }
 
+bool CNickserv::evtNick ( const IMessage& msg_ )
+{
+    try
+    {
+        const CMessageNICK& msg = dynamic_cast < const CMessageNICK& > ( msg_ );
+        CClient* pSource = msg.GetSource ();
 
+        // Cambios de nick
+        if ( pSource->GetType () == CClient::USER )
+        {
+            // Desidentificamos al usuario al cambiarse de nick
+            CUser& s = (CUser &)*pSource;
+            SServicesData& data = s.GetServicesData ();
+            data.bIdentified = false;
+            data.ID = 0ULL;
+        }
+    }
+    catch ( std::bad_cast ) { return false; }
+
+    return true;
+}
 
 
 
@@ -131,8 +187,7 @@ COMMAND(Register)
             "VALUES ( ?, MD5(?), ?, ?, ?, ?, ?, ? )" );
         if ( !SQLRegister )
         {
-            ReportBrokenDB ( info.pSource, 0, "Generando nickserv.SQLRegister" );
-            return false;
+            return ReportBrokenDB ( info.pSource, 0, "Generando nickserv.SQLRegister" );
         }
     }
 
@@ -141,7 +196,15 @@ COMMAND(Register)
     if ( szPassword == "" )
     {
         // Si no nos especifican ningún password, les enviamos la sintaxis del comando
-        SendSyntax ( info.pSource, "REGISTER" );
+        return SendSyntax ( info.pSource, "REGISTER" );
+    }
+
+    CUser& s = *( info.pSource );
+
+    // Nos aseguramos de que no exista la cuenta
+    if ( GetAccountID ( s.GetName () ) != 0ULL )
+    {
+        LangMsg ( &s, "REGISTER_ACCOUNT_EXISTS" );
         return false;
     }
 
@@ -151,7 +214,7 @@ COMMAND(Register)
     // Obtenemos la fecha actual
     CDate now;
 
-    CUser& s = *(info.pSource);
+    // Ejecutamos la consulta SQL para registrar la cuenta
     bool bResult;
     if ( szEmail == "" )
     {
@@ -175,12 +238,14 @@ COMMAND(Register)
 
     if ( !bResult || ! SQLRegister->InsertID () )
     {
-        ReportBrokenDB ( &s, SQLRegister, CString ( "Ejecutando nickserv.SQLRegister: bResult=%s, InsertID=%lu", bResult?"true":"false", SQLRegister->InsertID () ) );
-        return false;
+        memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
+        return ReportBrokenDB ( &s, SQLRegister, CString ( "Ejecutando nickserv.SQLRegister: bResult=%s, InsertID=%lu", bResult?"true":"false", SQLRegister->InsertID () ) );
     }
 
+    SQLRegister->FreeResult ();
 
     LangMsg ( &s, "REGISTER_COMPLETE", szPassword.c_str () );
+    memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
 
     SServicesData& data = s.GetServicesData ();
     data.bIdentified = true;
@@ -188,5 +253,81 @@ COMMAND(Register)
 
     return true;
 }
+
+
+
+
+
+///////////////////
+// IDENTIFY
+//
+bool CNickserv::cmdIdentify ( SCommandInfo& info )
+{
+    // Generamos la consulta SQL para identificar cuentas
+    static CDBStatement* SQLIdentify = 0;
+    if ( SQLIdentify == 0 )
+    {
+        SQLIdentify = CDatabase::GetSingleton ().PrepareStatement (
+              "SELECT id FROM account WHERE id=? AND password=MD5(?)"
+            );
+        if ( !SQLIdentify )
+        {
+            return ReportBrokenDB ( info.pSource, 0, "Generando nickserv.SQLIdentify" );
+        }
+    }
+
+    CUser& s = *( info.pSource );
+    SServicesData& data = s.GetServicesData ();
+
+    // Obtenemos el password
+    CString& szPassword = info.GetNextParam ();
+
+    if ( szPassword == "" )
+    {
+        return SendSyntax ( &s, "IDENTIFY" );
+    }
+
+    // Nos aseguramos de que no esté ya identificado
+    if ( data.bIdentified == true )
+    {
+        LangMsg ( &s, "IDENTIFY_IDENTIFIED" );
+        return false;
+    }
+
+    // Comprobamos si tiene una cuenta
+    unsigned long long ID = GetAccountID ( s.GetName () );
+    if ( ID == 0ULL )
+    {
+        memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
+        LangMsg ( &s, "IDENTIFY_UNREGISTERED" );
+    }
+    else
+    {
+        // Verificamos la contraseña
+        if ( ! SQLIdentify->Execute ( "Qs", ID, szPassword.c_str () ) )
+        {
+            memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
+            return ReportBrokenDB ( &s, 0, "Ejecutando nickserv.SQLIdentify" );
+        }
+
+        memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
+
+        if ( SQLIdentify->Fetch ( 0, 0, "Q", &ID ) != CDBStatement::FETCH_OK )
+            LangMsg ( &s, "IDENTIFY_WRONG_PASSWORD" );
+        else
+        {
+            LangMsg ( &s, "IDENTIFY_SUCCESS" );
+            data.bIdentified = true;
+            data.ID = ID;
+        }
+
+        SQLIdentify->FreeResult ();
+    }
+
+    return true;
+}
+
+
+
 
 #undef COMMAND
