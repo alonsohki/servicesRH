@@ -25,15 +25,6 @@ public:
     unsigned long long
                     GetAccountID    ( const CString& szName );
 
-    // Eventos
-private:
-    bool            evtQuit         ( const IMessage& msg );
-    bool            evtNick         ( const IMessage& msg );
-
-    // Verificación de acceso a comandos
-private:
-    bool            verifyAll       ( SCommandInfo& info );
-    bool            verifyOperator  ( SCommandInfo& info );
 
     // Comandos
 protected:
@@ -44,4 +35,17 @@ private:
     COMMAND ( Register );
     COMMAND ( Identify );
 #undef COMMAND
+
+
+    // Verificación de acceso a comandos
+private:
+    bool            verifyAll       ( SCommandInfo& info );
+    bool            verifyOperator  ( SCommandInfo& info );
+
+
+    // Eventos
+private:
+    bool            evtQuit         ( const IMessage& msg );
+    bool            evtNick         ( const IMessage& msg );
+    bool            evtMode         ( const IMessage& msg );
 };

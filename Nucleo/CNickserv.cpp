@@ -30,6 +30,7 @@ CNickserv::CNickserv ( const CConfig& config )
     CProtocol& protocol = CProtocol::GetSingleton ();
     protocol.AddHandler ( CMessageQUIT (), PROTOCOL_CALLBACK ( &CNickserv::evtQuit, this ) );
     protocol.AddHandler ( CMessageNICK (), PROTOCOL_CALLBACK ( &CNickserv::evtNick, this ) );
+    protocol.AddHandler ( CMessageMODE (), PROTOCOL_CALLBACK ( &CNickserv::evtMode, this ) );
 }
 
 CNickserv::~CNickserv ( )
@@ -69,6 +70,209 @@ unsigned long long CNickserv::GetAccountID ( const CString& szName )
     return ID;
 }
 
+
+
+
+
+
+
+
+///////////////////////////////////////////////////
+////                 COMANDOS                  ////
+///////////////////////////////////////////////////
+void CNickserv::UnknownCommand ( SCommandInfo& info )
+{
+    info.ResetParamCounter ();
+    LangMsg ( info.pSource, "UNKNOWN_COMMAND", info.GetNextParam ().c_str () );
+}
+
+#define COMMAND(x) bool CNickserv::cmd ## x ( SCommandInfo& info )
+
+///////////////////
+// HELP
+//
+COMMAND(Help)
+{
+    return CService::ProcessHelp ( info );
+}
+
+
+
+
+
+///////////////////
+// REGISTER
+//
+COMMAND(Register)
+{
+    // Generamos la consulta SQL para registrar cuentas
+    static CDBStatement* SQLRegister = 0;
+    if ( !SQLRegister )
+    {
+        SQLRegister = CDatabase::GetSingleton ().PrepareStatement (
+            "INSERT INTO account ( name, password, email, username, hostname, fullname, registered, lastSeen ) "
+            "VALUES ( ?, MD5(?), ?, ?, ?, ?, ?, ? )" );
+        if ( !SQLRegister )
+        {
+            return ReportBrokenDB ( info.pSource, 0, "Generando nickserv.SQLRegister" );
+        }
+    }
+
+    // Obtenemos el password
+    CString& szPassword = info.GetNextParam ();
+    if ( szPassword == "" )
+    {
+        // Si no nos especifican ningún password, les enviamos la sintaxis del comando
+        return SendSyntax ( info.pSource, "REGISTER" );
+    }
+
+    CUser& s = *( info.pSource );
+    SServicesData& data = s.GetServicesData ();
+
+    // Nos aseguramos de que no exista la cuenta
+    if ( data.ID != 0ULL )
+    {
+        LangMsg ( &s, "REGISTER_ACCOUNT_EXISTS" );
+        return false;
+    }
+
+    // Obtenemos el email si hubiere
+    CString& szEmail = info.GetNextParam ();
+
+    // Obtenemos la fecha actual
+    CDate now;
+
+    // Ejecutamos la consulta SQL para registrar la cuenta
+    bool bResult;
+    if ( szEmail == "" )
+    {
+        bResult = SQLRegister->Execute ( "ssNsssTT", s.GetName ().c_str (),
+                                                     szPassword.c_str (),
+                                                     s.GetIdent ().c_str (),
+                                                     s.GetHost ().c_str (),
+                                                     s.GetDesc ().c_str (),
+                                                     &now, &now );
+    }
+    else
+    {
+        bResult = SQLRegister->Execute ( "ssssssTT", s.GetName ().c_str (),
+                                                     szPassword.c_str (),
+                                                     szEmail.c_str (),
+                                                     s.GetIdent ().c_str (),
+                                                     s.GetHost ().c_str (),
+                                                     s.GetDesc ().c_str (),
+                                                     &now, &now );
+    }
+
+    if ( !bResult || ! SQLRegister->InsertID () )
+    {
+        memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
+        return ReportBrokenDB ( &s, SQLRegister, CString ( "Ejecutando nickserv.SQLRegister: bResult=%s, InsertID=%lu", bResult?"true":"false", SQLRegister->InsertID () ) );
+    }
+
+    SQLRegister->FreeResult ();
+
+    LangMsg ( &s, "REGISTER_COMPLETE", szPassword.c_str () );
+    memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
+
+    data.bIdentified = true;
+    data.ID = SQLRegister->InsertID ();
+
+    return true;
+}
+
+
+
+
+
+///////////////////
+// IDENTIFY
+//
+bool CNickserv::cmdIdentify ( SCommandInfo& info )
+{
+    // Generamos la consulta SQL para identificar cuentas
+    static CDBStatement* SQLIdentify = 0;
+    if ( SQLIdentify == 0 )
+    {
+        SQLIdentify = CDatabase::GetSingleton ().PrepareStatement (
+              "SELECT id FROM account WHERE id=? AND password=MD5(?)"
+            );
+        if ( !SQLIdentify )
+        {
+            return ReportBrokenDB ( info.pSource, 0, "Generando nickserv.SQLIdentify" );
+        }
+    }
+
+    CUser& s = *( info.pSource );
+    SServicesData& data = s.GetServicesData ();
+
+    // Obtenemos el password
+    CString& szPassword = info.GetNextParam ();
+
+    if ( szPassword == "" )
+    {
+        return SendSyntax ( &s, "IDENTIFY" );
+    }
+
+    // Nos aseguramos de que no esté ya identificado
+    if ( data.bIdentified == true )
+    {
+        LangMsg ( &s, "IDENTIFY_IDENTIFIED" );
+        return false;
+    }
+
+    // Comprobamos si tiene una cuenta
+    if ( data.ID == 0ULL )
+    {
+        memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
+        LangMsg ( &s, "IDENTIFY_UNREGISTERED" );
+    }
+    else
+    {
+        unsigned long long ID;
+
+        // Verificamos la contraseña
+        if ( ! SQLIdentify->Execute ( "Qs", data.ID, szPassword.c_str () ) )
+        {
+            memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
+            return ReportBrokenDB ( &s, 0, "Ejecutando nickserv.SQLIdentify" );
+        }
+
+        memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
+
+        if ( SQLIdentify->Fetch ( 0, 0, "Q", &ID ) != CDBStatement::FETCH_OK )
+            LangMsg ( &s, "IDENTIFY_WRONG_PASSWORD" );
+        else
+        {
+            LangMsg ( &s, "IDENTIFY_SUCCESS" );
+            data.bIdentified = true;
+            CProtocol::GetSingleton ().GetMe ().Send ( CMessageIDENTIFY ( &s ) );
+        }
+
+        SQLIdentify->FreeResult ();
+    }
+
+    return true;
+}
+
+
+
+
+#undef COMMAND
+
+
+
+
+// Verificación de acceso
+bool CNickserv::verifyAll ( SCommandInfo& info )
+{
+    return true;
+}
+
+bool CNickserv::verifyOperator ( SCommandInfo& info )
+{
+    return false;
+}
 
 
 
@@ -130,7 +334,10 @@ bool CNickserv::evtNick ( const IMessage& msg_ )
                 // Verificamos si su nuevo nick está registrado
                 unsigned long long ID = GetAccountID ( msg.GetNick () );
                 if ( ID != 0ULL )
+                {
+                    data.ID = ID;
                     LangMsg ( &s, "NICKNAME_REGISTERED" );
+                }
 
                 break;
             }
@@ -145,13 +352,17 @@ bool CNickserv::evtNick ( const IMessage& msg_ )
                     CUser* pUser = CProtocol::GetSingleton ().GetMe ().GetUserAnywhere ( msg.GetNick () );
                     if ( pUser )
                     {
+                        SServicesData& data = pUser->GetServicesData ();
+                        data.ID = ID;
+
                         if ( !strchr ( msg.GetModes (), 'n' ) && !strchr ( msg.GetModes (), 'r' ) )
+                        {
                             LangMsg ( pUser, "NICKNAME_REGISTERED" );
+                            data.bIdentified = false;
+                        }
                         else
                         {
-                            SServicesData& data = pUser->GetServicesData ();
                             data.bIdentified = true;
-                            data.ID = ID;
                             CProtocol::GetSingleton ().GetMe ().Send ( CMessageIDENTIFY ( pUser ) );
                         }
                     }
@@ -165,203 +376,29 @@ bool CNickserv::evtNick ( const IMessage& msg_ )
     return true;
 }
 
-
-
-// Verificación de acceso
-bool CNickserv::verifyAll ( SCommandInfo& info )
+bool CNickserv::evtMode ( const IMessage& msg_ )
 {
-    return true;
-}
-
-bool CNickserv::verifyOperator ( SCommandInfo& info )
-{
-    return false;
-}
-
-
-
-
-
-
-
-
-// Comandos
-void CNickserv::UnknownCommand ( SCommandInfo& info )
-{
-    info.ResetParamCounter ();
-    LangMsg ( info.pSource, "UNKNOWN_COMMAND", info.GetNextParam ().c_str () );
-}
-
-#define COMMAND(x) bool CNickserv::cmd ## x ( SCommandInfo& info )
-
-///////////////////
-// HELP
-//
-COMMAND(Help)
-{
-    return CService::ProcessHelp ( info );
-}
-
-
-
-
-
-///////////////////
-// REGISTER
-//
-COMMAND(Register)
-{
-    // Generamos la consulta SQL para registrar cuentas
-    static CDBStatement* SQLRegister = 0;
-    if ( !SQLRegister )
+    try
     {
-        SQLRegister = CDatabase::GetSingleton ().PrepareStatement (
-            "INSERT INTO account ( name, password, email, username, hostname, fullname, registered, lastSeen ) "
-            "VALUES ( ?, MD5(?), ?, ?, ?, ?, ?, ? )" );
-        if ( !SQLRegister )
+        const CMessageMODE& msg = dynamic_cast < const CMessageMODE& > ( msg_ );
+
+        CUser* pUser = msg.GetUser ();
+        if ( pUser )
         {
-            return ReportBrokenDB ( info.pSource, 0, "Generando nickserv.SQLRegister" );
+            // Un usuario se cambia los modos
+            SServicesData& data = pUser->GetServicesData ();
+            if ( data.bIdentified == false && data.ID != 0ULL )
+            {
+                if ( pUser->GetModes () & ( CUser::UMODE_ACCOUNT | CUser::UMODE_REGNICK ) )
+                {
+                    data.bIdentified = true;
+                    LangMsg ( pUser, "IDENTIFY_SUCCESS" );
+                    CProtocol::GetSingleton ().GetMe ().Send ( CMessageIDENTIFY ( pUser ) );
+                }
+            }
         }
     }
-
-    // Obtenemos el password
-    CString& szPassword = info.GetNextParam ();
-    if ( szPassword == "" )
-    {
-        // Si no nos especifican ningún password, les enviamos la sintaxis del comando
-        return SendSyntax ( info.pSource, "REGISTER" );
-    }
-
-    CUser& s = *( info.pSource );
-
-    // Nos aseguramos de que no exista la cuenta
-    if ( GetAccountID ( s.GetName () ) != 0ULL )
-    {
-        LangMsg ( &s, "REGISTER_ACCOUNT_EXISTS" );
-        return false;
-    }
-
-    // Obtenemos el email si hubiere
-    CString& szEmail = info.GetNextParam ();
-
-    // Obtenemos la fecha actual
-    CDate now;
-
-    // Ejecutamos la consulta SQL para registrar la cuenta
-    bool bResult;
-    if ( szEmail == "" )
-    {
-        bResult = SQLRegister->Execute ( "ssNsssTT", s.GetName ().c_str (),
-                                                     szPassword.c_str (),
-                                                     s.GetIdent ().c_str (),
-                                                     s.GetHost ().c_str (),
-                                                     s.GetDesc ().c_str (),
-                                                     &now, &now );
-    }
-    else
-    {
-        bResult = SQLRegister->Execute ( "ssssssTT", s.GetName ().c_str (),
-                                                     szPassword.c_str (),
-                                                     szEmail.c_str (),
-                                                     s.GetIdent ().c_str (),
-                                                     s.GetHost ().c_str (),
-                                                     s.GetDesc ().c_str (),
-                                                     &now, &now );
-    }
-
-    if ( !bResult || ! SQLRegister->InsertID () )
-    {
-        memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
-        return ReportBrokenDB ( &s, SQLRegister, CString ( "Ejecutando nickserv.SQLRegister: bResult=%s, InsertID=%lu", bResult?"true":"false", SQLRegister->InsertID () ) );
-    }
-
-    SQLRegister->FreeResult ();
-
-    LangMsg ( &s, "REGISTER_COMPLETE", szPassword.c_str () );
-    memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
-
-    SServicesData& data = s.GetServicesData ();
-    data.bIdentified = true;
-    data.ID = SQLRegister->InsertID ();
+    catch ( std::bad_cast ) { return false; }
 
     return true;
 }
-
-
-
-
-
-///////////////////
-// IDENTIFY
-//
-bool CNickserv::cmdIdentify ( SCommandInfo& info )
-{
-    // Generamos la consulta SQL para identificar cuentas
-    static CDBStatement* SQLIdentify = 0;
-    if ( SQLIdentify == 0 )
-    {
-        SQLIdentify = CDatabase::GetSingleton ().PrepareStatement (
-              "SELECT id FROM account WHERE id=? AND password=MD5(?)"
-            );
-        if ( !SQLIdentify )
-        {
-            return ReportBrokenDB ( info.pSource, 0, "Generando nickserv.SQLIdentify" );
-        }
-    }
-
-    CUser& s = *( info.pSource );
-    SServicesData& data = s.GetServicesData ();
-
-    // Obtenemos el password
-    CString& szPassword = info.GetNextParam ();
-
-    if ( szPassword == "" )
-    {
-        return SendSyntax ( &s, "IDENTIFY" );
-    }
-
-    // Nos aseguramos de que no esté ya identificado
-    if ( data.bIdentified == true )
-    {
-        LangMsg ( &s, "IDENTIFY_IDENTIFIED" );
-        return false;
-    }
-
-    // Comprobamos si tiene una cuenta
-    unsigned long long ID = GetAccountID ( s.GetName () );
-    if ( ID == 0ULL )
-    {
-        memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
-        LangMsg ( &s, "IDENTIFY_UNREGISTERED" );
-    }
-    else
-    {
-        // Verificamos la contraseña
-        if ( ! SQLIdentify->Execute ( "Qs", ID, szPassword.c_str () ) )
-        {
-            memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
-            return ReportBrokenDB ( &s, 0, "Ejecutando nickserv.SQLIdentify" );
-        }
-
-        memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
-
-        if ( SQLIdentify->Fetch ( 0, 0, "Q", &ID ) != CDBStatement::FETCH_OK )
-            LangMsg ( &s, "IDENTIFY_WRONG_PASSWORD" );
-        else
-        {
-            LangMsg ( &s, "IDENTIFY_SUCCESS" );
-            data.bIdentified = true;
-            data.ID = ID;
-            CProtocol::GetSingleton ().GetMe ().Send ( CMessageIDENTIFY ( &s ) );
-        }
-
-        SQLIdentify->FreeResult ();
-    }
-
-    return true;
-}
-
-
-
-
-#undef COMMAND
