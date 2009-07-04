@@ -203,6 +203,7 @@ COMMAND(Register)
 
     data.bIdentified = true;
     data.ID = SQLRegister->InsertID ();
+    CProtocol::GetSingleton ().GetMe ().Send ( CMessageIDENTIFY ( &s ) );
 
     return true;
 }
