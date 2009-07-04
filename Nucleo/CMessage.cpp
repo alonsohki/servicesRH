@@ -873,3 +873,32 @@ bool CMessageKILL::ProcessMessage ( const CString& szLine, const std::vector < C
         m_szReason = "";
     return true;
 }
+
+
+
+////////////////////////////
+//        IDENTIFY        //
+////////////////////////////
+CMessageIDENTIFY::CMessageIDENTIFY ( CUser* pUser )
+: m_pUser ( pUser )
+{
+}
+CMessageIDENTIFY::~CMessageIDENTIFY ( ) { }
+
+bool CMessageIDENTIFY::BuildMessage ( SProtocolMessage& message ) const
+{
+    if ( !m_pUser )
+        return false;
+
+    message.szText = m_pUser->GetName ();
+    return true;
+}
+
+bool CMessageIDENTIFY::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
+{
+    if ( vec.size () < 2 )
+        return false;
+
+    m_pUser = CProtocol::GetSingleton ().GetMe ().GetUserAnywhere ( vec [ 2 ] );
+    return ( m_pUser != NULL );
+}

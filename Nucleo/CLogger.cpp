@@ -16,7 +16,14 @@
 
 #include "stdafx.h"
 
-void CLogger::Log ( const CString& szMessage )
+void CLogger::Log ( const CString& szMessage, ... )
 {
-    puts ( szMessage );
+    va_list vl;
+
+    CString szOutput;
+    va_start ( vl, szMessage );
+    szOutput.vFormat ( szMessage, vl );
+    va_end ( vl );
+
+    puts ( szOutput );
 }

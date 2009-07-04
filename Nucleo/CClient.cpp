@@ -9,26 +9,14 @@
 //
 // (C) RedHispana.Org 2009
 //
-// Archivo:     SProtocolMessage.h
-// Propósito:   Estructura contenedora de los datos de mensajes del protocolo
+// Archivo:     CClient.cpp
+// Propósito:   Contenedor de clientes.
 // Autores:     Alberto Alonso <rydencillo@gmail.com>
 //
 
-#pragma once
+#include "stdafx.h"
 
-class CClient;
-
-struct SProtocolMessage
+void CClient::Send ( const IMessage& message )
 {
-    SProtocolMessage ( )
-    {
-        pSource = 0;
-        pDest = 0;
-    }
-
-    CClient* pSource;
-    CString  szCommand;
-    CString  szExtraInfo;
-    CClient* pDest;
-    CString  szText;
-};
+    CProtocol::GetSingleton ().Send ( message, this );
+}

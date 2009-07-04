@@ -48,6 +48,12 @@ Escribe 12/msg %N HELP %s para obtener más información.
 Vuelve a intentarlo en unos minutos.
 %%
 
+%NICKNAME_REGISTERED%
+Este nick está 12REGISTRADO y protegido.
+Si es tu nick, escribe 12/msg %N IDENTIFY <contraseña> para identificarte.
+En caso contrario, utiliza otro nick.
+%%
+
 
 
 ############################

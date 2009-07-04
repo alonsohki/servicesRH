@@ -59,6 +59,8 @@ public:
     inline const CString&   GetDesc         ( ) const { return m_szDesc; }
     inline unsigned long    GetNumeric      ( ) const { return m_ulNumeric; }
 
+    void                    Send            ( const IMessage& message );
+
 protected:
     inline void             SetName         ( const CString& szName ) { m_szName = szName; }
 

@@ -122,7 +122,7 @@ CService::~CService ( )
 
 void CService::Msg ( CUser* pDest, const CString& szMessage )
 {
-    m_protocol.Send ( CMessagePRIVMSG ( pDest, 0, szMessage ), this );
+    Send ( CMessagePRIVMSG ( pDest, 0, szMessage ) );
 }
 
 bool CService::LangMsg ( CUser* pDest, const char* szTopic, ... )

@@ -117,14 +117,47 @@ bool CNickserv::evtNick ( const IMessage& msg_ )
         const CMessageNICK& msg = dynamic_cast < const CMessageNICK& > ( msg_ );
         CClient* pSource = msg.GetSource ();
 
-        // Cambios de nick
-        if ( pSource->GetType () == CClient::USER )
+        switch ( pSource->GetType () )
         {
-            // Desidentificamos al usuario al cambiarse de nick
-            CUser& s = (CUser &)*pSource;
-            SServicesData& data = s.GetServicesData ();
-            data.bIdentified = false;
-            data.ID = 0ULL;
+            case CClient::USER:
+            {
+                // Desidentificamos al usuario al cambiarse de nick
+                CUser& s = (CUser &)*pSource;
+                SServicesData& data = s.GetServicesData ();
+                data.bIdentified = false;
+                data.ID = 0ULL;
+
+                // Verificamos si su nuevo nick está registrado
+                unsigned long long ID = GetAccountID ( msg.GetNick () );
+                if ( ID != 0ULL )
+                    LangMsg ( &s, "NICKNAME_REGISTERED" );
+
+                break;
+            }
+
+            case CClient::SERVER:
+            {
+                // Verificamos nuevos usuarios
+                unsigned long long ID = GetAccountID ( msg.GetNick () );
+
+                if ( ID != 0ULL )
+                {
+                    CUser* pUser = CProtocol::GetSingleton ().GetMe ().GetUserAnywhere ( msg.GetNick () );
+                    if ( pUser )
+                    {
+                        if ( !strchr ( msg.GetModes (), 'n' ) && !strchr ( msg.GetModes (), 'r' ) )
+                            LangMsg ( pUser, "NICKNAME_REGISTERED" );
+                        else
+                        {
+                            SServicesData& data = pUser->GetServicesData ();
+                            data.bIdentified = true;
+                            data.ID = ID;
+                            CProtocol::GetSingleton ().GetMe ().Send ( CMessageIDENTIFY ( pUser ) );
+                        }
+                    }
+                }
+                break;
+            }
         }
     }
     catch ( std::bad_cast ) { return false; }
@@ -319,6 +352,7 @@ bool CNickserv::cmdIdentify ( SCommandInfo& info )
             LangMsg ( &s, "IDENTIFY_SUCCESS" );
             data.bIdentified = true;
             data.ID = ID;
+            CProtocol::GetSingleton ().GetMe ().Send ( CMessageIDENTIFY ( &s ) );
         }
 
         SQLIdentify->FreeResult ();

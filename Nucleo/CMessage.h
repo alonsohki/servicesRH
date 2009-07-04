@@ -16,6 +16,11 @@
 
 #pragma once
 
+class CClient;
+class CUser;
+class CServer;
+class CChannel;
+
 class IMessage
 {
 public:
@@ -340,6 +345,17 @@ public:
 private:
     CUser*      m_pVictim;
     CString     m_szReason;
+END_MESSAGE_DECLARATION()
+
+
+////////////////////////////
+//        IDENTIFY        //
+////////////////////////////
+BEGIN_MESSAGE_DECLARATION(IDENTIFY, CUser* pUser)
+public:
+    inline CUser*           GetUser     ( ) const { return m_pUser; }
+private:
+    CUser*      m_pUser;
 END_MESSAGE_DECLARATION()
 
 
