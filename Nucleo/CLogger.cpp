@@ -9,21 +9,14 @@
 //
 // (C) RedHispana.Org 2009
 //
-// Archivo:     SServicesData.h
-// Propósito:   Datos de los servicios para un usuario.
+// Archivo:     CLogger.cpp
+// Propósito:   Logs.
 // Autores:     Alberto Alonso <rydencillo@gmail.com>
 //
 
-#pragma once
+#include "stdafx.h"
 
-struct SServicesData
+void CLogger::Log ( const CString& szMessage )
 {
-    SServicesData ()
-        : bIdentified ( false ), ID ( 0 )
-    {
-    }
-
-    CString             szLang;
-    bool                bIdentified;
-    unsigned long long  ID;
-};
+    puts ( szMessage );
+}

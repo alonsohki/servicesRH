@@ -40,6 +40,11 @@ Comando 12%s desconocido. Escribe 12/msg %N HELP para recibir ayuda.
 Escribe 12/msg %N HELP %s para obtener más información.
 %%
 
+%BROKEN_DB%
+04Error: La base de datos está caída en este momento. Tu petición no se ha podido procesar.
+Vuelve a intentarlo en unos minutos.
+%%
+
 
 
 ############################
@@ -55,6 +60,10 @@ en las futuras sesiones para verificar que eres el dueño de este nick.
 
 Opcionalmente, puedes definir una 12dirección de email para poder
 recuperar tu contraseña si en el futuro la olvidas.
+%%
+
+%REGISTER_COMPLETE%
+Tu nick ha sido registrado con la contraseña 12%s.
 %%
 #
 ############################

@@ -22,6 +22,9 @@ public:
                 CNickserv       ( const CConfig& config );
     virtual     ~CNickserv      ( );
 
+    // Eventos
+private:
+    bool        evtQuit         ( const IMessage& msg );
 
     // Verificación de acceso a comandos
 private:

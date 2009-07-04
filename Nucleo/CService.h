@@ -37,6 +37,7 @@ public:
     bool            LangMsg         ( CUser* pDest, const char* szTopic, ... );
     void            SendSyntax      ( CUser* pDest, const char* szCommand );
     void            AccessDenied    ( CUser* pDest );
+    void            ReportBrokenDB  ( CUser* pDest, CDBStatement* pStatement = 0, const CString& szExtraInfo = CString() );
 
 protected:
     void            RegisterCommand ( const char* szCommand, const COMMAND_CALLBACK& pCallback, const COMMAND_CALLBACK& verifyAccess );

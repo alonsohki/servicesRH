@@ -183,6 +183,24 @@ void CService::AccessDenied ( CUser* pDest )
     LangMsg ( pDest, "ACCESS_DENIED" );
 }
 
+void CService::ReportBrokenDB ( CUser* pDest, CDBStatement* pStatement, const CString& szExtraInfo )
+{
+    if ( pDest )
+        LangMsg ( pDest, "BROKEN_DB" );
+
+    CString szMessage;
+    if ( szExtraInfo != "" )
+        szMessage.Format ( "Error en la %%s (%%d): %%s [%s]", szExtraInfo.c_str () );
+    else
+        szMessage.assign ( "Error en la %s (%d): %s" );
+
+    CDatabase& db = CDatabase::GetSingleton ();
+    if ( pStatement )
+        CLogger::Log ( CString ( szMessage.c_str (), "consulta precompilada", pStatement->Errno (), pStatement->Error () ) );
+    else
+        CLogger::Log ( CString ( szMessage.c_str (), "base de datos", db.Errno (), db.Error () ) );
+}
+
 
 bool CService::ProcessHelp ( SCommandInfo& info )
 {

@@ -41,7 +41,9 @@ public:
     int                     Fetch           ( unsigned long* ulLengths, bool* bNulls, const char* szParamTypes, ... );
     bool                    FreeResult      ( );
 
-    inline bool             IsOk            ( ) const { return m_pStatement != NULL; }
+    unsigned long long      InsertID        ( );
+
+    inline bool             IsOk            ( ) const { return m_pStatement != NULL && Errno () == 0; }
     inline int              Errno           ( ) const { return m_iErrno; }
     inline const CString&   Error           ( ) const { return m_szError; }
 

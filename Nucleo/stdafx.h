@@ -68,6 +68,7 @@
 #include "CString.h"
 #include "CDate.h"
 #include "CDirectory.h"
+#include "CLogger.h"
 #include "ircd_chattr.h"
 #include "base64.h"
 #include "hash.h"

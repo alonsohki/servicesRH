@@ -19,9 +19,14 @@
 CDBStatement::CDBStatement ( MYSQL* pHandle )
 {
     m_pHandler = pHandle;
-    m_pStatement = mysql_stmt_init ( m_pHandler );
     m_iErrno = 0;
     m_szError = "";
+    m_pStatement = mysql_stmt_init ( m_pHandler );
+    if ( !m_pStatement )
+    {
+        m_iErrno = mysql_errno ( m_pHandler );
+        m_szError = mysql_error ( m_pHandler );
+    }
 }
 
 CDBStatement::~CDBStatement ()
@@ -35,10 +40,14 @@ CDBStatement::~CDBStatement ()
 
 bool CDBStatement::Prepare ( const CString& szQuery )
 {
-    if ( IsOk () && !mysql_stmt_prepare ( m_pStatement, szQuery, szQuery.length () ) )
+    if ( !IsOk () )
+        return false;
+
+    if ( !mysql_stmt_prepare ( m_pStatement, szQuery, szQuery.length () ) )
         return true;
-    m_iErrno = mysql_errno ( m_pHandler );
-    m_szError = mysql_error ( m_pHandler );
+
+    m_iErrno = mysql_stmt_errno ( m_pStatement );
+    m_szError = mysql_stmt_error ( m_pStatement );
 
     return false;
 }
@@ -99,7 +108,7 @@ bool CDBStatement::Execute ( const char* szParamTypes, ... )
             case 'w':
             case 'W':
             {
-                ((short *)buffer) [ uiBufferPos ] = static_cast < short > ( va_arg ( vl, int ) );
+                *( (short *)&buffer[ uiBufferPos ] ) = static_cast < short > ( va_arg ( vl, int ) );
                 ulLength = sizeof ( short );
                 params [ uiCurParam ].buffer_type = MYSQL_TYPE_SHORT;
                 params [ uiCurParam ].buffer = &buffer [ uiBufferPos ];
@@ -111,7 +120,7 @@ bool CDBStatement::Execute ( const char* szParamTypes, ... )
             case 'd':
             case 'D':
             {
-                ((int *)buffer) [ uiBufferPos ] = va_arg ( vl, int );
+                *( (int *)&buffer[ uiBufferPos ] ) = va_arg ( vl, int );
                 ulLength = sizeof ( int );
                 params [ uiCurParam ].buffer_type = MYSQL_TYPE_LONG;
                 params [ uiCurParam ].buffer = &buffer [ uiBufferPos ];
@@ -123,7 +132,7 @@ bool CDBStatement::Execute ( const char* szParamTypes, ... )
             case 'q':
             case 'Q':
             {
-                ((long long*)buffer) [ uiBufferPos ] = va_arg ( vl, long long );
+                *( (long long *)&buffer[ uiBufferPos ] ) = va_arg ( vl, long long );
                 ulLength = sizeof ( long long );
                 params [ uiCurParam ].buffer_type = MYSQL_TYPE_LONGLONG;
                 params [ uiCurParam ].buffer = &buffer [ uiBufferPos ];
@@ -134,7 +143,7 @@ bool CDBStatement::Execute ( const char* szParamTypes, ... )
 
             case 'f':
             {
-                ((float*)buffer) [ uiBufferPos ] = static_cast < float > ( va_arg ( vl, double ) );
+                *( (float *)&buffer[ uiBufferPos ] ) = static_cast < float > ( va_arg ( vl, double ) );
                 ulLength = sizeof ( float );
                 params [ uiCurParam ].buffer_type = MYSQL_TYPE_FLOAT;
                 params [ uiCurParam ].buffer = &buffer [ uiBufferPos ];
@@ -145,7 +154,7 @@ bool CDBStatement::Execute ( const char* szParamTypes, ... )
 
             case 'F':
             {
-                ((double*)buffer) [ uiBufferPos ] = va_arg ( vl, double );
+                *( (double *)&buffer[ uiBufferPos ] ) = va_arg ( vl, double );
                 ulLength = sizeof ( double );
                 params [ uiCurParam ].buffer_type = MYSQL_TYPE_DOUBLE;
                 params [ uiCurParam ].buffer = &buffer [ uiBufferPos ];
@@ -196,7 +205,16 @@ bool CDBStatement::Execute ( const char* szParamTypes, ... )
                 myTime.day    = pDate->GetDay ();
                 myTime.month  = pDate->GetMonth ();
                 myTime.year   = pDate->GetYear ();
+                myTime.neg    = 0;
+                myTime.time_type = MYSQL_TIMESTAMP_DATETIME;
 
+                break;
+            }
+
+            case 'N':
+            {
+                ulLength = 0;
+                params [ uiCurParam ].buffer_type = MYSQL_TYPE_NULL;
                 break;
             }
         }
@@ -216,8 +234,8 @@ bool CDBStatement::Execute ( const char* szParamTypes, ... )
     if ( !mysql_stmt_execute ( m_pStatement ) )
         return true;
 
-    m_iErrno = mysql_errno ( m_pHandler );
-    m_szError = mysql_error ( m_pHandler );
+    m_iErrno = mysql_stmt_errno ( m_pStatement );
+    m_szError = mysql_stmt_error ( m_pStatement );
 
     return false;
 }
@@ -377,8 +395,8 @@ int CDBStatement::Fetch ( unsigned long* ulLengths, bool* bNulls, const char* sz
         }
         case 1:
         {
-            m_iErrno = mysql_errno ( m_pHandler );
-            m_szError = mysql_error ( m_pHandler );
+            m_iErrno = mysql_stmt_errno ( m_pStatement );
+            m_szError = mysql_stmt_error ( m_pStatement );
             uiResult = FETCH_ERROR;
             break;
         }
@@ -415,4 +433,11 @@ int CDBStatement::Fetch ( unsigned long* ulLengths, bool* bNulls, const char* sz
 bool CDBStatement::FreeResult ( )
 {
     return ( mysql_stmt_free_result ( m_pStatement ) == 0 );
+}
+
+
+
+unsigned long long CDBStatement::InsertID ( )
+{
+    return mysql_stmt_insert_id ( m_pStatement );
 }

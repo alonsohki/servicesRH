@@ -9,21 +9,15 @@
 //
 // (C) RedHispana.Org 2009
 //
-// Archivo:     SServicesData.h
-// Propósito:   Datos de los servicios para un usuario.
+// Archivo:     CLogger.h
+// Propósito:   Logs.
 // Autores:     Alberto Alonso <rydencillo@gmail.com>
 //
 
 #pragma once
 
-struct SServicesData
+class CLogger
 {
-    SServicesData ()
-        : bIdentified ( false ), ID ( 0 )
-    {
-    }
-
-    CString             szLang;
-    bool                bIdentified;
-    unsigned long long  ID;
+public:
+    static void     Log     ( const CString& szMessage );
 };

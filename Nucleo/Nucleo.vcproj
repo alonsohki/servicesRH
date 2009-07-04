@@ -236,6 +236,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CLogger.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CMembership.cpp"
 				>
 			</File>
@@ -395,6 +399,10 @@
 			</File>
 			<File
 				RelativePath=".\CLocalUser.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CLogger.h"
 				>
 			</File>
 			<File
