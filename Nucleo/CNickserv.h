@@ -22,6 +22,12 @@ public:
                 CNickserv       ( const CConfig& config );
     virtual     ~CNickserv      ( );
 
+
+    // Verificación de acceso a comandos
+private:
+    bool        verifyAll       ( SCommandInfo& info );
+    bool        verifyOperator  ( SCommandInfo& info );
+
     // Comandos
 protected:
     void        UnknownCommand  ( SCommandInfo& info );

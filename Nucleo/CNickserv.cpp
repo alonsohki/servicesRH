@@ -19,15 +19,39 @@
 CNickserv::CNickserv ( const CConfig& config )
 : CService ( "nickserv", config )
 {
-#define REGISTER(x) RegisterCommand ( #x, COMMAND_CALLBACK ( &CNickserv::cmd ## x , this ) )
-    REGISTER ( Help );
-    REGISTER ( Register );
+#define REGISTER(x,ver) RegisterCommand ( #x, COMMAND_CALLBACK ( &CNickserv::cmd ## x , this ), COMMAND_CALLBACK ( &CNickserv::verify ## ver , this ) )
+    REGISTER ( Help,        All );
+    REGISTER ( Register,    All );
 #undef REGISTER
 }
 
 CNickserv::~CNickserv ( )
 {
 }
+
+
+
+
+
+
+
+// Verificación de acceso
+bool CNickserv::verifyAll ( SCommandInfo& info )
+{
+    return true;
+}
+
+bool CNickserv::verifyOperator ( SCommandInfo& info )
+{
+    return false;
+}
+
+
+
+
+
+
+
 
 // Comandos
 void CNickserv::UnknownCommand ( SCommandInfo& info )
@@ -38,17 +62,12 @@ void CNickserv::UnknownCommand ( SCommandInfo& info )
 
 #define COMMAND(x) bool CNickserv::cmd ## x ( SCommandInfo& info )
 
-
-
-
 ///////////////////
 // HELP
 //
 COMMAND(Help)
 {
-    LangMsg ( info.pSource, "HELP" );
-
-    return true;
+    return CService::ProcessHelp ( info );
 }
 
 

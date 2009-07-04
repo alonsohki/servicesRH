@@ -12,10 +12,33 @@ Lista de comandos disponibles:
 Comando 12%s desconocido. Escribe 12/msg %N HELP para recibir ayuda.
 %%
 
+%ACCESS_DENIED%
+04¡Acceso denegado!
+%%
+
+%NO_HELP_TOPIC%
+04Error: No existe ningún tema de ayuda para 12%s.
+%%
+
 %HELP_FOR_MORE_INFORMATION%
 Escribe 12/msg %N HELP %s para obtener más información.
 %%
 
+
+
+############################
+# REGISTER
 %SYNTAX_REGISTER%
 Sintaxis: 12REGISTER <contraseña> [dirección email]
 %%
+
+%HELP_REGISTER%
+Registra el nick que estés usando ahora para futuro uso.
+Es necesario que especifiques una 12contraseña, la cuál utilizarás
+en las futuras sesiones para verificar que eres el dueño de este nick.
+
+Opcionalmente, puedes definir una 12dirección de email para poder
+recuperar tu contraseña si en el futuro la olvidas.
+%%
+#
+############################

@@ -34,19 +34,28 @@ public:
     const CString&  GetError        ( ) const { return m_szError; }
 
     void            Msg             ( CUser* pDest, const CString& szMessage );
-    void            LangMsg         ( CUser* pDest, const char* szTopic, ... );
+    bool            LangMsg         ( CUser* pDest, const char* szTopic, ... );
     void            SendSyntax      ( CUser* pDest, const char* szCommand );
+    void            AccessDenied    ( CUser* pDest );
 
 protected:
-    void            RegisterCommand ( const char* szCommand, const COMMAND_CALLBACK& pCallback );
+    void            RegisterCommand ( const char* szCommand, const COMMAND_CALLBACK& pCallback, const COMMAND_CALLBACK& verifyAccess );
     virtual void    UnknownCommand  ( SCommandInfo& info ) { }
+
+    bool            ProcessHelp     ( SCommandInfo& info );
 
 private:
     void            ProcessCommands ( CUser* pSource, const CString& szMessage );
     bool            evtPrivmsg      ( const IMessage& message );
 
 private:
-    typedef google::dense_hash_map < const char*, COMMAND_CALLBACK*, SStringHasher, SStringEquals > t_commandsMap;
+    struct SCommandCallbackInfo
+    {
+        COMMAND_CALLBACK* pCallback;
+        COMMAND_CALLBACK* pVerifyCallback;
+    };
+
+    typedef google::dense_hash_map < const char*, SCommandCallbackInfo, SStringHasher, SStringEquals > t_commandsMap;
     t_commandsMap       m_commandsMap;
     bool                m_bIsOk;
     CString             m_szError;

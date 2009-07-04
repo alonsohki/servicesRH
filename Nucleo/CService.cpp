@@ -114,7 +114,9 @@ CService::~CService ( )
           i != m_commandsMap.end ();
           ++i )
     {
-        delete (*i).second;
+        SCommandCallbackInfo& info = (*i).second;
+        delete info.pCallback;
+        delete info.pVerifyCallback;
     }
 }
 
@@ -123,7 +125,7 @@ void CService::Msg ( CUser* pDest, const CString& szMessage )
     m_protocol.Send ( CMessagePRIVMSG ( pDest, 0, szMessage ), this );
 }
 
-void CService::LangMsg ( CUser* pDest, const char* szTopic, ... )
+bool CService::LangMsg ( CUser* pDest, const char* szTopic, ... )
 {
     va_list vl;
 
@@ -136,7 +138,7 @@ void CService::LangMsg ( CUser* pDest, const char* szTopic, ... )
         pLanguage = m_langManager.GetDefaultLanguage ();
 
     if ( pLanguage == NULL )
-        return;
+        return false;
 
     CString szMessage = pLanguage->GetTopic ( m_szServiceName, szTopic );
     if ( szMessage.length () > 0 )
@@ -162,7 +164,11 @@ void CService::LangMsg ( CUser* pDest, const char* szTopic, ... )
                 Msg ( pDest, szMessage2.substr ( iPrevPos + 1, iPos - iPrevPos - 1 ) );
             iPrevPos = iPos;
         }
+
+        return true;
     }
+
+    return false;
 }
 
 void CService::SendSyntax ( CUser* pDest, const char* szCommand )
@@ -172,10 +178,101 @@ void CService::SendSyntax ( CUser* pDest, const char* szCommand )
     LangMsg ( pDest, "HELP_FOR_MORE_INFORMATION", szCommand );
 }
 
-void CService::RegisterCommand ( const char* szCommand, const COMMAND_CALLBACK& callback )
+void CService::AccessDenied ( CUser* pDest )
+{
+    LangMsg ( pDest, "ACCESS_DENIED" );
+}
+
+
+bool CService::ProcessHelp ( SCommandInfo& info )
+{
+    CString szTopic = info.GetNextParam ();
+    if ( szTopic == "" || !CPortability::CompareNoCase ( szTopic, "HELP" ) )
+    {
+        LangMsg ( info.pSource, "HELP" );
+    }
+    else
+    {
+        // Comprobamos que tiene acceso al comando del que está solicitando ayuda
+        t_commandsMap::iterator find = m_commandsMap.find ( szTopic.c_str () );
+        if ( find != m_commandsMap.end () )
+        {
+            SCommandCallbackInfo& cbkInfo = (*find).second;
+            COMMAND_CALLBACK* pVerifyCallback = cbkInfo.pVerifyCallback;
+
+            // Construímos una nueva estructura de información del comando
+            // para enviarsela a la verificación.
+            SCommandInfo info2;
+            info2.pSource = info.pSource;
+            info2.vecParams.assign ( info.vecParams.begin () + 1, info.vecParams.end () );
+            info2.GetNextParam ();
+
+            if ( ! (*pVerifyCallback) ( info2 ) )
+            {
+                // No tiene acceso al comando
+                AccessDenied ( info2.pSource );
+                return false;
+            }
+
+            // Concatenamos los temas de ayuda
+            do
+            {
+                CString& szNext = info.GetNextParam ();
+                if ( szNext == "" )
+                    break;
+                szTopic.append ( "_" );
+                szTopic.append ( szNext );
+            } while ( true );
+
+            if ( LangMsg ( info.pSource, CString ( "SYNTAX_%s", szTopic.c_str () ) ) )
+                Msg ( info.pSource, "\xA0" ); // Insertamos una línea en blanco entre
+                                              // la sintaxis y la ayuda.
+
+            if ( ! LangMsg ( info.pSource, CString ( "HELP_%s", szTopic.c_str () ) ) )
+            {
+                // Construímos una cadena de texto con el tema de ayuda solicitado
+                // para enviarle al usuario que no se ha encontrado ayuda al respecto.
+                info.ResetParamCounter ();
+                info.GetNextParam (); // Saltamos el comando: HELP
+                szTopic = info.GetNextParam ();
+                do
+                {
+                    CString& szNext = info.GetNextParam ();
+                    if ( szNext == "" )
+                        break;
+                    szTopic.append ( " " );
+                    szTopic.append ( szNext );
+                } while ( true );
+
+                LangMsg ( info.pSource, "NO_HELP_TOPIC", szTopic.c_str () );
+                return false;
+            }
+        }
+        else
+        {
+            LangMsg ( info.pSource, "NO_HELP_TOPIC", szTopic.c_str () );
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
+
+
+void CService::RegisterCommand ( const char* szCommand,
+                                 const COMMAND_CALLBACK& callback,
+                                 const COMMAND_CALLBACK& verifyAccess )
 {
     COMMAND_CALLBACK* pCallback = new COMMAND_CALLBACK ( callback );
-    m_commandsMap.insert ( t_commandsMap::value_type ( szCommand, pCallback ) );
+    COMMAND_CALLBACK* pVerifyCallback = new COMMAND_CALLBACK ( verifyAccess );
+
+    SCommandCallbackInfo info;
+    info.pCallback = pCallback;
+    info.pVerifyCallback = pVerifyCallback;
+
+    m_commandsMap.insert ( t_commandsMap::value_type ( szCommand, info ) );
 }
 
 
@@ -208,8 +305,14 @@ void CService::ProcessCommands ( CUser* pSource, const CString& szMessage )
         t_commandsMap::iterator find = m_commandsMap.find ( szCommand.c_str () );
         if ( find != m_commandsMap.end () )
         {
-            COMMAND_CALLBACK* pCallback = (*find).second;
-            (*pCallback) ( info );
+            SCommandCallbackInfo& cbkInfo = (*find).second;
+            COMMAND_CALLBACK* pVerifyCallback = cbkInfo.pVerifyCallback;
+            COMMAND_CALLBACK* pCallback = cbkInfo.pCallback;
+
+            if ( (*pVerifyCallback) ( info ) )
+                (*pCallback) ( info );
+            else
+                AccessDenied ( pSource );
         }
         else
         {

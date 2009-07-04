@@ -110,6 +110,12 @@ void CLanguage::LoadFile ( const CString& szLangName, const CString& szEntryName
             --p;
         }
 
+        if ( *p == '#' )
+        {
+            // Es un comentario
+            continue;
+        }
+
         if ( *p == '%' && szBuffer [ 0 ] == '%' )
         {
             if ( p > szBuffer + 1 )

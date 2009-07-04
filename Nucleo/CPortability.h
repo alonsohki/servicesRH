@@ -84,4 +84,13 @@ public:
         close ( socket );
 #endif
     }
+
+    static inline int CompareNoCase ( const char* s1, const char* s2 )
+    {
+#ifdef WIN32
+        return stricmp ( s1, s2 );
+#else
+        return strcasecmp ( s1, s2 );
+#endif
+    }
 };
