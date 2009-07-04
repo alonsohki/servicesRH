@@ -97,8 +97,8 @@ public:
         if ( bBlocking )
             uiFlags &= ~O_NONBLOCK;
         else
-            ulFlags |= O_NONBLOCK;
-        fcntl ( socket, F_SETFL, ulFlags );
+            uiFlags |= O_NONBLOCK;
+        fcntl ( socket, F_SETFL, uiFlags );
 #endif
     }
 
