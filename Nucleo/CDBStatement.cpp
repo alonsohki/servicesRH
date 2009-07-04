@@ -179,6 +179,26 @@ bool CDBStatement::Execute ( const char* szParamTypes, ... )
 
                 break;
             }
+
+            case 'T':
+            {
+                CDate* pDate = reinterpret_cast < CDate* > ( va_arg ( vl, void* ) );
+                ulLength = sizeof ( MYSQL_TIME );
+                params [ uiCurParam ].buffer_type = MYSQL_TYPE_TIMESTAMP;
+                params [ uiCurParam ].buffer = &buffer [ uiBufferPos ];
+                
+                MYSQL_TIME& myTime = *( MYSQL_TIME* )&buffer [ uiBufferPos ];
+                memset ( &myTime, 0, sizeof ( MYSQL_TIME ) );
+
+                myTime.hour   = pDate->GetHour ();
+                myTime.minute = pDate->GetMinute ();
+                myTime.second = pDate->GetSecond ();
+                myTime.day    = pDate->GetDay ();
+                myTime.month  = pDate->GetMonth ();
+                myTime.year   = pDate->GetYear ();
+
+                break;
+            }
         }
 
         params [ uiCurParam ].buffer_length = ulLength;
@@ -217,6 +237,14 @@ int CDBStatement::Fetch ( unsigned long* ulLengths, bool* bNulls, const char* sz
     my_bool my_bNulls [ uiNumParams ];
     my_bool my_bErrors [ uiNumParams ];
 #endif
+
+    struct DateConversion
+    {
+        CDate*      pDate;
+        MYSQL_TIME  myDate;
+    };
+    unsigned int uiNumDates = 0;
+    DateConversion dates [ 128 ];
 
     if ( ulLengths == 0 )
         ulLengths = &_ulLengths [ 0 ];
@@ -313,6 +341,18 @@ int CDBStatement::Fetch ( unsigned long* ulLengths, bool* bNulls, const char* sz
 
                 break;
             }
+
+            case 'T':
+            {
+                CDate* pDest = reinterpret_cast < CDate* > ( va_arg ( vl, void* ) );
+                dates [ uiNumDates ].pDate = pDest;
+                results [ uiCurParam ].buffer_type = MYSQL_TYPE_TIMESTAMP;
+                results [ uiCurParam ].buffer = (char *)& ( dates [ uiNumDates ].myDate );
+
+                ++uiNumDates;
+                
+                break;
+            }
         }
 
         results [ uiCurParam ].is_null = &my_bNulls [ uiCurParam ];
@@ -327,36 +367,50 @@ int CDBStatement::Fetch ( unsigned long* ulLengths, bool* bNulls, const char* sz
 
     mysql_stmt_bind_result ( m_pStatement, results );
 
+    unsigned int uiResult;
+    switch ( mysql_stmt_fetch ( m_pStatement ) )
+    {
+        case 0:
+        {
+            uiResult = FETCH_OK;
+            break;
+        }
+        case 1:
+        {
+            m_iErrno = mysql_errno ( m_pHandler );
+            m_szError = mysql_error ( m_pHandler );
+            uiResult = FETCH_ERROR;
+            break;
+        }
+        case MYSQL_NO_DATA:
+        {
+            uiResult = FETCH_NO_DATA;
+            break;
+        }
+        case MYSQL_DATA_TRUNCATED:
+        {
+            uiResult = FETCH_DATA_TRUNCATED;
+            break;
+        }
+        default:
+            uiResult = FETCH_UNKNOWN;
+    }
+
     // Volcamos los datos de nulidad al parámetro si así lo han pedido
     if ( bNulls )
         for ( unsigned int i = 0; i < uiNumParams; ++i )
             bNulls [ i ] = static_cast < bool > ( my_bNulls [ i ] == static_cast < my_bool > ( true ) );
 
-    switch ( mysql_stmt_fetch ( m_pStatement ) )
+    // Volcamos las fechas
+    for ( unsigned int i = 0; i < uiNumDates; ++i )
     {
-        case 0: return FETCH_OK;
-        case 1:
-        {
-            m_iErrno = mysql_errno ( m_pHandler );
-            m_szError = mysql_error ( m_pHandler );
-            return FETCH_ERROR;
-        }
-        case MYSQL_NO_DATA: return FETCH_NO_DATA;
-        case MYSQL_DATA_TRUNCATED: return FETCH_DATA_TRUNCATED;
-        default: return FETCH_UNKNOWN;
+        MYSQL_TIME& myDate = dates [ i ].myDate;
+        dates [ i ].pDate->Create ( myDate.hour, myDate.minute, myDate.second,
+                                    myDate.day, myDate.month, myDate.year );
     }
-}
-/*
-bool CDBStatement::BindResult ( MYSQL_BIND* pBind )
-{
-    if ( !mysql_stmt_bind_result ( m_pStatement, pBind ) )
-        return true;
-    m_iErrno = mysql_errno ( m_pHandler );
-    m_szError = mysql_error ( m_pHandler );
 
-    return false;
+    return uiResult;
 }
-*/
 
 bool CDBStatement::FreeResult ( )
 {

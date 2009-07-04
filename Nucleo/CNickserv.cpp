@@ -19,7 +19,10 @@
 CNickserv::CNickserv ( const CConfig& config )
 : CService ( "nickserv", config )
 {
-    RegisterCommand ( "help", COMMAND_CALLBACK ( &CNickserv::cmdHelp, this ) );
+#define REGISTER(x) RegisterCommand ( #x, COMMAND_CALLBACK ( &CNickserv::cmd ## x , this ) )
+    REGISTER ( Help );
+    REGISTER ( Register );
+#undef REGISTER
 }
 
 CNickserv::~CNickserv ( )
@@ -33,9 +36,38 @@ void CNickserv::UnknownCommand ( SCommandInfo& info )
     LangMsg ( info.pSource, "UNKNOWN_COMMAND", info.GetNextParam ().c_str () );
 }
 
-bool CNickserv::cmdHelp ( SCommandInfo& info )
+#define COMMAND(x) bool CNickserv::cmd ## x ( SCommandInfo& info )
+
+
+
+
+///////////////////
+// HELP
+//
+COMMAND(Help)
 {
     LangMsg ( info.pSource, "HELP" );
 
     return true;
 }
+
+
+
+
+
+///////////////////
+// REGISTER
+//
+COMMAND(Register)
+{
+    CString& szPassword = info.GetNextParam ();
+    if ( szPassword == "" )
+    {
+        SendSyntax ( info.pSource, "REGISTER" );
+        return false;
+    }
+
+    return true;
+}
+
+#undef COMMAND

@@ -165,6 +165,13 @@ void CService::LangMsg ( CUser* pDest, const char* szTopic, ... )
     }
 }
 
+void CService::SendSyntax ( CUser* pDest, const char* szCommand )
+{
+    CString szLangTopic ( "SYNTAX_%s", szCommand );
+    LangMsg ( pDest, szLangTopic );
+    LangMsg ( pDest, "HELP_FOR_MORE_INFORMATION", szCommand );
+}
+
 void CService::RegisterCommand ( const char* szCommand, const COMMAND_CALLBACK& callback )
 {
     COMMAND_CALLBACK* pCallback = new COMMAND_CALLBACK ( callback );

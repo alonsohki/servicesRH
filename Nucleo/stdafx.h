@@ -66,6 +66,7 @@
 
 // Encabezados propios
 #include "CString.h"
+#include "CDate.h"
 #include "CDirectory.h"
 #include "ircd_chattr.h"
 #include "base64.h"

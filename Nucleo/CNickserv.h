@@ -26,5 +26,8 @@ public:
 protected:
     void        UnknownCommand  ( SCommandInfo& info );
 private:
-    bool        cmdHelp         ( SCommandInfo& info );
+#define COMMAND(x) bool cmd ## x ( SCommandInfo& info )
+    COMMAND ( Help );
+    COMMAND ( Register );
+#undef COMMAND
 };

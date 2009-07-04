@@ -208,6 +208,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CDate.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CDBStatement.cpp"
 				>
 			</File>
@@ -359,6 +363,10 @@
 			</File>
 			<File
 				RelativePath=".\CDatabase.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CDate.h"
 				>
 			</File>
 			<File

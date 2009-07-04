@@ -2,8 +2,20 @@
 Ayuda de 12%N
 
 12%N es el servicio encargado del registro de nicks.
+
+Lista de comandos disponibles:
+
+    12REGISTER             Registro de un nick
 %%
 
 %UNKNOWN_COMMAND%
 Comando 12%s desconocido. Escribe 12/msg %N HELP para recibir ayuda.
+%%
+
+%HELP_FOR_MORE_INFORMATION%
+Escribe 12/msg %N HELP %s para obtener más información.
+%%
+
+%SYNTAX_REGISTER%
+Sintaxis: 12REGISTER <contraseña> [dirección email]
 %%

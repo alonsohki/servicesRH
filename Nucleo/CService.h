@@ -35,6 +35,7 @@ public:
 
     void            Msg             ( CUser* pDest, const CString& szMessage );
     void            LangMsg         ( CUser* pDest, const char* szTopic, ... );
+    void            SendSyntax      ( CUser* pDest, const char* szCommand );
 
 protected:
     void            RegisterCommand ( const char* szCommand, const COMMAND_CALLBACK& pCallback );
