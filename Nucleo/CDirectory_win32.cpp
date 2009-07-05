@@ -33,11 +33,12 @@ void CDirectory::SetCurrentDirectory ( const CString& szDirectoryPath )
 
 /* Clase CDirectory */
 CDirectory::CDirectory ( )
-    : m_pHandle ( INVALID_HANDLE_VALUE )
+: m_pHandle ( INVALID_HANDLE_VALUE )
 {
 }
 
 CDirectory::CDirectory ( const CString& szPath )
+: m_pHandle ( INVALID_HANDLE_VALUE )
 {
     Open ( szPath );
 }
