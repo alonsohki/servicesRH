@@ -863,8 +863,12 @@ bool CProtocol::evtRaw ( const IMessage& message_ )
     try
     {
         const CMessageRAW& message = dynamic_cast < const CMessageRAW& > ( message_ );
-        // Logueamos la línea
-        CLogger::Log ( message.GetLine () );
+
+        // Logueamos la línea, salvo líneas de base de datos
+        std::vector < CString > vec;
+        message.GetLine ().Split ( vec );
+        if ( vec [ 1 ] != "DB" )
+            CLogger::Log ( message.GetLine () );
     }
     catch ( std::bad_cast ) { return false; }
     return true;
