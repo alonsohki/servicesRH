@@ -60,6 +60,14 @@ public:
     void                    AddHandler          ( const IMessage& message, const PROTOCOL_CALLBACK& callback );
     void                    RemoveHandler       ( const IMessage& message, const PROTOCOL_CALLBACK& callback );
 
+    // Distributed database
+    unsigned int            GetDDBVersion       ( ) const { return m_uiDDBVersion; }
+    unsigned int            GetDDBTableSerial   ( unsigned char ucTable ) const { return m_uiDDBSerials [ ucTable ]; }
+    void                    InsertIntoDDB       ( unsigned char ucTable,
+                                                  const CString& szKey,
+                                                  const CString& szValue,
+                                                  const CString& szTarget = "*" );
+
 private:
     void                    InternalAddHandler      ( unsigned long ulStage,
                                                       const IMessage& message,
@@ -88,6 +96,7 @@ private:
     bool                    evtJoin             ( const IMessage& message );
     bool                    evtPart             ( const IMessage& message );
     bool                    evtKick             ( const IMessage& message );
+    bool                    evtDB               ( const IMessage& message );
     bool                    evtRaw              ( const IMessage& message );
 
 private:
@@ -99,4 +108,9 @@ private:
     t_commandsMap           m_commandsMapBefore;
     t_commandsMap           m_commandsMapAfter;
     bool                    m_bGotServer;
+
+    // Distributed database
+    bool                    m_bDDBInitialized;
+    unsigned int            m_uiDDBVersion;
+    unsigned int            m_uiDDBSerials [ 256 ];
 };

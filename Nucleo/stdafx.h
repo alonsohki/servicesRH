@@ -76,6 +76,7 @@
 #include "ircd_chattr.h"
 #include "base64.h"
 #include "hash.h"
+#include "tea.h"
 #include "CConfig.h"
 #include "CSocket.h"
 #include "SProtocolMessage.h"

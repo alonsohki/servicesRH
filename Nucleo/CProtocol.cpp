@@ -20,12 +20,19 @@
 CProtocol::CProtocol ( )
 : m_bGotServer ( false )
 {
+    // Inicializamos las tablas hash
     m_commandsMap.set_deleted_key ( (const char *)HASH_STRING_DELETED );
     m_commandsMap.set_empty_key ( (const char *)HASH_STRING_EMPTY );
     m_commandsMapBefore.set_deleted_key ( (const char *)HASH_STRING_DELETED );
     m_commandsMapBefore.set_empty_key ( (const char *)HASH_STRING_EMPTY );
     m_commandsMapAfter.set_deleted_key ( (const char *)HASH_STRING_DELETED );
     m_commandsMapAfter.set_empty_key ( (const char *)HASH_STRING_EMPTY );
+
+    // Inicializamos los serials de la base de datos
+    for ( unsigned int i = 0; i < 256; ++i )
+    {
+        m_uiDDBSerials [ i ] = 0;
+    }
 }
 
 CProtocol::~CProtocol ( )
@@ -126,7 +133,11 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageJOIN(),   PROTOCOL_CALLBACK ( &CProtocol::evtJoin,   this ) );
     InternalAddHandler ( HANDLER_AFTER_CALLBACKS,  CMessagePART(),   PROTOCOL_CALLBACK ( &CProtocol::evtPart,   this ) );
     InternalAddHandler ( HANDLER_AFTER_CALLBACKS,  CMessageKICK(),   PROTOCOL_CALLBACK ( &CProtocol::evtKick,   this ) );
+    InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageDB(),     PROTOCOL_CALLBACK ( &CProtocol::evtDB,     this ) );
     InternalAddHandler ( HANDLER_IN_CALLBACKS,     CMessageRAW(),    PROTOCOL_CALLBACK ( &CProtocol::evtRaw,    this ) );
+
+    // Enviamos la versión de base de datos
+    Send ( CMessageDB ( "*", 0, 0, 0, "", "", 2 ), &m_me );
 
     // Inicializamos los servicios
     CService::RegisterServices ( m_config );
@@ -455,6 +466,16 @@ void CProtocol::InternalAddHandler ( t_commandsMap& map, const IMessage& message
 
     PROTOCOL_CALLBACK* pCallback = new PROTOCOL_CALLBACK ( callback );
     pVector->push_back ( pCallback );
+}
+
+
+void CProtocol::InsertIntoDDB ( unsigned char ucTable,
+                                const CString& szKey,
+                                const CString& szValue,
+                                const CString& szTarget )
+{
+    m_uiDDBSerials [ ucTable ]++;
+    Send ( CMessageDB ( szTarget, 0, m_uiDDBSerials [ ucTable ], ucTable, szKey, szValue, 0 ), &m_me );
 }
 
 // Parte estática
@@ -786,6 +807,52 @@ bool CProtocol::evtKick ( const IMessage& message_ )
     {
         const CMessageKICK& message = dynamic_cast < const CMessageKICK& > ( message_ );
         message.GetChannel ()->RemoveMember ( message.GetVictim () );
+    }
+    catch ( std::bad_cast ) { return false; }
+    return true;
+}
+
+bool CProtocol::evtDB ( const IMessage& message_ )
+{
+    try
+    {
+        const CMessageDB& message = dynamic_cast < const CMessageDB& > ( message_ );
+
+        if ( message.GetVersion () == 0 && m_bDDBInitialized == false )
+        {
+            // No aceptamos mensajes de base de datos hasta que se inicialice
+            // enviando la versión.
+            return false;
+        }
+        else if ( message.GetVersion () != 0 )
+        {
+            if ( message.GetSource () != &m_me )
+            {
+                m_uiDDBVersion = message.GetVersion ();
+                m_bDDBInitialized = true;
+
+                if ( m_uiDDBVersion == 2 )
+                {
+                    // Solicitamos las tablas
+                    for ( unsigned char ucTable = 'a'; ucTable <= 'z'; ++ucTable )
+                        Send ( CMessageDB ( "*", 'J', 0, ucTable, "", "", 0 ), &m_me );
+                    for ( unsigned char ucTable = 'A'; ucTable <= 'Z'; ++ucTable )
+                        Send ( CMessageDB ( "*", 'J', 0, ucTable, "", "", 0 ), &m_me );
+                }
+            }
+        }
+        else if ( message.GetCommand () != 0 )
+        {
+            // Aquí procesaríamos comandos de DDB, pero no nos interesa ninguno.
+        }
+        else
+        {
+            unsigned char ucTable = message.GetTable ();
+            unsigned int uiSerial = message.GetSerial ();
+            if ( uiSerial < m_uiDDBSerials [ ucTable ] )
+                return false;
+            m_uiDDBSerials [ ucTable ] = uiSerial;
+        }
     }
     catch ( std::bad_cast ) { return false; }
     return true;

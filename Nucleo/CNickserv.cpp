@@ -130,6 +130,56 @@ void CNickserv::Identify ( CUser* pUser )
     SQLGetLang->FreeResult ();
 }
 
+char* CNickserv::CifraNick ( char* dest, const char* szNick, const char* szPassword )
+{
+    const static unsigned int NICKLEN = 15;
+    const static unsigned int s_uiCount = (NICKLEN + 8)/8;
+    unsigned int v [ 2 ];
+    unsigned int w [ 2 ];
+    unsigned int k [ 4 ];
+    char szTempNick [ 8 * ((NICKLEN + 8)/8) + 1 ];
+    char szTempPass [ 24 + 1 ];
+    unsigned int* p = reinterpret_cast < unsigned int* > ( szTempNick );
+
+    unsigned int uiLength = strlen ( szPassword );
+    if ( uiLength > sizeof ( szTempPass ) - 1 )
+        uiLength = sizeof ( szTempPass ) - 1;
+    memset ( szTempPass, 0, sizeof ( szTempPass ) );
+    strncpy ( szTempPass, szPassword, uiLength );
+    for ( unsigned int i = uiLength; i < sizeof ( szTempPass ) - 1; ++i )
+        szTempPass [ i ] = 'A';
+
+    uiLength = strlen ( szNick );
+    if ( uiLength > sizeof ( szTempNick ) - 1 )
+        uiLength = sizeof ( szTempNick ) - 1;
+    memset ( szTempNick, 0, sizeof ( szTempNick ) );
+    strncpy ( szTempNick, szNick, uiLength );
+
+    k [ 3 ] = base64toint ( szTempPass + 18 );
+    szTempPass [ 18 ] = '\0';
+    k [ 2 ] = base64toint ( szTempPass + 12 );
+    szTempPass [ 12 ] = '\0';
+    k [ 1 ] = base64toint ( szTempPass + 6 );
+    szTempPass [ 6 ] = '\0';
+    k [ 0 ] = base64toint ( szTempPass );
+
+    w [ 0 ] = w [ 1 ] = 0;
+
+    unsigned int uiCount = s_uiCount;
+    while ( uiCount-- )
+    {
+        v [ 0 ] = ntohl ( *p++ );
+        v [ 1 ] = ntohl ( *p++ );
+        tea ( v, k, w );
+    }
+    --p;
+
+    memset ( szTempPass, 0, sizeof ( szTempPass ) );
+
+    inttobase64 ( dest, w [ 0 ], 6 );
+    inttobase64 ( dest+6, w [ 1 ], 6 );
+    return dest;
+}
 
 
 
@@ -235,6 +285,12 @@ COMMAND(Register)
     }
 
     SQLRegister->FreeResult ();
+
+    // Insertamos el registro del nick en la base de datos.
+    // Primero, generamos el hash de su clave.
+    char szHash [ 32 ];
+    CifraNick ( szHash, s.GetName (), szPassword );
+    CProtocol::GetSingleton ().InsertIntoDDB ( 'n', s.GetName (), szHash );
 
     LangMsg ( &s, "REGISTER_COMPLETE", szPassword.c_str () );
     memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password

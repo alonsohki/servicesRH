@@ -303,6 +303,10 @@
 					/>
 				</FileConfiguration>
 			</File>
+			<File
+				RelativePath=".\tea.cpp"
+				>
+			</File>
 			<Filter
 				Name="Services"
 				>
@@ -475,6 +479,10 @@
 			</File>
 			<File
 				RelativePath=".\stdafx.h"
+				>
+			</File>
+			<File
+				RelativePath=".\tea.h"
 				>
 			</File>
 			<Filter

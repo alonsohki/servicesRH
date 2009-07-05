@@ -925,3 +925,90 @@ bool CMessageIDENTIFY::ProcessMessage ( const CString& szLine, const std::vector
     m_pUser = CProtocol::GetSingleton ().GetMe ().GetUserAnywhere ( vec [ 2 ] );
     return ( m_pUser != NULL );
 }
+
+
+////////////////////////////
+//           DB           //
+////////////////////////////
+CMessageDB::CMessageDB ( const CString& szTarget,
+                         unsigned char ucCommand,
+                         unsigned int uiSerial,
+                         unsigned char ucTable,
+                         const CString& szKey,
+                         const CString& szValue,
+                         unsigned int uiVersion )
+: m_szTarget ( szTarget ),
+  m_ucCommand ( ucCommand ),
+  m_uiSerial ( uiSerial ),
+  m_ucTable ( ucTable ),
+  m_szKey ( szKey ),
+  m_szValue ( szValue ),
+  m_uiVersion ( uiVersion )
+{
+}
+CMessageDB::~CMessageDB ( ) { }
+
+bool CMessageDB::BuildMessage ( SProtocolMessage& message ) const
+{
+    if ( m_uiVersion != 0 )
+    {
+        message.szExtraInfo.Format ( "%s 0 J 0 %u", m_szTarget.c_str (), m_uiVersion );
+    }
+    else if ( m_ucCommand != 0 )
+    {
+        message.szExtraInfo.Format ( "%s %c 0 %09u %c", m_szTarget.c_str (), m_ucCommand, m_uiSerial, m_ucTable );
+    }
+    else
+    {
+        message.szExtraInfo.Format ( "%s %09u %c %s", m_szTarget.c_str (), m_uiSerial, m_ucTable, m_szKey.c_str () );
+        message.szText = m_szValue;
+    }
+    return true;
+}
+
+bool CMessageDB::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
+{
+    if ( vec.size () < 6 )
+        return false;
+
+    m_szTarget = vec [ 2 ];
+
+    unsigned char ucTemp = *( vec [ 3 ] );
+    if ( ( ucTemp >= 'A' && ucTemp <= 'Z' ) || ( ucTemp >= 'a' && ucTemp <= 'z' ) )
+    {
+        // Es un comando
+        m_uiVersion = 0;
+        m_szKey = "";
+        m_szValue = "";
+        m_ucCommand = ucTemp;
+        m_uiSerial = strtoul ( vec [ 5 ], NULL, 10 );
+        m_ucTable = *( vec [ 6 ] );
+    }
+    else
+    {
+        // Es un nuevo registro o la versión
+        m_uiSerial = strtoul ( vec [ 3 ], NULL, 10 );
+        m_ucTable = * ( vec [ 4 ] );
+        m_szKey = vec [ 5 ];
+        if ( vec.size () == 6 )
+            m_szValue = "";
+        else
+            m_szValue = vec [ 6 ];
+        m_ucCommand = 0;
+
+        // Verificamos si es la versión
+        if ( m_uiSerial == 0 && m_ucTable == 'J' && m_szKey == "0" )
+        {
+            m_uiVersion = strtol ( m_szValue, NULL, 10 );
+            m_ucTable = 0;
+            m_szKey = "";
+            m_szValue = "";
+        }
+        else
+        {
+            m_uiVersion = 0;
+        }
+    }
+
+    return true;
+}

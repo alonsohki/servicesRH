@@ -370,5 +370,28 @@ private:
 END_MESSAGE_DECLARATION()
 
 
+////////////////////////////
+//           DB           //
+////////////////////////////
+BEGIN_MESSAGE_DECLARATION(DB, const CString& szTarget, unsigned char ucCommand, unsigned int uiSerial, unsigned char ucTable, const CString& szKey, const CString& szValue = "", unsigned int uiVersion = 0 )
+public:
+    inline const CString&       GetTarget       ( ) const { return m_szTarget; }
+    inline unsigned char        GetCommand      ( ) const { return m_ucCommand; }
+    inline unsigned int         GetSerial       ( ) const { return m_uiSerial; }
+    inline unsigned char        GetTable        ( ) const { return m_ucTable; }
+    inline const CString&       GetKey          ( ) const { return m_szKey; }
+    inline const CString&       GetValue        ( ) const { return m_szValue; }
+    inline unsigned int         GetVersion      ( ) const { return m_uiVersion; }
+private:
+    CString             m_szTarget;
+    unsigned char       m_ucCommand;
+    unsigned int        m_uiSerial;
+    unsigned char       m_ucTable;
+    CString             m_szKey;
+    CString             m_szValue;
+    unsigned int        m_uiVersion;
+END_MESSAGE_DECLARATION()
+
+
 #undef BEGIN_MESSAGE_DECLARATION
 #undef END_MESSAGE_DECLARATION

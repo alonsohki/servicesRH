@@ -26,6 +26,7 @@ public:
                     GetAccountID    ( const CString& szName );
 
     void            Identify        ( CUser* pUser );
+    char*           CifraNick       ( char* dest, const char* szNick, const char* szPassword );
 
 
     // Comandos
