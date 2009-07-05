@@ -16,6 +16,29 @@
 
 #include "stdafx.h"
 
+
+////////////////////////////
+//           RAW          //
+////////////////////////////
+CMessageRAW::CMessageRAW ( const CString& szLine )
+: m_szLine ( szLine )
+{
+}
+CMessageRAW::~CMessageRAW ( ) { }
+
+bool CMessageRAW::BuildMessage ( SProtocolMessage& message ) const
+{
+    message.szCommand = m_szLine;
+    return true;
+}
+
+bool CMessageRAW::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
+{
+    m_szLine = szLine;
+    return true;
+}
+
+
 ////////////////////////////
 //          PASS          //
 ////////////////////////////

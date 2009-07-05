@@ -68,6 +68,17 @@ class CMessage ## msg : public IMessage \
 
 
 ////////////////////////////
+//           RAW          //
+////////////////////////////
+BEGIN_MESSAGE_DECLARATION(RAW, const CString& szLine)
+public:
+    inline const CString& GetLine ( ) const { return m_szLine; }
+private:
+    CString m_szLine;
+END_MESSAGE_DECLARATION()
+
+
+////////////////////////////
 //          PASS          //
 ////////////////////////////
 BEGIN_MESSAGE_DECLARATION(PASS, const CString& szPassword)

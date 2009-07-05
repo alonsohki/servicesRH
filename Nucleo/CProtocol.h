@@ -88,6 +88,7 @@ private:
     bool                    evtJoin             ( const IMessage& message );
     bool                    evtPart             ( const IMessage& message );
     bool                    evtKick             ( const IMessage& message );
+    bool                    evtRaw              ( const IMessage& message );
 
 private:
     CSocket                 m_socket;

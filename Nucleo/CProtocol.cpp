@@ -126,7 +126,7 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageJOIN(),   PROTOCOL_CALLBACK ( &CProtocol::evtJoin,   this ) );
     InternalAddHandler ( HANDLER_AFTER_CALLBACKS,  CMessagePART(),   PROTOCOL_CALLBACK ( &CProtocol::evtPart,   this ) );
     InternalAddHandler ( HANDLER_AFTER_CALLBACKS,  CMessageKICK(),   PROTOCOL_CALLBACK ( &CProtocol::evtKick,   this ) );
-
+    InternalAddHandler ( HANDLER_IN_CALLBACKS,     CMessageRAW(),    PROTOCOL_CALLBACK ( &CProtocol::evtRaw,    this ) );
 
     // Inicializamos los servicios
     CService::RegisterServices ( m_config );
@@ -221,10 +221,16 @@ bool CProtocol::Process ( const CString& szLine )
         pSource = m_me.GetServer ( ulNumeric );
     }
 
-    puts ( szLine );
     if ( !pSource )
         return false;
 
+    // Llamamos a los eventos de mensajes directos
+    CMessageRAW raw ( szLine );
+    raw.SetSource ( pSource );
+    TriggerMessageHandlers ( HANDLER_IN_CALLBACKS, raw );
+
+
+    // Obtenemos el escenario en el que se ejecutan los eventos para este mensaje
     IMessage* pMessage = 0;
     unsigned long ulStage = 0;
     t_commandsMap::iterator iterBefore = m_commandsMapBefore.find ( vec [ 1 ].c_str () );
@@ -781,7 +787,18 @@ bool CProtocol::evtKick ( const IMessage& message_ )
         const CMessageKICK& message = dynamic_cast < const CMessageKICK& > ( message_ );
         message.GetChannel ()->RemoveMember ( message.GetVictim () );
     }
+    catch ( std::bad_cast ) { return false; }
+    return true;
+}
 
+bool CProtocol::evtRaw ( const IMessage& message_ )
+{
+    try
+    {
+        const CMessageRAW& message = dynamic_cast < const CMessageRAW& > ( message_ );
+        // Logueamos la línea
+        CLogger::Log ( message.GetLine () );
+    }
     catch ( std::bad_cast ) { return false; }
     return true;
 }
