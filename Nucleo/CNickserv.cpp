@@ -24,6 +24,8 @@ CNickserv::CNickserv ( const CConfig& config )
     REGISTER ( Help,        All );
     REGISTER ( Register,    All );
     REGISTER ( Identify,    All );
+    REGISTER ( Group,       All );
+    REGISTER ( Ungroup,     All );
 #undef REGISTER
 
     // Registramos los eventos
@@ -38,7 +40,7 @@ CNickserv::~CNickserv ( )
 }
 
 
-unsigned long long CNickserv::GetAccountID ( const CString& szName )
+unsigned long long CNickserv::GetAccountID ( const CString& szName, bool bCheckGroups )
 {
     // Generamos la consulta SQL para obtener el ID dado un nick
     static CDBStatement* SQLAccountID = 0;
@@ -71,29 +73,66 @@ unsigned long long CNickserv::GetAccountID ( const CString& szName )
     // Ejecutamos la consulta
     if ( ! SQLAccountID->Execute ( "s", szName.c_str () ) )
     {
-        ReportBrokenDB ( 0, 0, "Ejecutando nickserv.SQLAccountID" );
+        ReportBrokenDB ( 0, SQLAccountID, "Ejecutando nickserv.SQLAccountID" );
         return 0ULL;
     }
 
     // Obtenemos y retornamos el ID conseguido de la base de datos
-    unsigned long long ID;
+    unsigned long long ID = 0ULL;
     if ( SQLAccountID->Fetch ( 0, 0, "Q", &ID ) != CDBStatement::FETCH_OK )
     {
         // Lo intentamos con el grupo
-        if ( ! SQLGroupID->Execute ( "s", szName.c_str () ) )
+        if ( bCheckGroups )
         {
-            ReportBrokenDB ( 0, 0, "Ejecutando nickserv.SQLGroupID" );
-            return 0ULL;
+            if ( ! SQLGroupID->Execute ( "s", szName.c_str () ) )
+            {
+                SQLAccountID->FreeResult ();
+                ReportBrokenDB ( 0, SQLGroupID, "Ejecutando nickserv.SQLGroupID" );
+                return 0ULL;
+            }
+
+            if ( SQLGroupID->Fetch ( 0, 0, "Q", &ID ) != CDBStatement::FETCH_OK )
+                ID = 0ULL;
+
+            SQLGroupID->FreeResult ();
         }
-
-        if ( SQLGroupID->Fetch ( 0, 0, "Q", &ID ) != CDBStatement::FETCH_OK )
-            ID = 0ULL;
-
-        SQLGroupID->FreeResult ();
     }
 
     SQLAccountID->FreeResult ();
     return ID;
+}
+
+void CNickserv::GetAccountName ( unsigned long long ID, CString& szDest )
+{
+    // Generamos la consulta para obtener el nombre
+    static CDBStatement* SQLGetName = 0;
+    if ( !SQLGetName )
+    {
+        SQLGetName = CDatabase::GetSingleton ().PrepareStatement (
+              "SELECT name FROM account WHERE id=?"
+            );
+        if ( !SQLGetName )
+        {
+            ReportBrokenDB ( 0, 0, "Generando nickserv.SQLGetName" );
+            szDest = "";
+            return;
+        }
+    }
+
+    // Obtenemos el nombre
+    char szName [ 64 ];
+    if ( !SQLGetName->Execute ( "Q", ID ) )
+    {
+        ReportBrokenDB ( 0, SQLGetName, "Ejecutando nickserv.SQLGetName" );
+        szDest = "";
+        return;
+    }
+
+    if ( SQLGetName->Fetch ( 0, 0, "s", szName, sizeof ( szName ) ) != CDBStatement::FETCH_OK )
+        szDest = "";
+    else
+        szDest = szName;
+    SQLGetName->FreeResult ();
 }
 
 void CNickserv::Identify ( CUser* pUser )
@@ -115,7 +154,7 @@ void CNickserv::Identify ( CUser* pUser )
     // Obtenemos el idioma
     if ( ! SQLGetLang->Execute ( "Q", data.ID ) )
     {
-        ReportBrokenDB ( 0, 0, "Ejecutando nickserv.SQLGetLang" );
+        ReportBrokenDB ( 0, SQLGetLang, "Ejecutando nickserv.SQLGetLang" );
         return;
     }
 
@@ -181,8 +220,57 @@ char* CNickserv::CifraNick ( char* dest, const char* szNick, const char* szPassw
     return dest;
 }
 
+bool CNickserv::CheckPassword ( unsigned long long ID, const CString& szPassword )
+{
+    // Generamos la consulta SQL para identificar cuentas
+    static CDBStatement* SQLIdentify = 0;
+    if ( SQLIdentify == 0 )
+    {
+        SQLIdentify = CDatabase::GetSingleton ().PrepareStatement (
+              "SELECT id FROM account WHERE id=? AND password=MD5(?)"
+            );
+        if ( !SQLIdentify )
+        {
+            return ReportBrokenDB ( 0, 0, "Generando nickserv.SQLIdentify" );
+        }
+    }
+
+    if ( ID == 0ULL )
+        return false;
+
+    // Verificamos la contraseña
+    if ( ! SQLIdentify->Execute ( "Qs", ID, szPassword.c_str () ) )
+    {
+        return ReportBrokenDB ( 0, SQLIdentify, "Ejecutando nickserv.SQLIdentify" );
+    }
+
+    bool bResult;
+    if ( SQLIdentify->Fetch ( 0, 0, "Q", &ID ) != CDBStatement::FETCH_OK )
+        bResult = false;
+    else
+        bResult = true;
+
+    SQLIdentify->FreeResult ();
+    return bResult;
+}
 
 
+
+// Grupos
+void CNickserv::CreateDBGroup ( CUser& s, unsigned long long ID )
+{
+    // TODO: Aquí iría crear la vhost y todo lo relacionado para la DB
+}
+
+void CNickserv::DestroyDBGroup ( CUser& s )
+{
+    // TODO: Aquí iría borrar de la DB la vhost y todo lo relacionado
+}
+
+void CNickserv::UpdateDBGroup ( CUser& s, unsigned char ucTable, const CString& szKey, const CString& szValue )
+{
+    // TODO: Introducimos un registro en la base de datos, pero para todo el grupo
+}
 
 
 
@@ -310,25 +398,11 @@ COMMAND(Register)
 //
 bool CNickserv::cmdIdentify ( SCommandInfo& info )
 {
-    // Generamos la consulta SQL para identificar cuentas
-    static CDBStatement* SQLIdentify = 0;
-    if ( SQLIdentify == 0 )
-    {
-        SQLIdentify = CDatabase::GetSingleton ().PrepareStatement (
-              "SELECT id FROM account WHERE id=? AND password=MD5(?)"
-            );
-        if ( !SQLIdentify )
-        {
-            return ReportBrokenDB ( info.pSource, 0, "Generando nickserv.SQLIdentify" );
-        }
-    }
-
     CUser& s = *( info.pSource );
     SServicesData& data = s.GetServicesData ();
 
     // Obtenemos el password
     CString& szPassword = info.GetNextParam ();
-
     if ( szPassword == "" )
     {
         return SendSyntax ( &s, "IDENTIFY" );
@@ -337,6 +411,7 @@ bool CNickserv::cmdIdentify ( SCommandInfo& info )
     // Nos aseguramos de que no esté ya identificado
     if ( data.bIdentified == true )
     {
+        memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
         LangMsg ( &s, "IDENTIFY_IDENTIFIED" );
         return false;
     }
@@ -349,18 +424,7 @@ bool CNickserv::cmdIdentify ( SCommandInfo& info )
     }
     else
     {
-        unsigned long long ID;
-
-        // Verificamos la contraseña
-        if ( ! SQLIdentify->Execute ( "Qs", data.ID, szPassword.c_str () ) )
-        {
-            memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
-            return ReportBrokenDB ( &s, 0, "Ejecutando nickserv.SQLIdentify" );
-        }
-
-        memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
-
-        if ( SQLIdentify->Fetch ( 0, 0, "Q", &ID ) != CDBStatement::FETCH_OK )
+        if ( !CheckPassword ( data.ID, szPassword ) )
             LangMsg ( &s, "IDENTIFY_WRONG_PASSWORD" );
         else
         {
@@ -368,13 +432,171 @@ bool CNickserv::cmdIdentify ( SCommandInfo& info )
             Identify ( &s );
         }
 
-        SQLIdentify->FreeResult ();
+        memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
     }
 
     return true;
 }
 
 
+
+///////////////////
+// GROUP
+//
+bool CNickserv::cmdGroup ( SCommandInfo& info )
+{
+    // Generamos la consulta para crear agrupamientos
+    static CDBStatement* SQLAddGroup = 0;
+    if ( !SQLAddGroup )
+    {
+        SQLAddGroup = CDatabase::GetSingleton ().PrepareStatement (
+              "INSERT INTO groups ( name, id ) VALUES ( ?, ? )"
+            );
+
+        if ( !SQLAddGroup )
+        {
+            return ReportBrokenDB ( info.pSource, SQLAddGroup, "Generando nickserv.SQLAddGroup" );
+        }
+    }
+
+    CUser& s = *( info.pSource );
+    SServicesData& data = s.GetServicesData ();
+
+    // Obtenemos el nick y password con los que quiere agruparse
+    CString& szNick = info.GetNextParam ();
+    if ( szNick == "" )
+        return SendSyntax ( &s, "GROUP" );
+    CString& szPassword = info.GetNextParam ();
+    if ( szPassword == "" )
+        return SendSyntax ( &s, "GROUP" );
+
+    // Comprobamos que el nick que quieren agrupar no esté ya registrado o agrupado
+    if ( data.ID != 0ULL )
+    {
+        memset ( (void*)szPassword.c_str (), 0, szPassword.length () ); // Eliminamos el password por seguridad
+        LangMsg ( &s, "GROUP_ACCOUNT_EXISTS" );
+        return false;
+    }
+
+    // Obtenemos el ID del nick con el que quieren agruparse
+    unsigned long long ID = GetAccountID ( szNick, false );
+    if ( ID == 0ULL )
+    {
+        memset ( (void*)szPassword.c_str (), 0, szPassword.length () ); // Eliminamos el password por seguridad
+        LangMsg ( &s, "GROUP_PRIMARY_DOESNT_EXIST", szNick.c_str () );
+        return false;
+    }
+
+    // Comprobamos la contraseña
+    if ( !CheckPassword ( ID, szPassword ) )
+    {
+        memset ( (void*)szPassword.c_str (), 0, szPassword.length () ); // Eliminamos el password por seguridad
+        LangMsg ( &s, "GROUP_WRONG_PASSWORD" );
+        return false;
+    }
+
+    // Agrupamos el nick
+    if ( ! SQLAddGroup->Execute ( "sQ", s.GetName ().c_str (), ID ) )
+    {
+        memset ( (void*)szPassword.c_str (), 0, szPassword.length () ); // Eliminamos el password por seguridad
+        return ReportBrokenDB ( &s, SQLAddGroup, "Ejecutando nickserv.SQLAddGroup" );
+    }
+    SQLAddGroup->FreeResult ();
+
+    // Insertamos el registro en la base de datos
+    char szHash [ 32 ];
+    CifraNick ( szHash, s.GetName (), szPassword );
+    CProtocol::GetSingleton ().InsertIntoDDB ( 'n', s.GetName (), szHash );
+
+    // Copiamos a la DDB los datos específicos de esta
+    CreateDBGroup ( s, ID );
+
+    // Identificamos al usuario
+    data.ID = ID;
+    Identify ( &s );
+
+    // Informamos al usuario del agrupamiento correcto
+    memset ( (void*)szPassword.c_str (), 0, szPassword.length () ); // Eliminamos el password por seguridad
+    LangMsg ( &s, "GROUP_SUCCESS", szNick.c_str () );
+
+    return true;
+}
+
+
+
+///////////////////
+// UNGROUP
+//
+bool CNickserv::cmdUngroup ( SCommandInfo& info )
+{
+    // Creamos la consulta SQL para borrar de un grupo
+    static CDBStatement* SQLUngroup = 0;
+    if ( !SQLUngroup )
+    {
+        SQLUngroup = CDatabase::GetSingleton ().PrepareStatement (
+              "DELETE FROM groups WHERE name=?"
+            );
+        if ( !SQLUngroup )
+        {
+            return ReportBrokenDB ( info.pSource, 0, "Generando nickserv.SQLUngroup" );
+        }
+    }
+
+    CUser& s = *( info.pSource );
+    SServicesData& data = s.GetServicesData ();
+
+    // Comprobamos que al menos está registrado o agrupado
+    if ( data.ID == 0ULL )
+    {
+        LangMsg ( &s, "UNGROUP_NOT_GROUPED" );
+        return false;
+    }
+
+    // Comprobamos que esté identificado
+    if ( data.bIdentified == false )
+    {
+        LangMsg ( &s, "UNGROUP_NOT_IDENTIFIED" );
+        return false;
+    }
+
+    // Nos aseguramos de que sea un group y no el nick principal
+    unsigned long long ID = GetAccountID ( s.GetName (), false );
+    if ( ID != 0ULL )
+    {
+        LangMsg ( &s, "UNGROUP_TRYING_PRIMARY" );
+        return false;
+    }
+
+    // Obtenemos el nick de la cuenta principal
+    CString szPrimaryName;
+    GetAccountName ( data.ID, szPrimaryName );
+    if ( szPrimaryName == "" )
+    {
+        return ReportBrokenDB ( &s );
+    }
+
+    // Lo desagrupamos
+    if ( ! SQLUngroup->Execute ( "s", s.GetName ().c_str () ) )
+    {
+        return ReportBrokenDB ( &s, SQLUngroup, "Ejecutando nickserv.SQLUngroup" );
+    }
+    SQLUngroup->FreeResult ();
+
+    // Eliminamos de la DDB los datos específicos
+    DestroyDBGroup ( s );
+
+    // Eliminamos el registro de la cuenta de la DDB
+    CProtocol::GetSingleton ().InsertIntoDDB ( 'n', s.GetName (), "" );
+
+    // Le desidentificamos
+    data.bIdentified = false;
+    data.ID = 0ULL;
+
+    // Informamos del desagrupamiento
+    LangMsg ( &s, "UNGROUP_SUCCESS", szPrimaryName.c_str () );
+
+    return true;
+}
 
 
 #undef COMMAND

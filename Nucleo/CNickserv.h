@@ -23,11 +23,18 @@ public:
     virtual         ~CNickserv      ( );
 
     unsigned long long
-                    GetAccountID    ( const CString& szName );
+                    GetAccountID    ( const CString& szName, bool bCheckGroups = true );
+    void            GetAccountName  ( unsigned long long ID, CString& szDest );
 
     void            Identify        ( CUser* pUser );
     char*           CifraNick       ( char* dest, const char* szNick, const char* szPassword );
+    bool            CheckPassword   ( unsigned long long ID, const CString& szPassword );
 
+private:
+    // Grupos
+    void            CreateDBGroup   ( CUser& s, unsigned long long ID );
+    void            DestroyDBGroup  ( CUser& s );
+    void            UpdateDBGroup   ( CUser& s, unsigned char ucTable, const CString& szKey, const CString& szValue );
 
     // Comandos
 protected:
@@ -37,6 +44,8 @@ private:
     COMMAND ( Help );
     COMMAND ( Register );
     COMMAND ( Identify );
+    COMMAND ( Group );
+    COMMAND ( Ungroup );
 #undef COMMAND
 
 

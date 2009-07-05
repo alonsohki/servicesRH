@@ -23,6 +23,8 @@ Lista de comandos disponibles:
 
     12REGISTER             Registro de un nick
     12IDENTIFY             Identificación de un nick registrado
+    12GROUP                Agrupamiento de nicks
+    12UNGROUP              Desagrupamiento de nicks
 
 Para obtener ayuda detallada sobre cualquier comando, escribe 12/msg %N HELP <comando>.
 %%
@@ -108,6 +110,71 @@ Si deseas saber cómo registrarlo, escribe 12/msg %N HELP REGISTER.
 
 %IDENTIFY_IDENTIFIED%
 Ya estás autentificado.
+%%
+#
+############################
+
+############################
+# GROUP
+%SYNTAX_GROUP%
+Sintaxis: 12GROUP <nick> <contraseña>
+%%
+
+%HELP_GROUP%
+El agrupamiento de nicks trata de poder tener todos tus nicks agrupados compartiendo
+todas las propiedades con tu nick principal (contraseña, email, ip virtual, etc).
+
+Para agrupar un nick, necesitas estar utilizando el nick que quieres agrupar con tu
+12nick principal y utilizar tu 12contraseña para agruparlo.
+
+Una vez hayas realizado el agrupamiento, podrás utilizar tu segundo nick como si fuera
+el principal.
+%%
+
+%GROUP_ACCOUNT_EXISTS%
+04Error: Este nick ya está registrado o agrupado.
+%%
+
+%GROUP_PRIMARY_DOESNT_EXIST%
+04Error: El nick 12%s no existe o forma parte de un grupo.
+%%
+
+%GROUP_WRONG_PASSWORD%
+04¡Contraseña incorrecta!
+%%
+
+%GROUP_SUCCESS%
+Tu nick ahora forma parte del grupo de 12%s.
+%%
+#
+############################
+
+############################
+# UNGROUP
+%SYNTAX_UNGROUP%
+Sintaxis: 12UNGROUP
+%%
+
+%HELP_UNGROUP%
+Si tu nick actual está agrupado con algún otro nick, te desagrupa de él.
+Para más información acerca de agrupamiento de nicks,
+escribe 12/msg %N HELP GROUP.
+%%
+
+%UNGROUP_NOT_GROUPED%
+04Error: Este nick no está registrado o agrupado a ningún otro.
+%%
+
+%UNGROUP_NOT_IDENTIFIED%
+04Error: No estás identificado. Escribe 12/msg %N HELP IDENTIFY para obtener ayuda.
+%%
+
+%UNGROUP_TRYING_PRIMARY%
+04Error: Este es el nick principal del grupo y no puedes desagruparlo.
+%%
+
+%UNGROUP_SUCCESS%
+Te has desagrupado del nick 12%s.
 %%
 #
 ############################
