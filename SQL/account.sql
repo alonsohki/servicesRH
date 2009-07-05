@@ -3,6 +3,8 @@ CREATE TABLE account (
 	name		VARCHAR ( 64 )		NOT NULL,
 	password	VARCHAR ( 32 )		NOT NULL,
 	email		VARCHAR ( 64 )		NULL,
+	lang		VARCHAR ( 8 )		NOT NULL DEFAULT 'EN',
+	rank		INT					NOT NULL DEFAULT '-1',
 	
 	username	VARCHAR ( 64 )		NOT NULL,
 	hostname	VARCHAR ( 128 )		NOT NULL,

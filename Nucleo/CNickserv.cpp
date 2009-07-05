@@ -96,6 +96,40 @@ unsigned long long CNickserv::GetAccountID ( const CString& szName )
     return ID;
 }
 
+void CNickserv::Identify ( CUser* pUser )
+{
+    // Construímos la consulta para obtener el idioma del usuario
+    static CDBStatement* SQLGetLang = 0;
+    if ( !SQLGetLang )
+    {
+        SQLGetLang = CDatabase::GetSingleton ().PrepareStatement ( "SELECT lang FROM account WHERE id=?" );
+        if ( !SQLGetLang )
+        {
+            ReportBrokenDB ( 0, 0, "Generando nickserv.SQLGetLang" );
+            return;
+        }
+    }
+
+    SServicesData& data = pUser->GetServicesData ();
+
+    // Obtenemos el idioma
+    if ( ! SQLGetLang->Execute ( "Q", data.ID ) )
+    {
+        ReportBrokenDB ( 0, 0, "Ejecutando nickserv.SQLGetLang" );
+        return;
+    }
+
+    char szLang [ 16 ];
+    if ( SQLGetLang->Fetch ( 0, 0, "s", szLang, sizeof ( szLang ) ) == CDBStatement::FETCH_OK )
+    {
+        data.bIdentified = true;
+        data.szLang = szLang;
+        CProtocol::GetSingleton ().GetMe ().Send ( CMessageIDENTIFY ( pUser ) );
+    }
+
+    SQLGetLang->FreeResult ();
+}
+
 
 
 
@@ -136,8 +170,10 @@ COMMAND(Register)
     if ( !SQLRegister )
     {
         SQLRegister = CDatabase::GetSingleton ().PrepareStatement (
-            "INSERT INTO account ( name, password, email, username, hostname, fullname, registered, lastSeen ) "
-            "VALUES ( ?, MD5(?), ?, ?, ?, ?, ?, ? )" );
+            "INSERT INTO account "
+            "( name, password, email, lang, username, "
+            "  hostname, fullname, registered, lastSeen ) "
+            "VALUES ( ?, MD5(?), ?, ?, ?, ?, ?, ?, ? )" );
         if ( !SQLRegister )
         {
             return ReportBrokenDB ( info.pSource, 0, "Generando nickserv.SQLRegister" );
@@ -172,8 +208,9 @@ COMMAND(Register)
     bool bResult;
     if ( szEmail == "" )
     {
-        bResult = SQLRegister->Execute ( "ssNsssTT", s.GetName ().c_str (),
+        bResult = SQLRegister->Execute ( "ssNssssTT", s.GetName ().c_str (),
                                                      szPassword.c_str (),
+                                                     data.szLang.c_str (),
                                                      s.GetIdent ().c_str (),
                                                      s.GetHost ().c_str (),
                                                      s.GetDesc ().c_str (),
@@ -181,9 +218,10 @@ COMMAND(Register)
     }
     else
     {
-        bResult = SQLRegister->Execute ( "ssssssTT", s.GetName ().c_str (),
+        bResult = SQLRegister->Execute ( "sssssssTT", s.GetName ().c_str (),
                                                      szPassword.c_str (),
                                                      szEmail.c_str (),
+                                                     data.szLang.c_str (),
                                                      s.GetIdent ().c_str (),
                                                      s.GetHost ().c_str (),
                                                      s.GetDesc ().c_str (),
@@ -201,9 +239,8 @@ COMMAND(Register)
     LangMsg ( &s, "REGISTER_COMPLETE", szPassword.c_str () );
     memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
 
-    data.bIdentified = true;
     data.ID = SQLRegister->InsertID ();
-    CProtocol::GetSingleton ().GetMe ().Send ( CMessageIDENTIFY ( &s ) );
+    Identify ( &s );
 
     return true;
 }
@@ -272,8 +309,7 @@ bool CNickserv::cmdIdentify ( SCommandInfo& info )
         else
         {
             LangMsg ( &s, "IDENTIFY_SUCCESS" );
-            data.bIdentified = true;
-            CProtocol::GetSingleton ().GetMe ().Send ( CMessageIDENTIFY ( &s ) );
+            Identify ( &s );
         }
 
         SQLIdentify->FreeResult ();
@@ -371,15 +407,17 @@ bool CNickserv::evtNick ( const IMessage& msg_ )
 
             case CClient::SERVER:
             {
-                // Verificamos nuevos usuarios
-                unsigned long long ID = GetAccountID ( msg.GetNick () );
-
-                if ( ID != 0ULL )
+                CUser* pUser = CProtocol::GetSingleton ().GetMe ().GetUserAnywhere ( msg.GetNick () );
+                if ( pUser )
                 {
-                    CUser* pUser = CProtocol::GetSingleton ().GetMe ().GetUserAnywhere ( msg.GetNick () );
-                    if ( pUser )
+                    SServicesData& data = pUser->GetServicesData ();
+                    data.szLang = CLanguageManager::GetSingleton ().GetDefaultLanguage ()->GetName ();
+
+                    // Verificamos nuevos usuarios
+                    unsigned long long ID = GetAccountID ( msg.GetNick () );
+
+                    if ( ID != 0ULL )
                     {
-                        SServicesData& data = pUser->GetServicesData ();
                         data.ID = ID;
 
                         if ( !strchr ( msg.GetModes (), 'n' ) && !strchr ( msg.GetModes (), 'r' ) )
@@ -389,8 +427,7 @@ bool CNickserv::evtNick ( const IMessage& msg_ )
                         }
                         else
                         {
-                            data.bIdentified = true;
-                            CProtocol::GetSingleton ().GetMe ().Send ( CMessageIDENTIFY ( pUser ) );
+                            Identify ( pUser );
                         }
                     }
                 }
@@ -420,9 +457,8 @@ bool CNickserv::evtMode ( const IMessage& msg_ )
             {
                 if ( pUser->GetModes () & ( CUser::UMODE_ACCOUNT | CUser::UMODE_REGNICK ) )
                 {
-                    data.bIdentified = true;
                     LangMsg ( pUser, "IDENTIFY_SUCCESS" );
-                    CProtocol::GetSingleton ().GetMe ().Send ( CMessageIDENTIFY ( pUser ) );
+                    Identify ( pUser );
                 }
             }
         }

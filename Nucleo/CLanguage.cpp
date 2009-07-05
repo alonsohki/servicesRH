@@ -27,6 +27,7 @@ CLanguage::CLanguage ( const CString& szLangName )
     m_entriesMap.set_empty_key ( (char*)HASH_STRING_EMPTY );
     m_entriesMap.set_deleted_key ( (char*)HASH_STRING_DELETED );
 
+    m_szName = szLangName;
     Load ( szLangName );
 }
 

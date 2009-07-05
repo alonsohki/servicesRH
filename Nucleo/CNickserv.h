@@ -25,6 +25,8 @@ public:
     unsigned long long
                     GetAccountID    ( const CString& szName );
 
+    void            Identify        ( CUser* pUser );
+
 
     // Comandos
 protected:
