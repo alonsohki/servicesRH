@@ -7,9 +7,9 @@ void tea(const unsigned int *const v,const unsigned int * const k,
 
    while(n-->0)
       {
-      y += (z << 4 ^ z >> 5) + z ^ sum + k[sum&3];
+      y += ((z << 4) ^ (z >> 5)) + (z ^ sum) + k[sum&3];
       sum += delta;
-      z += (y << 4 ^ y >> 5) + y ^ sum + k[sum>>11 & 3];
+      z += ((y << 4) ^ (y >> 5)) + (y ^ sum) + k[sum>>11 & 3];
       }
 
    w[0]=y; w[1]=z;

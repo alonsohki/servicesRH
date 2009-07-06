@@ -52,8 +52,9 @@ am_services_OBJECTS = base64.$(OBJEXT) CChannel.$(OBJEXT) \
 	CDirectory_posix.$(OBJEXT) CLanguageManager.$(OBJEXT) \
 	CLanguage.$(OBJEXT) CDatabase.$(OBJEXT) CDBStatement.$(OBJEXT) \
 	CDate.$(OBJEXT) CLogger.$(OBJEXT) CTimerManager.$(OBJEXT) \
-	CTimer.$(OBJEXT) CService.$(OBJEXT) CNickserv.$(OBJEXT) \
-	CChanserv.$(OBJEXT) CMemoserv.$(OBJEXT) COperserv.$(OBJEXT)
+	CTimer.$(OBJEXT) tea.$(OBJEXT) CService.$(OBJEXT) \
+	CNickserv.$(OBJEXT) CChanserv.$(OBJEXT) CMemoserv.$(OBJEXT) \
+	COperserv.$(OBJEXT)
 services_OBJECTS = $(am_services_OBJECTS)
 services_DEPENDENCIES =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
@@ -161,7 +162,7 @@ services_SOURCES = base64.cpp CChannel.cpp CChannelManager.cpp CClientManager.cp
     chattr.tab.cpp CMembership.cpp CMessage.cpp CProtocol.cpp CServer.cpp CSocket.cpp \
     CClient.cpp CLocalUser.cpp CUser.cpp hash.cpp Nucleo.cpp CDirectory_posix.cpp \
     CLanguageManager.cpp CLanguage.cpp CDatabase.cpp CDBStatement.cpp CDate.cpp \
-	CLogger.cpp CTimerManager.cpp CTimer.cpp \
+	CLogger.cpp CTimerManager.cpp CTimer.cpp tea.cpp \
     CService.cpp CNickserv.cpp CChanserv.cpp CMemoserv.cpp COperserv.cpp
 
 services_LDADD = -lmysqlclient
@@ -261,6 +262,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/base64.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chattr.tab.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hash.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tea.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
