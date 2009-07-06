@@ -149,6 +149,20 @@ void CNickserv::Identify ( CUser* pUser )
         }
     }
 
+    // Construímos la consulta para almacenar los datos del usuario
+    static CDBStatement* SQLSaveAccountDetails = 0;
+    if ( !SQLSaveAccountDetails )
+    {
+        SQLSaveAccountDetails = CDatabase::GetSingleton ().PrepareStatement (
+              "UPDATE account SET username=?,hostname=?,fullname=? WHERE id=?"
+            );
+        if ( !SQLSaveAccountDetails )
+        {
+            ReportBrokenDB ( 0, 0, "Generando nickserv.SQLSaveAccountDetails" );
+            return;
+        }
+    }
+
     SServicesData& data = pUser->GetServicesData ();
 
     // Obtenemos el idioma
@@ -167,6 +181,17 @@ void CNickserv::Identify ( CUser* pUser )
     }
 
     SQLGetLang->FreeResult ();
+
+    // Actualizamos los datos de la cuenta
+    if ( ! SQLSaveAccountDetails->Execute ( "sssQ", pUser->GetIdent ().c_str (),
+                                                    pUser->GetHost ().c_str (),
+                                                    pUser->GetDesc ().c_str (),
+                                                    data.ID ) )
+    {
+        ReportBrokenDB ( 0, SQLSaveAccountDetails, "Ejecutando nickserv.SQLSaveAccountDetails" );
+        return;
+    }
+    SQLSaveAccountDetails->FreeResult ();
 }
 
 char* CNickserv::CifraNick ( char* dest, const char* szNick, const char* szPassword )
@@ -632,7 +657,7 @@ bool CNickserv::evtQuit ( const IMessage& msg_ )
             if ( SQLUpdateLastSeen == 0 )
             {
                 SQLUpdateLastSeen = CDatabase::GetSingleton ().PrepareStatement (
-                      "UPDATE account SET lastSeen=? WHERE id=?"
+                      "UPDATE account SET lastSeen=?,quitmsg=? WHERE id=?"
                     );
                 if ( !SQLUpdateLastSeen )
                 {
@@ -644,7 +669,7 @@ bool CNickserv::evtQuit ( const IMessage& msg_ )
             // Obtenemos la fecha actual y la establecemos como
             // la última vez que se vió al usuario.
             CDate now;
-            if ( ! SQLUpdateLastSeen->Execute ( "TQ", &now, data.ID ) )
+            if ( ! SQLUpdateLastSeen->Execute ( "TsQ", &now, msg.GetMessage ().c_str (), data.ID ) )
                 ReportBrokenDB ( 0, SQLUpdateLastSeen, "Executing SQLUpdateLastSeen" );
 
             SQLUpdateLastSeen->FreeResult ();

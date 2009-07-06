@@ -9,6 +9,7 @@ CREATE TABLE account (
 	username	VARCHAR ( 64 )		NOT NULL,
 	hostname	VARCHAR ( 128 )		NOT NULL,
 	fullname	VARCHAR ( 128 )		NOT NULL,
+	quitmsg		VARCHAR ( 256 )		NULL,
 	
 	registered	TIMESTAMP			NOT NULL DEFAULT '0000-00-00 00:00:00',
 	lastSeen	TIMESTAMP			NOT NULL DEFAULT '0000-00-00 00:00:00',
