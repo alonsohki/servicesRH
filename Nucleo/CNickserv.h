@@ -26,7 +26,7 @@ public:
                     GetAccountID    ( const CString& szName, bool bCheckGroups = true );
     void            GetAccountName  ( unsigned long long ID, CString& szDest );
 
-    void            Identify        ( CUser* pUser );
+    void            Identify        ( CUser& user );
     char*           CifraNick       ( char* dest, const char* szNick, const char* szPassword );
     bool            CheckPassword   ( unsigned long long ID, const CString& szPassword );
 

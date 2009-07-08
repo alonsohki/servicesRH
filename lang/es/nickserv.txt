@@ -64,6 +64,10 @@ En caso contrario, utiliza otro nick.
 Si deseas saber cómo registrarlo, escribe 12/msg %N HELP REGISTER.
 %%
 
+%ACCOUNT_NOT_FOUND%
+04Error: No hay ningún nick registrado con el nombre 12%s.
+%%
+
 ############################
 # REGISTER
 %SYNTAX_REGISTER%

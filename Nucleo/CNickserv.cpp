@@ -134,7 +134,7 @@ void CNickserv::GetAccountName ( unsigned long long ID, CString& szDest )
     SQLGetName->FreeResult ();
 }
 
-void CNickserv::Identify ( CUser* pUser )
+void CNickserv::Identify ( CUser& user )
 {
     // Construímos la consulta para obtener el idioma del usuario
     static CDBStatement* SQLGetLang = 0;
@@ -162,7 +162,7 @@ void CNickserv::Identify ( CUser* pUser )
         }
     }
 
-    SServicesData& data = pUser->GetServicesData ();
+    SServicesData& data = user.GetServicesData ();
 
     // Obtenemos el idioma
     if ( ! SQLGetLang->Execute ( "Q", data.ID ) )
@@ -176,15 +176,15 @@ void CNickserv::Identify ( CUser* pUser )
     {
         data.bIdentified = true;
         data.szLang = szLang;
-        CProtocol::GetSingleton ().GetMe ().Send ( CMessageIDENTIFY ( pUser ) );
+        CProtocol::GetSingleton ().GetMe ().Send ( CMessageIDENTIFY ( &user ) );
     }
 
     SQLGetLang->FreeResult ();
 
     // Actualizamos los datos de la cuenta
-    if ( ! SQLSaveAccountDetails->Execute ( "sssQ", pUser->GetIdent ().c_str (),
-                                                    pUser->GetHost ().c_str (),
-                                                    pUser->GetDesc ().c_str (),
+    if ( ! SQLSaveAccountDetails->Execute ( "sssQ", user.GetIdent ().c_str (),
+                                                    user.GetHost ().c_str (),
+                                                    user.GetDesc ().c_str (),
                                                     data.ID ) )
     {
         ReportBrokenDB ( 0, SQLSaveAccountDetails, "Ejecutando nickserv.SQLSaveAccountDetails" );
@@ -305,7 +305,7 @@ void CNickserv::UpdateDBGroup ( CUser& s, unsigned char ucTable, const CString& 
 void CNickserv::UnknownCommand ( SCommandInfo& info )
 {
     info.ResetParamCounter ();
-    LangMsg ( info.pSource, "UNKNOWN_COMMAND", info.GetNextParam ().c_str () );
+    LangMsg ( *( info.pSource ), "UNKNOWN_COMMAND", info.GetNextParam ().c_str () );
 }
 
 #define COMMAND(x) bool CNickserv::cmd ## x ( SCommandInfo& info )
@@ -327,6 +327,9 @@ COMMAND(Help)
 //
 COMMAND(Register)
 {
+    CUser& s = *( info.pSource );
+    SServicesData& data = s.GetServicesData ();
+
     // Generamos la consulta SQL para registrar cuentas
     static CDBStatement* SQLRegister = 0;
     if ( !SQLRegister )
@@ -337,9 +340,19 @@ COMMAND(Register)
             "  hostname, fullname, registered, lastSeen ) "
             "VALUES ( ?, MD5(?), ?, ?, ?, ?, ?, ?, ? )" );
         if ( !SQLRegister )
-        {
-            return ReportBrokenDB ( info.pSource, 0, "Generando nickserv.SQLRegister" );
-        }
+            return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLRegister" );
+    }
+
+    // Generamos la consulta SQL para establecer al primer
+    // usuario registrado como administrador.
+    static CDBStatement* SQLSetFirstAdmin = 0;
+    if ( !SQLSetFirstAdmin )
+    {
+        SQLSetFirstAdmin = CDatabase::GetSingleton ().PrepareStatement (
+              "UPDATE account SET rank=? WHERE id=?"
+            );
+        if ( !SQLSetFirstAdmin )
+            return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLSetFirstAdmin" );
     }
 
     // Obtenemos el password
@@ -347,16 +360,13 @@ COMMAND(Register)
     if ( szPassword == "" )
     {
         // Si no nos especifican ningún password, les enviamos la sintaxis del comando
-        return SendSyntax ( info.pSource, "REGISTER" );
+        return SendSyntax ( s, "REGISTER" );
     }
-
-    CUser& s = *( info.pSource );
-    SServicesData& data = s.GetServicesData ();
 
     // Nos aseguramos de que no exista la cuenta
     if ( data.ID != 0ULL )
     {
-        LangMsg ( &s, "REGISTER_ACCOUNT_EXISTS" );
+        LangMsg ( s, "REGISTER_ACCOUNT_EXISTS" );
         return false;
     }
 
@@ -404,11 +414,19 @@ COMMAND(Register)
     CifraNick ( szHash, s.GetName (), szPassword );
     CProtocol::GetSingleton ().InsertIntoDDB ( 'n', s.GetName (), szHash );
 
-    LangMsg ( &s, "REGISTER_COMPLETE", szPassword.c_str () );
+    LangMsg ( s, "REGISTER_COMPLETE", szPassword.c_str () );
     memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
 
+    // Le identificamos
     data.ID = SQLRegister->InsertID ();
-    Identify ( &s );
+    Identify ( s );
+
+    // Si es el primer usuario en registrarse, le damos el rango de administrador.
+    if ( data.ID == 1ULL )
+    {
+        if ( SQLSetFirstAdmin->Execute ( "dQ", RANK_ADMINISTRATOR, data.ID ) )
+            SQLSetFirstAdmin->FreeResult ();
+    }
 
     return true;
 }
@@ -429,14 +447,14 @@ COMMAND(Identify)
     CString& szPassword = info.GetNextParam ();
     if ( szPassword == "" )
     {
-        return SendSyntax ( &s, "IDENTIFY" );
+        return SendSyntax ( s, "IDENTIFY" );
     }
 
     // Nos aseguramos de que no esté ya identificado
     if ( data.bIdentified == true )
     {
         memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
-        LangMsg ( &s, "IDENTIFY_IDENTIFIED" );
+        LangMsg ( s, "IDENTIFY_IDENTIFIED" );
         return false;
     }
 
@@ -444,16 +462,16 @@ COMMAND(Identify)
     if ( data.ID == 0ULL )
     {
         memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
-        LangMsg ( &s, "NOT_REGISTERED" );
+        LangMsg ( s, "NOT_REGISTERED" );
     }
     else
     {
         if ( !CheckPassword ( data.ID, szPassword ) )
-            LangMsg ( &s, "IDENTIFY_WRONG_PASSWORD" );
+            LangMsg ( s, "IDENTIFY_WRONG_PASSWORD" );
         else
         {
-            LangMsg ( &s, "IDENTIFY_SUCCESS" );
-            Identify ( &s );
+            LangMsg ( s, "IDENTIFY_SUCCESS" );
+            Identify ( s );
         }
 
         memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
@@ -474,7 +492,7 @@ COMMAND(Group)
 
     CString& szOption = info.GetNextParam ();
     if ( szOption == "" )
-        return SendSyntax ( &s, "GROUP" );
+        return SendSyntax ( s, "GROUP" );
 
     else if ( ! CPortability::CompareNoCase ( szOption, "JOIN" ) )
     {
@@ -493,16 +511,16 @@ COMMAND(Group)
         // Obtenemos el nick y password con los que quiere agruparse
         CString& szNick = info.GetNextParam ();
         if ( szNick == "" )
-            return SendSyntax ( &s, "GROUP" );
+            return SendSyntax ( s, "GROUP" );
         CString& szPassword = info.GetNextParam ();
         if ( szPassword == "" )
-            return SendSyntax ( &s, "GROUP" );
+            return SendSyntax ( s, "GROUP" );
 
         // Comprobamos que el nick que quieren agrupar no esté ya registrado o agrupado
         if ( data.ID != 0ULL )
         {
             memset ( (void*)szPassword.c_str (), 0, szPassword.length () ); // Eliminamos el password por seguridad
-            LangMsg ( &s, "GROUP_JOIN_ACCOUNT_EXISTS" );
+            LangMsg ( s, "GROUP_JOIN_ACCOUNT_EXISTS" );
             return false;
         }
 
@@ -511,7 +529,7 @@ COMMAND(Group)
         if ( ID == 0ULL )
         {
             memset ( (void*)szPassword.c_str (), 0, szPassword.length () ); // Eliminamos el password por seguridad
-            LangMsg ( &s, "GROUP_JOIN_PRIMARY_DOESNT_EXIST", szNick.c_str () );
+            LangMsg ( s, "GROUP_JOIN_PRIMARY_DOESNT_EXIST", szNick.c_str () );
             return false;
         }
 
@@ -519,7 +537,7 @@ COMMAND(Group)
         if ( !CheckPassword ( ID, szPassword ) )
         {
             memset ( (void*)szPassword.c_str (), 0, szPassword.length () ); // Eliminamos el password por seguridad
-            LangMsg ( &s, "GROUP_JOIN_WRONG_PASSWORD" );
+            LangMsg ( s, "GROUP_JOIN_WRONG_PASSWORD" );
             return false;
         }
 
@@ -541,11 +559,11 @@ COMMAND(Group)
 
         // Identificamos al usuario
         data.ID = ID;
-        Identify ( &s );
+        Identify ( s );
 
         // Informamos al usuario del agrupamiento correcto
         memset ( (void*)szPassword.c_str (), 0, szPassword.length () ); // Eliminamos el password por seguridad
-        LangMsg ( &s, "GROUP_JOIN_SUCCESS", szNick.c_str () );
+        LangMsg ( s, "GROUP_JOIN_SUCCESS", szNick.c_str () );
     }
 
 
@@ -565,14 +583,14 @@ COMMAND(Group)
         // Comprobamos que al menos está registrado o agrupado
         if ( data.ID == 0ULL )
         {
-            LangMsg ( &s, "GROUP_LEAVE_NOT_GROUPED" );
+            LangMsg ( s, "GROUP_LEAVE_NOT_GROUPED" );
             return false;
         }
 
         // Comprobamos que esté identificado
         if ( data.bIdentified == false )
         {
-            LangMsg ( &s, "NOT_IDENTIFIED" );
+            LangMsg ( s, "NOT_IDENTIFIED" );
             return false;
         }
 
@@ -580,7 +598,7 @@ COMMAND(Group)
         unsigned long long ID = GetAccountID ( s.GetName (), false );
         if ( ID != 0ULL )
         {
-            LangMsg ( &s, "GROUP_LEAVE_TRYING_PRIMARY" );
+            LangMsg ( s, "GROUP_LEAVE_TRYING_PRIMARY" );
             return false;
         }
 
@@ -606,7 +624,7 @@ COMMAND(Group)
         data.ID = 0ULL;
 
         // Informamos del desagrupamiento
-        LangMsg ( &s, "GROUP_LEAVE_SUCCESS", szPrimaryName.c_str () );
+        LangMsg ( s, "GROUP_LEAVE_SUCCESS", szPrimaryName.c_str () );
     }
 
     else if ( ! CPortability::CompareNoCase ( szOption, "LIST" ) )
@@ -625,37 +643,54 @@ COMMAND(Group)
         // Verificamos que el usuario está registrado
         if ( data.ID == 0ULL )
         {
-            LangMsg ( &s, "NOT_REGISTERED");
+            LangMsg ( s, "NOT_REGISTERED" );
             return false;
         }
 
         // Verificamos que el usuario está identificado
         if ( data.bIdentified == false )
         {
-            LangMsg ( &s, "NOT_IDENTIFIED" );
+            LangMsg ( s, "NOT_IDENTIFIED" );
             return false;
+        }
+
+        // Verificamos si es un operador para permitir visualizar
+        // los grupos ajenos.
+        unsigned long long ID = data.ID;
+        if ( HasAccess ( s, RANK_OPERATOR ) )
+        {
+            CString& szTarget = info.GetNextParam ();
+            if ( szTarget != "" )
+            {
+                ID = GetAccountID ( szTarget );
+                if ( ID == 0ULL )
+                {
+                    LangMsg ( s, "ACCOUNT_NOT_FOUND", szTarget.c_str () );
+                    return false;
+                }
+            }
         }
 
         // Obtenemos el nick principal del grupo
         CString szPrimaryName;
-        GetAccountName ( data.ID, szPrimaryName );
+        GetAccountName ( ID, szPrimaryName );
         if ( szPrimaryName == "" )
             return ReportBrokenDB ( &s );
 
         // Obtenemos los nicks del grupo
-        if ( ! SQLGetNicksInGroup->Execute ( "Q", data.ID ) )
+        if ( ! SQLGetNicksInGroup->Execute ( "Q", ID ) )
             return ReportBrokenDB ( &s, SQLGetNicksInGroup, "Ejecutando nickserv.SQLGetNicksInGroup" );
 
         // Le mostramos la lista en el grupo
         char szNick [ 128 ];
-        LangMsg ( &s, "GROUP_LIST", szPrimaryName.c_str () );
+        LangMsg ( s, "GROUP_LIST", szPrimaryName.c_str () );
         while ( SQLGetNicksInGroup->Fetch ( 0, 0, "s", szNick, sizeof ( szNick ) ) == CDBStatement::FETCH_OK )
-            Msg ( &s, CString ( "- %s", szNick ) );
+            Msg ( s, CString ( "- %s", szNick ) );
         SQLGetNicksInGroup->FreeResult ();
     }
 
     else
-        return SendSyntax ( &s, "GROUP" );
+        return SendSyntax ( s, "GROUP" );
 
     return true;
 }
@@ -740,7 +775,7 @@ bool CNickserv::evtNick ( const IMessage& msg_ )
                 if ( ID != 0ULL )
                 {
                     data.ID = ID;
-                    LangMsg ( &s, "NICKNAME_REGISTERED" );
+                    LangMsg ( s, "NICKNAME_REGISTERED" );
                 }
 
                 break;
@@ -751,7 +786,8 @@ bool CNickserv::evtNick ( const IMessage& msg_ )
                 CUser* pUser = CProtocol::GetSingleton ().GetMe ().GetUserAnywhere ( msg.GetNick () );
                 if ( pUser )
                 {
-                    SServicesData& data = pUser->GetServicesData ();
+                    CUser& s = *pUser;
+                    SServicesData& data = s.GetServicesData ();
                     data.szLang = CLanguageManager::GetSingleton ().GetDefaultLanguage ()->GetName ();
 
                     // Verificamos nuevos usuarios
@@ -763,12 +799,12 @@ bool CNickserv::evtNick ( const IMessage& msg_ )
 
                         if ( !strchr ( msg.GetModes (), 'n' ) && !strchr ( msg.GetModes (), 'r' ) )
                         {
-                            LangMsg ( pUser, "NICKNAME_REGISTERED" );
+                            LangMsg ( s, "NICKNAME_REGISTERED" );
                             data.bIdentified = false;
                         }
                         else
                         {
-                            Identify ( pUser );
+                            Identify ( s );
                         }
                     }
                 }
@@ -793,13 +829,14 @@ bool CNickserv::evtMode ( const IMessage& msg_ )
         if ( pUser )
         {
             // Un usuario se cambia los modos
-            SServicesData& data = pUser->GetServicesData ();
+            CUser& s = *pUser;
+            SServicesData& data = s.GetServicesData ();
             if ( data.bIdentified == false && data.ID != 0ULL )
             {
                 if ( pUser->GetModes () & ( CUser::UMODE_ACCOUNT | CUser::UMODE_REGNICK ) )
                 {
-                    LangMsg ( pUser, "IDENTIFY_SUCCESS" );
-                    Identify ( pUser );
+                    LangMsg ( s, "IDENTIFY_SUCCESS" );
+                    Identify ( s );
                 }
             }
         }

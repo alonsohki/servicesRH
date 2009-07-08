@@ -21,11 +21,23 @@
 class CService : public CLocalUser
 {
 public:
+    enum EServicesRank
+    {
+        RANK_ADMINISTRATOR = 0,
+        RANK_COADMINISTRATOR,
+        RANK_OPERATOR,
+        RANK_PREOPERATOR
+    };
+
+    // Parte estática
+public:
     static void     RegisterServices        ( const CConfig& config );
 private:
     static std::vector < unsigned long >      ms_ulFreeNumerics;
     static std::list < CService* >            ms_listServices;
 
+
+    // Parte no estática
 public:
                     CService        ( const CString& szServiceName, const CConfig& config );
     virtual         ~CService       ( );
@@ -33,10 +45,10 @@ public:
     bool            IsOk            ( ) const { return m_bIsOk; }
     const CString&  GetError        ( ) const { return m_szError; }
 
-    void            Msg             ( CUser* pDest, const CString& szMessage );
-    bool            LangMsg         ( CUser* pDest, const char* szTopic, ... );
-    bool            SendSyntax      ( CUser* pDest, const char* szCommand );
-    bool            AccessDenied    ( CUser* pDest );
+    void            Msg             ( CUser& pDest, const CString& szMessage );
+    bool            LangMsg         ( CUser& pDest, const char* szTopic, ... );
+    bool            SendSyntax      ( CUser& pDest, const char* szCommand );
+    bool            AccessDenied    ( CUser& pDest );
     bool            ReportBrokenDB  ( CUser* pDest, CDBStatement* pStatement = 0, const CString& szExtraInfo = CString() );
 
 protected:
@@ -44,6 +56,7 @@ protected:
     virtual void    UnknownCommand  ( SCommandInfo& info ) { }
 
     bool            ProcessHelp     ( SCommandInfo& info );
+    bool            HasAccess       ( CUser& user, EServicesRank rank );
 
 private:
     void            ProcessCommands ( CUser* pSource, const CString& szMessage );

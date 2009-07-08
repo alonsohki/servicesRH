@@ -120,17 +120,17 @@ CService::~CService ( )
     }
 }
 
-void CService::Msg ( CUser* pDest, const CString& szMessage )
+void CService::Msg ( CUser& dest, const CString& szMessage )
 {
-    Send ( CMessagePRIVMSG ( pDest, 0, szMessage ) );
+    Send ( CMessagePRIVMSG ( &dest, 0, szMessage ) );
 }
 
-bool CService::LangMsg ( CUser* pDest, const char* szTopic, ... )
+bool CService::LangMsg ( CUser& dest, const char* szTopic, ... )
 {
     va_list vl;
 
     CLanguage* pLanguage = 0;
-    SServicesData& data = pDest->GetServicesData ();
+    SServicesData& data = dest.GetServicesData ();
 
     if ( data.szLang.size () > 0 )
         pLanguage = m_langManager.GetLanguage ( data.szLang );
@@ -159,9 +159,9 @@ bool CService::LangMsg ( CUser* pDest, const char* szTopic, ... )
         while ( ( iPos = szMessage2.find ( '\n', iPrevPos + 1 ) ) != CString::npos )
         {
             if ( iPrevPos + 1 == iPos )
-                Msg ( pDest, "\xA0" );
+                Msg ( dest, "\xA0" );
             else
-                Msg ( pDest, szMessage2.substr ( iPrevPos + 1, iPos - iPrevPos - 1 ) );
+                Msg ( dest, szMessage2.substr ( iPrevPos + 1, iPos - iPrevPos - 1 ) );
             iPrevPos = iPos;
         }
 
@@ -171,24 +171,24 @@ bool CService::LangMsg ( CUser* pDest, const char* szTopic, ... )
     return false;
 }
 
-bool CService::SendSyntax ( CUser* pDest, const char* szCommand )
+bool CService::SendSyntax ( CUser& dest, const char* szCommand )
 {
     CString szLangTopic ( "SYNTAX_%s", szCommand );
-    LangMsg ( pDest, szLangTopic );
-    LangMsg ( pDest, "HELP_FOR_MORE_INFORMATION", szCommand );
+    LangMsg ( dest, szLangTopic );
+    LangMsg ( dest, "HELP_FOR_MORE_INFORMATION", szCommand );
     return false;
 }
 
-bool CService::AccessDenied ( CUser* pDest )
+bool CService::AccessDenied ( CUser& dest )
 {
-    LangMsg ( pDest, "ACCESS_DENIED" );
+    LangMsg ( dest, "ACCESS_DENIED" );
     return false;
 }
 
 bool CService::ReportBrokenDB ( CUser* pDest, CDBStatement* pStatement, const CString& szExtraInfo )
 {
     if ( pDest )
-        LangMsg ( pDest, "BROKEN_DB" );
+        LangMsg ( *pDest, "BROKEN_DB" );
 
     CString szMessage;
     if ( szExtraInfo != "" )
@@ -208,10 +208,11 @@ bool CService::ReportBrokenDB ( CUser* pDest, CDBStatement* pStatement, const CS
 
 bool CService::ProcessHelp ( SCommandInfo& info )
 {
+    CUser& s = *( info.pSource );
     CString szTopic = info.GetNextParam ();
     if ( szTopic == "" || !CPortability::CompareNoCase ( szTopic, "HELP" ) )
     {
-        LangMsg ( info.pSource, "HELP" );
+        LangMsg ( s, "HELP" );
     }
     else
     {
@@ -225,14 +226,14 @@ bool CService::ProcessHelp ( SCommandInfo& info )
             // Construímos una nueva estructura de información del comando
             // para enviarsela a la verificación.
             SCommandInfo info2;
-            info2.pSource = info.pSource;
+            info2.pSource = &s;
             info2.vecParams.assign ( info.vecParams.begin () + 1, info.vecParams.end () );
             info2.GetNextParam ();
 
             if ( ! (*pVerifyCallback) ( info2 ) )
             {
                 // No tiene acceso al comando
-                AccessDenied ( info2.pSource );
+                AccessDenied ( s );
                 return false;
             }
 
@@ -246,11 +247,11 @@ bool CService::ProcessHelp ( SCommandInfo& info )
                 szTopic.append ( szNext );
             } while ( true );
 
-            if ( LangMsg ( info.pSource, CString ( "SYNTAX_%s", szTopic.c_str () ) ) )
-                Msg ( info.pSource, "\xA0" ); // Insertamos una línea en blanco entre
+            if ( LangMsg ( s, CString ( "SYNTAX_%s", szTopic.c_str () ) ) )
+                Msg ( s, "\xA0" ); // Insertamos una línea en blanco entre
                                               // la sintaxis y la ayuda.
 
-            if ( ! LangMsg ( info.pSource, CString ( "HELP_%s", szTopic.c_str () ) ) )
+            if ( ! LangMsg ( s, CString ( "HELP_%s", szTopic.c_str () ) ) )
             {
                 // Construímos una cadena de texto con el tema de ayuda solicitado
                 // para enviarle al usuario que no se ha encontrado ayuda al respecto.
@@ -266,13 +267,13 @@ bool CService::ProcessHelp ( SCommandInfo& info )
                     szTopic.append ( szNext );
                 } while ( true );
 
-                LangMsg ( info.pSource, "NO_HELP_TOPIC", szTopic.c_str () );
+                LangMsg ( s, "NO_HELP_TOPIC", szTopic.c_str () );
                 return false;
             }
         }
         else
         {
-            LangMsg ( info.pSource, "NO_HELP_TOPIC", szTopic.c_str () );
+            LangMsg ( s, "NO_HELP_TOPIC", szTopic.c_str () );
             return false;
         }
     }
@@ -334,11 +335,46 @@ void CService::ProcessCommands ( CUser* pSource, const CString& szMessage )
             if ( (*pVerifyCallback) ( info ) )
                 (*pCallback) ( info );
             else
-                AccessDenied ( pSource );
+                AccessDenied ( *pSource );
         }
         else
         {
             UnknownCommand ( info );
         }
     }
+}
+
+bool CService::HasAccess ( CUser& user, EServicesRank rank )
+{
+    // Creamos la consulta SQL para obtener el rango de un usuario
+    static CDBStatement* SQLHasAccess = 0;
+    if ( !SQLHasAccess )
+    {
+        SQLHasAccess = CDatabase::GetSingleton ().PrepareStatement (
+              "SELECT rank FROM account WHERE id=?"
+            );
+        if ( !SQLHasAccess )
+            return ReportBrokenDB ( &user, 0, "Generando CService.SQLHasAccess" );
+    }
+
+    SServicesData& data = user.GetServicesData ();
+
+    // Nos aseguramos de que esté registrado e identificado
+    if ( data.ID == 0ULL || data.bIdentified == false )
+        return false;
+
+    // Obtenemos el rango
+    int iRank;
+    if ( ! SQLHasAccess->Execute ( "Q", data.ID ) )
+        return ReportBrokenDB ( &user, SQLHasAccess, "Ejecutando CService.SQLHasAccess" );
+    if ( SQLHasAccess->Fetch ( 0, 0, "d", &iRank ) != CDBStatement::FETCH_OK )
+        iRank = -1;
+    SQLHasAccess->FreeResult ();
+
+    // Verificamos el acceso
+    if ( iRank == -1 || static_cast < EServicesRank > ( iRank ) > rank )
+        return false;
+    return true;
+
+
 }
