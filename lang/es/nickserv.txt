@@ -24,7 +24,6 @@ Lista de comandos disponibles:
     12REGISTER             Registro de un nick
     12IDENTIFY             Identificación de un nick registrado
     12GROUP                Agrupamiento de nicks
-    12UNGROUP              Desagrupamiento de nicks
 
 Para obtener ayuda detallada sobre cualquier comando, escribe 12/msg %N HELP <comando>.
 %%
@@ -56,7 +55,14 @@ Si es tu nick, escribe 12/msg %N IDENTIFY <contraseña> para identificarte.
 En caso contrario, utiliza otro nick.
 %%
 
+%NOT_IDENTIFIED%
+04Error: No estás identificado. Escribe 12/msg %N HELP IDENTIFY para obtener ayuda.
+%%
 
+%NOT_REGISTERED%
+04Error: Tu nick no está registrado.
+Si deseas saber cómo registrarlo, escribe 12/msg %N HELP REGISTER.
+%%
 
 ############################
 # REGISTER
@@ -95,11 +101,6 @@ Sintaxis: 12IDENTIFY <contraseña>
 Te identifica como el legítimo dueño de este nick frente a los servicios.
 %%
 
-%IDENTIFY_UNREGISTERED%
-Tu nick no está registrado.
-Si deseas saber cómo registrarlo, escribe 12/msg %N HELP REGISTER.
-%%
-
 %IDENTIFY_WRONG_PASSWORD%
 04¡Contraseña incorrecta!
 %%
@@ -117,64 +118,56 @@ Ya estás autentificado.
 ############################
 # GROUP
 %SYNTAX_GROUP%
-Sintaxis: 12GROUP <nick> <contraseña>
+Sintaxis: 12GROUP {JOIN/LEAVE/LIST} [nick] [contraseña]
 %%
 
 %HELP_GROUP%
 El agrupamiento de nicks trata de poder tener todos tus nicks agrupados compartiendo
 todas las propiedades con tu nick principal (contraseña, email, ip virtual, etc).
 
-Para agrupar un nick, necesitas estar utilizando el nick que quieres agrupar con tu
+Para agrupar un nick, necesitas estar utilizando el nick que quieres agrupar con tu
 12nick principal y utilizar tu 12contraseña para agruparlo.
 
 Una vez hayas realizado el agrupamiento, podrás utilizar tu segundo nick como si fuera
 el principal.
+
+Las distintas opciones del comando 12GROUP son:
+
+12- JOIN: Si estás utilizando un nick sin registrar, lo agrupas a tu nick principal.
+Los parámetros 12nick y 12contraseña son requeridos para esta acción.
+12- LEAVE: Si estás utilizando un nick agrupado, eliminará a este del grupo quedando
+desregistrado. No requiere parámetros.
+12- LIST: Lista los nicks dentro de tu grupo de nicks. No requiere parámetros.
 %%
 
-%GROUP_ACCOUNT_EXISTS%
+%GROUP_JOIN_ACCOUNT_EXISTS%
 04Error: Este nick ya está registrado o agrupado.
 %%
 
-%GROUP_PRIMARY_DOESNT_EXIST%
+%GROUP_JOIN_PRIMARY_DOESNT_EXIST%
 04Error: El nick 12%s no existe o forma parte de un grupo.
 %%
 
-%GROUP_WRONG_PASSWORD%
+%GROUP_JOIN_WRONG_PASSWORD%
 04¡Contraseña incorrecta!
 %%
 
-%GROUP_SUCCESS%
+%GROUP_JOIN_SUCCESS%
 Tu nick ahora forma parte del grupo de 12%s.
 %%
-#
-############################
 
-############################
-# UNGROUP
-%SYNTAX_UNGROUP%
-Sintaxis: 12UNGROUP
-%%
-
-%HELP_UNGROUP%
-Si tu nick actual está agrupado con algún otro nick, te desagrupa de él.
-Para más información acerca de agrupamiento de nicks,
-escribe 12/msg %N HELP GROUP.
-%%
-
-%UNGROUP_NOT_GROUPED%
+%GROUP_LEAVE_NOT_GROUPED%
 04Error: Este nick no está registrado o agrupado a ningún otro.
 %%
 
-%UNGROUP_NOT_IDENTIFIED%
-04Error: No estás identificado. Escribe 12/msg %N HELP IDENTIFY para obtener ayuda.
-%%
-
-%UNGROUP_TRYING_PRIMARY%
+%GROUP_LEAVE_TRYING_PRIMARY%
 04Error: Este es el nick principal del grupo y no puedes desagruparlo.
 %%
 
-%UNGROUP_SUCCESS%
+%GROUP_LEAVE_SUCCESS%
 Te has desagrupado del nick 12%s.
 %%
-#
-############################
+
+%GROUP_LIST%
+Lista de nicks en el grupo de 12%s:
+%%

@@ -25,7 +25,6 @@ CNickserv::CNickserv ( const CConfig& config )
     REGISTER ( Register,    All );
     REGISTER ( Identify,    All );
     REGISTER ( Group,       All );
-    REGISTER ( Ungroup,     All );
 #undef REGISTER
 
     // Registramos los eventos
@@ -421,7 +420,7 @@ COMMAND(Register)
 ///////////////////
 // IDENTIFY
 //
-bool CNickserv::cmdIdentify ( SCommandInfo& info )
+COMMAND(Identify)
 {
     CUser& s = *( info.pSource );
     SServicesData& data = s.GetServicesData ();
@@ -445,7 +444,7 @@ bool CNickserv::cmdIdentify ( SCommandInfo& info )
     if ( data.ID == 0ULL )
     {
         memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
-        LangMsg ( &s, "IDENTIFY_UNREGISTERED" );
+        LangMsg ( &s, "NOT_REGISTERED" );
     }
     else
     {
@@ -468,160 +467,199 @@ bool CNickserv::cmdIdentify ( SCommandInfo& info )
 ///////////////////
 // GROUP
 //
-bool CNickserv::cmdGroup ( SCommandInfo& info )
+COMMAND(Group)
 {
-    // Generamos la consulta para crear agrupamientos
-    static CDBStatement* SQLAddGroup = 0;
-    if ( !SQLAddGroup )
-    {
-        SQLAddGroup = CDatabase::GetSingleton ().PrepareStatement (
-              "INSERT INTO groups ( name, id ) VALUES ( ?, ? )"
-            );
+    CUser& s = *( info.pSource );
+    SServicesData& data = s.GetServicesData ();
 
+    CString& szOption = info.GetNextParam ();
+    if ( szOption == "" )
+        return SendSyntax ( &s, "GROUP" );
+
+    else if ( ! CPortability::CompareNoCase ( szOption, "JOIN" ) )
+    {
+        // Generamos la consulta para crear agrupamientos
+        static CDBStatement* SQLAddGroup = 0;
         if ( !SQLAddGroup )
         {
-            return ReportBrokenDB ( info.pSource, SQLAddGroup, "Generando nickserv.SQLAddGroup" );
+            SQLAddGroup = CDatabase::GetSingleton ().PrepareStatement (
+                  "INSERT INTO groups ( name, id ) VALUES ( ?, ? )"
+                );
+
+            if ( !SQLAddGroup )
+                return ReportBrokenDB ( info.pSource, SQLAddGroup, "Generando nickserv.SQLAddGroup" );
         }
-    }
 
-    CUser& s = *( info.pSource );
-    SServicesData& data = s.GetServicesData ();
+        // Obtenemos el nick y password con los que quiere agruparse
+        CString& szNick = info.GetNextParam ();
+        if ( szNick == "" )
+            return SendSyntax ( &s, "GROUP" );
+        CString& szPassword = info.GetNextParam ();
+        if ( szPassword == "" )
+            return SendSyntax ( &s, "GROUP" );
 
-    // Obtenemos el nick y password con los que quiere agruparse
-    CString& szNick = info.GetNextParam ();
-    if ( szNick == "" )
-        return SendSyntax ( &s, "GROUP" );
-    CString& szPassword = info.GetNextParam ();
-    if ( szPassword == "" )
-        return SendSyntax ( &s, "GROUP" );
+        // Comprobamos que el nick que quieren agrupar no esté ya registrado o agrupado
+        if ( data.ID != 0ULL )
+        {
+            memset ( (void*)szPassword.c_str (), 0, szPassword.length () ); // Eliminamos el password por seguridad
+            LangMsg ( &s, "GROUP_JOIN_ACCOUNT_EXISTS" );
+            return false;
+        }
 
-    // Comprobamos que el nick que quieren agrupar no esté ya registrado o agrupado
-    if ( data.ID != 0ULL )
-    {
+        // Obtenemos el ID del nick con el que quieren agruparse
+        unsigned long long ID = GetAccountID ( szNick, false );
+        if ( ID == 0ULL )
+        {
+            memset ( (void*)szPassword.c_str (), 0, szPassword.length () ); // Eliminamos el password por seguridad
+            LangMsg ( &s, "GROUP_JOIN_PRIMARY_DOESNT_EXIST", szNick.c_str () );
+            return false;
+        }
+
+        // Comprobamos la contraseña
+        if ( !CheckPassword ( ID, szPassword ) )
+        {
+            memset ( (void*)szPassword.c_str (), 0, szPassword.length () ); // Eliminamos el password por seguridad
+            LangMsg ( &s, "GROUP_JOIN_WRONG_PASSWORD" );
+            return false;
+        }
+
+        // Agrupamos el nick
+        if ( ! SQLAddGroup->Execute ( "sQ", s.GetName ().c_str (), ID ) )
+        {
+            memset ( (void*)szPassword.c_str (), 0, szPassword.length () ); // Eliminamos el password por seguridad
+            return ReportBrokenDB ( &s, SQLAddGroup, "Ejecutando nickserv.SQLAddGroup" );
+        }
+        SQLAddGroup->FreeResult ();
+
+        // Insertamos el registro en la base de datos
+        char szHash [ 32 ];
+        CifraNick ( szHash, s.GetName (), szPassword );
+        CProtocol::GetSingleton ().InsertIntoDDB ( 'n', s.GetName (), szHash );
+
+        // Copiamos a la DDB los datos específicos de esta
+        CreateDBGroup ( s, ID );
+
+        // Identificamos al usuario
+        data.ID = ID;
+        Identify ( &s );
+
+        // Informamos al usuario del agrupamiento correcto
         memset ( (void*)szPassword.c_str (), 0, szPassword.length () ); // Eliminamos el password por seguridad
-        LangMsg ( &s, "GROUP_ACCOUNT_EXISTS" );
-        return false;
+        LangMsg ( &s, "GROUP_JOIN_SUCCESS", szNick.c_str () );
     }
 
-    // Obtenemos el ID del nick con el que quieren agruparse
-    unsigned long long ID = GetAccountID ( szNick, false );
-    if ( ID == 0ULL )
+
+    else if ( ! CPortability::CompareNoCase ( szOption, "LEAVE" ) )
     {
-        memset ( (void*)szPassword.c_str (), 0, szPassword.length () ); // Eliminamos el password por seguridad
-        LangMsg ( &s, "GROUP_PRIMARY_DOESNT_EXIST", szNick.c_str () );
-        return false;
-    }
-
-    // Comprobamos la contraseña
-    if ( !CheckPassword ( ID, szPassword ) )
-    {
-        memset ( (void*)szPassword.c_str (), 0, szPassword.length () ); // Eliminamos el password por seguridad
-        LangMsg ( &s, "GROUP_WRONG_PASSWORD" );
-        return false;
-    }
-
-    // Agrupamos el nick
-    if ( ! SQLAddGroup->Execute ( "sQ", s.GetName ().c_str (), ID ) )
-    {
-        memset ( (void*)szPassword.c_str (), 0, szPassword.length () ); // Eliminamos el password por seguridad
-        return ReportBrokenDB ( &s, SQLAddGroup, "Ejecutando nickserv.SQLAddGroup" );
-    }
-    SQLAddGroup->FreeResult ();
-
-    // Insertamos el registro en la base de datos
-    char szHash [ 32 ];
-    CifraNick ( szHash, s.GetName (), szPassword );
-    CProtocol::GetSingleton ().InsertIntoDDB ( 'n', s.GetName (), szHash );
-
-    // Copiamos a la DDB los datos específicos de esta
-    CreateDBGroup ( s, ID );
-
-    // Identificamos al usuario
-    data.ID = ID;
-    Identify ( &s );
-
-    // Informamos al usuario del agrupamiento correcto
-    memset ( (void*)szPassword.c_str (), 0, szPassword.length () ); // Eliminamos el password por seguridad
-    LangMsg ( &s, "GROUP_SUCCESS", szNick.c_str () );
-
-    return true;
-}
-
-
-
-///////////////////
-// UNGROUP
-//
-bool CNickserv::cmdUngroup ( SCommandInfo& info )
-{
-    // Creamos la consulta SQL para borrar de un grupo
-    static CDBStatement* SQLUngroup = 0;
-    if ( !SQLUngroup )
-    {
-        SQLUngroup = CDatabase::GetSingleton ().PrepareStatement (
-              "DELETE FROM groups WHERE name=?"
-            );
+        // Creamos la consulta SQL para borrar de un grupo
+        static CDBStatement* SQLUngroup = 0;
         if ( !SQLUngroup )
         {
-            return ReportBrokenDB ( info.pSource, 0, "Generando nickserv.SQLUngroup" );
+            SQLUngroup = CDatabase::GetSingleton ().PrepareStatement (
+                  "DELETE FROM groups WHERE name=?"
+                );
+            if ( !SQLUngroup )
+                return ReportBrokenDB ( info.pSource, 0, "Generando nickserv.SQLUngroup" );
         }
+
+        // Comprobamos que al menos está registrado o agrupado
+        if ( data.ID == 0ULL )
+        {
+            LangMsg ( &s, "GROUP_LEAVE_NOT_GROUPED" );
+            return false;
+        }
+
+        // Comprobamos que esté identificado
+        if ( data.bIdentified == false )
+        {
+            LangMsg ( &s, "NOT_IDENTIFIED" );
+            return false;
+        }
+
+        // Nos aseguramos de que sea un group y no el nick principal
+        unsigned long long ID = GetAccountID ( s.GetName (), false );
+        if ( ID != 0ULL )
+        {
+            LangMsg ( &s, "GROUP_LEAVE_TRYING_PRIMARY" );
+            return false;
+        }
+
+        // Obtenemos el nick de la cuenta principal
+        CString szPrimaryName;
+        GetAccountName ( data.ID, szPrimaryName );
+        if ( szPrimaryName == "" )
+            return ReportBrokenDB ( &s );
+
+        // Lo desagrupamos
+        if ( ! SQLUngroup->Execute ( "s", s.GetName ().c_str () ) )
+            return ReportBrokenDB ( &s, SQLUngroup, "Ejecutando nickserv.SQLUngroup" );
+        SQLUngroup->FreeResult ();
+
+        // Eliminamos de la DDB los datos específicos
+        DestroyDBGroup ( s );
+
+        // Eliminamos el registro de la cuenta de la DDB
+        CProtocol::GetSingleton ().InsertIntoDDB ( 'n', s.GetName (), "" );
+
+        // Le desidentificamos
+        data.bIdentified = false;
+        data.ID = 0ULL;
+
+        // Informamos del desagrupamiento
+        LangMsg ( &s, "GROUP_LEAVE_SUCCESS", szPrimaryName.c_str () );
     }
 
-    CUser& s = *( info.pSource );
-    SServicesData& data = s.GetServicesData ();
-
-    // Comprobamos que al menos está registrado o agrupado
-    if ( data.ID == 0ULL )
+    else if ( ! CPortability::CompareNoCase ( szOption, "LIST" ) )
     {
-        LangMsg ( &s, "UNGROUP_NOT_GROUPED" );
-        return false;
+        // Preparamos la consulta SQL para obtener los nicks en un grupo
+        static CDBStatement* SQLGetNicksInGroup = 0;
+        if ( !SQLGetNicksInGroup )
+        {
+            SQLGetNicksInGroup = CDatabase::GetSingleton ().PrepareStatement (
+                  "SELECT name FROM groups WHERE id=?"
+                );
+            if ( !SQLGetNicksInGroup )
+                return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLGetNicksInGroup" );
+        }
+
+        // Verificamos que el usuario está registrado
+        if ( data.ID == 0ULL )
+        {
+            LangMsg ( &s, "NOT_REGISTERED");
+            return false;
+        }
+
+        // Verificamos que el usuario está identificado
+        if ( data.bIdentified == false )
+        {
+            LangMsg ( &s, "NOT_IDENTIFIED" );
+            return false;
+        }
+
+        // Obtenemos el nick principal del grupo
+        CString szPrimaryName;
+        GetAccountName ( data.ID, szPrimaryName );
+        if ( szPrimaryName == "" )
+            return ReportBrokenDB ( &s );
+
+        // Obtenemos los nicks del grupo
+        if ( ! SQLGetNicksInGroup->Execute ( "Q", data.ID ) )
+            return ReportBrokenDB ( &s, SQLGetNicksInGroup, "Ejecutando nickserv.SQLGetNicksInGroup" );
+
+        // Le mostramos la lista en el grupo
+        char szNick [ 128 ];
+        LangMsg ( &s, "GROUP_LIST", szPrimaryName.c_str () );
+        while ( SQLGetNicksInGroup->Fetch ( 0, 0, "s", szNick, sizeof ( szNick ) ) == CDBStatement::FETCH_OK )
+            Msg ( &s, CString ( "- %s", szNick ) );
+        SQLGetNicksInGroup->FreeResult ();
     }
 
-    // Comprobamos que esté identificado
-    if ( data.bIdentified == false )
-    {
-        LangMsg ( &s, "UNGROUP_NOT_IDENTIFIED" );
-        return false;
-    }
-
-    // Nos aseguramos de que sea un group y no el nick principal
-    unsigned long long ID = GetAccountID ( s.GetName (), false );
-    if ( ID != 0ULL )
-    {
-        LangMsg ( &s, "UNGROUP_TRYING_PRIMARY" );
-        return false;
-    }
-
-    // Obtenemos el nick de la cuenta principal
-    CString szPrimaryName;
-    GetAccountName ( data.ID, szPrimaryName );
-    if ( szPrimaryName == "" )
-    {
-        return ReportBrokenDB ( &s );
-    }
-
-    // Lo desagrupamos
-    if ( ! SQLUngroup->Execute ( "s", s.GetName ().c_str () ) )
-    {
-        return ReportBrokenDB ( &s, SQLUngroup, "Ejecutando nickserv.SQLUngroup" );
-    }
-    SQLUngroup->FreeResult ();
-
-    // Eliminamos de la DDB los datos específicos
-    DestroyDBGroup ( s );
-
-    // Eliminamos el registro de la cuenta de la DDB
-    CProtocol::GetSingleton ().InsertIntoDDB ( 'n', s.GetName (), "" );
-
-    // Le desidentificamos
-    data.bIdentified = false;
-    data.ID = 0ULL;
-
-    // Informamos del desagrupamiento
-    LangMsg ( &s, "UNGROUP_SUCCESS", szPrimaryName.c_str () );
+    else
+        return SendSyntax ( &s, "GROUP" );
 
     return true;
 }
+
 
 
 #undef COMMAND

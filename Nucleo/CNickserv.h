@@ -45,7 +45,6 @@ private:
     COMMAND ( Register );
     COMMAND ( Identify );
     COMMAND ( Group );
-    COMMAND ( Ungroup );
 #undef COMMAND
 
 
