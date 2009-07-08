@@ -700,19 +700,12 @@ COMMAND(Group)
 #undef COMMAND
 
 
-
-
-// Verificación de acceso
-bool CNickserv::verifyAll ( SCommandInfo& info )
-{
-    return true;
-}
-
-bool CNickserv::verifyOperator ( SCommandInfo& info )
-{
-    return false;
-}
-
+// Verificación de acceso a los comandos
+bool CNickserv::verifyAll ( SCommandInfo& info ) { return true; }
+bool CNickserv::verifyPreoperator ( SCommandInfo& info ) { return HasAccess ( *( info.pSource ), RANK_PREOPERATOR ); }
+bool CNickserv::verifyOperator ( SCommandInfo& info ) { return HasAccess ( *( info.pSource ), RANK_OPERATOR ); }
+bool CNickserv::verifyCoadministrator ( SCommandInfo& info ) { return HasAccess ( *( info.pSource ), RANK_COADMINISTRATOR ); }
+bool CNickserv::verifyAdministrator ( SCommandInfo& info ) { return HasAccess ( *( info.pSource ), RANK_ADMINISTRATOR ); }
 
 
 // Eventos

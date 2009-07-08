@@ -375,6 +375,4 @@ bool CService::HasAccess ( CUser& user, EServicesRank rank )
     if ( iRank == -1 || static_cast < EServicesRank > ( iRank ) > rank )
         return false;
     return true;
-
-
 }

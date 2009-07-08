@@ -47,12 +47,13 @@ private:
     COMMAND ( Group );
 #undef COMMAND
 
-
     // Verificación de acceso a comandos
 private:
-    bool            verifyAll       ( SCommandInfo& info );
-    bool            verifyOperator  ( SCommandInfo& info );
-
+    bool            verifyAll               ( SCommandInfo& info );
+    bool            verifyPreoperator       ( SCommandInfo& info );
+    bool            verifyOperator          ( SCommandInfo& info );
+    bool            verifyCoadministrator   ( SCommandInfo& info );
+    bool            verifyAdministrator     ( SCommandInfo& info );
 
     // Eventos
 private:
