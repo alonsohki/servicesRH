@@ -192,9 +192,9 @@ int CSocket::ReadLine ( CString& szDest )
         }
 
         // Llamamos a select para establecer un timeout
-        fd_set fds [ 1 ];
-        FD_ZERO ( fds );
-        FD_SET ( m_socket, fds );
+        fd_set fds;
+        FD_ZERO ( &fds );
+        FD_SET ( m_socket, &fds );
 
         struct timeval* tvTimeout = 0;
         struct timeval __tvTimeout;
@@ -205,7 +205,7 @@ int CSocket::ReadLine ( CString& szDest )
             tvTimeout = &__tvTimeout;
         }
 
-        int nChanged = select ( 1, fds, NULL, NULL, tvTimeout );
+        int nChanged = select ( m_socket + 1, &fds, NULL, NULL, tvTimeout );
 
         // Comprobamos que todo ha ido bien en el select
         if ( nChanged == -1 )
