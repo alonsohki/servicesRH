@@ -94,13 +94,13 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
     if ( ! m_config.GetValue ( szHost, "bots", "host" ) )
         return false;
     CString szNumeric;
-    if ( ! m_config.GetValue ( szNumeric, "bots", "numerico" ) )
+    if ( ! m_config.GetValue ( szNumeric, "bots", "numeric" ) )
         return false;
     CString szPass;
-    if ( ! m_config.GetValue ( szPass, "servidor", "clave" ) )
+    if ( ! m_config.GetValue ( szPass, "server", "password" ) )
         return false;
     CString szDesc;
-    if ( ! m_config.GetValue ( szDesc, "bots", "descripcion" ) )
+    if ( ! m_config.GetValue ( szDesc, "bots", "description" ) )
         return false;
     unsigned long ulNumeric = atol ( szNumeric );
 

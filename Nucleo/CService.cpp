@@ -87,11 +87,11 @@ CService::CService ( const CString& szServiceName, const CConfig& config )
     } \
 } while ( 0 )
 
-    SAFE_LOAD(m_szNick, "nick");
+    SAFE_LOAD(m_szNick,  "nick");
     SAFE_LOAD(m_szIdent, "ident");
-    SAFE_LOAD(m_szHost, "host");
-    SAFE_LOAD(m_szDesc, "descripcion");
-    SAFE_LOAD(m_szModes, "modos");
+    SAFE_LOAD(m_szHost,  "host");
+    SAFE_LOAD(m_szDesc,  "description");
+    SAFE_LOAD(m_szModes, "modes");
 
 #undef SAFE_LOAD
 

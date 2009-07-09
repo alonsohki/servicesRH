@@ -22,7 +22,7 @@ int main( int argc, const char* argv[], const char* envp[] )
     init_hash ();
 
     // Cargamos la configuración
-    CConfig config ( "servicios.conf" );
+    CConfig config ( "services.conf" );
     if ( config.IsOk () == false )
     {
         puts ( "Error cargando la configuración" );
@@ -37,10 +37,10 @@ int main( int argc, const char* argv[], const char* envp[] )
     CString szPass;
     CString szDB;
     if ( ! config.GetValue ( szHost, "database", "host" ) ||
-         ! config.GetValue ( szPort, "database", "puerto" ) ||
-         ! config.GetValue ( szUser, "database", "usuario" ) ||
-         ! config.GetValue ( szPass, "database", "clave" ) ||
-         ! config.GetValue ( szDB, "database", "db" ) )
+         ! config.GetValue ( szPort, "database", "port" ) ||
+         ! config.GetValue ( szUser, "database", "username" ) ||
+         ! config.GetValue ( szPass, "database", "password" ) ||
+         ! config.GetValue ( szDB,   "database", "db" ) )
     {
         puts ( "Error cargando la configuración de la base de datos" );
         CPortability::Pause ();
@@ -63,8 +63,8 @@ int main( int argc, const char* argv[], const char* envp[] )
     }
 
     // Conectamos
-    if ( ! config.GetValue ( szHost, "servidor", "host" ) ||
-         ! config.GetValue ( szPort, "servidor", "puerto" ) )
+    if ( ! config.GetValue ( szHost, "server", "host" ) ||
+         ! config.GetValue ( szPort, "server", "port" ) )
     {
         puts ( "Error cargando la información de conexión al servidor de IRC" );
         CPortability::Pause ();
@@ -81,7 +81,7 @@ int main( int argc, const char* argv[], const char* envp[] )
 
     // Inicializamos los idiomas
     CString szDefaultLang;
-    if ( !config.GetValue ( szDefaultLang, "bots", "idioma" ) )
+    if ( !config.GetValue ( szDefaultLang, "bots", "language" ) )
     {
         puts ( "Error al leer el idioma por defecto de la configuración" );
         CPortability::Pause ();
