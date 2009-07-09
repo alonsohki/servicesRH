@@ -28,8 +28,8 @@ CNickserv::CNickserv ( const CConfig& config )
 #undef REGISTER
 
     // Cargamos la configuración para nickserv
-#define SAFE_LOAD(dest,var) do { \
-    if ( !config.GetValue ( (dest), "nickserv", (var) ) ) \
+#define SAFE_LOAD(dest,section,var) do { \
+    if ( !config.GetValue ( (dest), (section), (var) ) ) \
     { \
         SetError ( CString ( "No se pudo leer la variable '%s' de la configuración.", (var) ) ); \
         SetOk ( false ); \
@@ -38,7 +38,7 @@ CNickserv::CNickserv ( const CConfig& config )
 } while ( 0 )
 
     CString szTemp;
-    SAFE_LOAD ( szTemp, "maxgroup" );
+    SAFE_LOAD ( szTemp, "options", "maxgroup" );
     m_uiMaxGroup = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
 
 #undef SAFE_LOAD
