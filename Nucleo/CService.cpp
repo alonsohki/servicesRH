@@ -54,7 +54,7 @@ CService* CService::GetService ( const CString& szName )
           i != ms_listServices.end ();
           ++i )
     {
-        if ( (*i)->GetName () == szName )
+        if ( (*i)->GetServiceName () == szName )
             return (*i);
     }
 

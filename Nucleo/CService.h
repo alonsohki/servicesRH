@@ -47,7 +47,7 @@ public:
     virtual void    Unload          ( );
     bool            IsLoaded        ( ) const { return m_bIsLoaded; }
 
-    const CString&  GetName         ( ) const { return m_szServiceName; }
+    const CString&  GetServiceName  ( ) const { return m_szServiceName; }
 
     bool            IsOk            ( ) const { return m_bIsOk; }
     const CString&  GetError        ( ) const { return m_szError; }
