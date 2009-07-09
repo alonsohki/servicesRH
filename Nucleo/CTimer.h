@@ -29,7 +29,7 @@ private:
                                               void* pUserData = 0);
                         ~CTimer             ( );
 
-    void                Execute             ( );
+    bool                Execute             ( );
     unsigned int        GetTimesToExecute   ( ) const { return m_uiTimesToExecute; }
     unsigned int        GetTimeForNextExec  ( ) const;
     bool                IsActive            ( ) const { return m_bIsActive; }

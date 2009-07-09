@@ -65,5 +65,10 @@ private:
     bool            evtMode         ( const IMessage& msg );
 
 private:
-    unsigned int    m_uiMaxGroup;
+    struct
+    {
+        unsigned int    uiMaxGroup;
+        unsigned int    uiTimeRegister;
+        unsigned int    uiTimeGroup;
+    } m_options;
 };

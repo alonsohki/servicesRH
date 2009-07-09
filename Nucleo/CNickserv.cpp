@@ -38,8 +38,12 @@ CNickserv::CNickserv ( const CConfig& config )
 } while ( 0 )
 
     CString szTemp;
-    SAFE_LOAD ( szTemp, "options", "maxgroup" );
-    m_uiMaxGroup = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
+    SAFE_LOAD ( szTemp, "options", "group.maxMembers" );
+    m_options.uiMaxGroup = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
+    SAFE_LOAD ( szTemp, "options", "time.register" );
+    m_options.uiTimeRegister = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
+    SAFE_LOAD ( szTemp, "options", "time.group" );
+    m_options.uiTimeGroup = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
 
 #undef SAFE_LOAD
 }
@@ -408,6 +412,10 @@ COMMAND(Register)
         return false;
     }
 
+    // Verificamos las restricciones de tiempo
+    if ( ! CheckOrAddTimeRestriction ( s, "REGISTER", m_options.uiTimeRegister ) )
+        return false;
+
     // Obtenemos el email si hubiere
     CString& szEmail = info.GetNextParam ();
 
@@ -602,12 +610,15 @@ COMMAND(Group)
             uiCount = 0;
         SQLGetGroupCount->FreeResult ();
 
-        if ( uiCount >= ( m_uiMaxGroup - 1 ) )
+        if ( uiCount >= ( m_options.uiMaxGroup - 1 ) )
         {
-            LangMsg ( s, "GROUP_JOIN_LIMIT_EXCEEDED", m_uiMaxGroup );
+            LangMsg ( s, "GROUP_JOIN_LIMIT_EXCEEDED", m_options.uiMaxGroup );
             return false;
         }
 
+        // Verificamos las restricciones de tiempo
+        if ( ! CheckOrAddTimeRestriction ( s, "GROUP", m_options.uiTimeGroup ) )
+            return false;
 
         // Agrupamos el nick
         if ( ! SQLAddGroup->Execute ( "sQ", s.GetName ().c_str (), ID ) )
@@ -669,6 +680,10 @@ COMMAND(Group)
             LangMsg ( s, "GROUP_LEAVE_TRYING_PRIMARY" );
             return false;
         }
+
+        // Verificamos las restricciones de tiempo
+        if ( ! CheckOrAddTimeRestriction ( s, "GROUP", m_options.uiTimeGroup ) )
+            return false;
 
         // Obtenemos el nick de la cuenta principal
         CString szPrimaryName;

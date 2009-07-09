@@ -85,9 +85,14 @@ void CTimerManager::Execute ()
         if ( uiRemainingTime > 20 )
             break;
 
+        // Condiciones de eliminado del timer:
+        // 1) Han retornado false en el callback.
+        // 2) Han parado el timer durante su ejecución.
+        // 3) No es un timer infinito y esta era su última ejecución.
         bool bDelete = ( pTimer->GetTimesToExecute () == 1 );
-        pTimer->Execute ();
-        bDelete = bDelete || ! pTimer->IsActive ();
+        bDelete = ( ! pTimer->Execute () )  ||
+                  ( bDelete )               ||
+                  ( ! pTimer->IsActive () );
 
         m_listTimers.erase ( i );
         if ( bDelete )

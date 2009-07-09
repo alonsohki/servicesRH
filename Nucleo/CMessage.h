@@ -157,7 +157,7 @@ END_MESSAGE_DECLARATION()
 ////////////////////////////
 //          NICK          //
 ////////////////////////////
-BEGIN_MESSAGE_DECLARATION(NICK, const CString& szNick, time_t timestamp, CServer* pServer = NULL, unsigned int uiDepth = 1, const CString& szIdent = "", const CString& szHost = "", const CString& szModes = "+", unsigned long ulAddress = 2130706433, unsigned long ulNumeric = 0, const CString& szDesc = "")
+BEGIN_MESSAGE_DECLARATION(NICK, const CString& szNick, time_t timestamp, CServer* pServer = NULL, unsigned int uiDepth = 1, const CString& szIdent = "", const CString& szHost = "", const CString& szModes = "+", unsigned int uiAddress = 2130706433, unsigned long ulNumeric = 0, const CString& szDesc = "")
 public:
     inline const CString&       GetNick         ( ) const { return m_szNick; }
     inline time_t               GetTimestamp    ( ) const { return m_timestamp; }
@@ -166,7 +166,7 @@ public:
     inline const CString&       GetIdent        ( ) const { return m_szIdent; }
     inline const CString&       GetHost         ( ) const { return m_szHost; }
     inline const CString&       GetModes        ( ) const { return m_szModes; }
-    inline unsigned long        GetAddress      ( ) const { return m_ulAddress; }
+    inline unsigned int         GetAddress      ( ) const { return m_uiAddress; }
     inline unsigned long        GetNumeric      ( ) const { return m_ulNumeric; }
     inline const CString&       GetDesc         ( ) const { return m_szDesc; }
 private:
@@ -177,7 +177,7 @@ private:
     CString         m_szIdent;
     CString         m_szHost;
     CString         m_szModes;
-    unsigned long   m_ulAddress;
+    unsigned int    m_uiAddress;
     unsigned long   m_ulNumeric;
     CString         m_szDesc;
 END_MESSAGE_DECLARATION()

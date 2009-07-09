@@ -68,6 +68,10 @@ Si deseas saber cómo registrarlo, escribe 12/msg %N HELP REGISTER.
 04Error: No hay ningún nick registrado con el nombre 12%s.
 %%
 
+%TIME_RESTRICTION%
+04Error: Sólo puedes ejecutar el comando 12%s cada 12%u segundos.
+%%
+
 ############################
 # REGISTER
 %SYNTAX_REGISTER%

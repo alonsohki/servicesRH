@@ -77,6 +77,8 @@ CService::CService ( const CString& szServiceName, const CConfig& config )
     // Inicializamos la tabla hash
     m_commandsMap.set_deleted_key ( (const char*)HASH_STRING_DELETED );
     m_commandsMap.set_empty_key ( (const char*)HASH_STRING_EMPTY );
+    m_timeRestrictionMap.set_deleted_key ( (unsigned int)-1 );
+    m_timeRestrictionMap.set_empty_key ( (unsigned int)0 );
 
 
 #define SAFE_LOAD(dest,var) do { \
@@ -124,6 +126,20 @@ CService::~CService ( )
         SCommandCallbackInfo& info = (*i).second;
         delete info.pCallback;
         delete info.pVerifyCallback;
+    }
+
+    // Eliminamos las restricciones de tiempo de los comandos
+    for ( t_timeRestrictionMap::iterator i = m_timeRestrictionMap.begin ();
+          i != m_timeRestrictionMap.end ();
+          ++i )
+    {
+        std::list < STimeRestriction >& list = (*i).second;
+        for ( std::list < STimeRestriction >::iterator j = list.begin ();
+              j != list.end ();
+              ++j )
+        {
+            CTimerManager::GetSingleton ().Stop ( (*j).pExpirationTimer );
+        }
     }
 }
 
@@ -423,5 +439,85 @@ bool CService::HasAccess ( CUser& user, EServicesRank rank )
     // Verificamos el acceso
     if ( iRank == -1 || static_cast < EServicesRank > ( iRank ) > rank )
         return false;
+    return true;
+}
+
+bool CService::CheckOrAddTimeRestriction ( CUser& user, const CString& szCommand, unsigned int uiTime )
+{
+    unsigned int uiAddress = user.GetAddress ();
+
+    // Buscamos si existen restricciones asociadas a la IP de este usuario.
+    t_timeRestrictionMap::iterator find = m_timeRestrictionMap.find ( uiAddress );
+    if ( find != m_timeRestrictionMap.end () )
+    {
+        // Existen restricciones, verificamos si existe alguna asociada
+        // al comando pedido.
+        std::list < STimeRestriction >& list = (*find).second;
+
+        for ( std::list < STimeRestriction >::iterator i = list.begin ();
+              i != list.end ();
+              ++i )
+        {
+            if ( (*i).szCommand == szCommand )
+            {
+                // Existe, informamos al usuario de la restricción de tiempo
+                // y retornamos false.
+                LangMsg ( user, "TIME_RESTRICTION", szCommand.c_str (), uiTime );
+                return false;
+            }
+        }
+    }
+
+    // Creamos una nueva restricción
+    if ( find == m_timeRestrictionMap.end () )
+    {
+        m_timeRestrictionMap.insert (
+            t_timeRestrictionMap::value_type ( uiAddress, std::list < STimeRestriction > () )
+        );
+        find = m_timeRestrictionMap.find ( uiAddress );
+    }
+    std::list < STimeRestriction >& list = (*find).second;
+    list.push_back ( STimeRestriction () );
+    STimeRestriction& restriction = list.back ();
+
+    // Rellenamos la estructura
+    restriction.szCommand = szCommand;
+    restriction.uiAddress = uiAddress;
+    // Creamos el timer
+    restriction.pExpirationTimer = CTimerManager::GetSingleton ().CreateTimer (
+        TIMER_CALLBACK ( &CService::TimeRestrictionCbk, this ), 1, uiTime * 1000, &restriction
+    );
+
+    return true;
+}
+
+bool CService::TimeRestrictionCbk ( void* pUserData )
+{
+    STimeRestriction& restriction = *reinterpret_cast < STimeRestriction* > ( pUserData );
+
+    // Buscamos las restricciones añadidas para esta IP.
+    t_timeRestrictionMap::iterator find = m_timeRestrictionMap.find ( restriction.uiAddress );
+    if ( find != m_timeRestrictionMap.end () )
+    {
+        std::list < STimeRestriction >& list = (*find).second;
+        
+        // Buscamos la restricción que nos piden eliminar
+        for ( std::list < STimeRestriction >::iterator i = list.begin ();
+              i != list.end ();
+              ++i )
+        {
+            if ( &(*i) == &restriction )
+            {
+                // Encontrada, la eliminamos.
+                list.erase ( i );
+                break;
+            }
+        }
+
+        // Si no queda ninguna restricción más, eliminamos las restricciones para esta IP.
+        if ( list.size () == 0 )
+            m_timeRestrictionMap.erase ( find );
+    }
+
     return true;
 }

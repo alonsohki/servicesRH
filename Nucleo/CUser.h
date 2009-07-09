@@ -57,7 +57,7 @@ public:
                                                   const CString& szIdent,
                                                   const CString& szDesc,
                                                   const CString& szHost,
-                                                  unsigned long ulAddress );
+                                                  unsigned int uiAddress );
     virtual                 ~CUser              ( );
 
     void                    Create              ( CServer* pServer,
@@ -66,7 +66,7 @@ public:
                                                   const CString& szIdent,
                                                   const CString& szDesc,
                                                   const CString& szHost,
-                                                  unsigned long ulAddress );
+                                                  unsigned int uiAddress );
 
     void                    FormatNumeric       ( char* szDest ) const;
     inline EType            GetType             ( ) const { return CClient::USER; }
@@ -79,7 +79,7 @@ public:
 
     inline const CString&   GetIdent            ( ) const { return m_szIdent; }
     inline const CString&   GetHost             ( ) const { return m_szHost; }
-    inline unsigned long    GetAddress          ( ) const { return m_ulAddress; }
+    inline unsigned int     GetAddress          ( ) const { return m_uiAddress; }
     inline unsigned long    GetModes            ( ) const { return m_ulModes; }
 
     // Membresía de canales
@@ -94,7 +94,7 @@ public:
 private:
     CString                         m_szIdent;
     CString                         m_szHost;
-    unsigned long                   m_ulAddress;
+    unsigned long                   m_uiAddress;
     unsigned long                   m_ulModes;
     std::list < CMembership* >      m_listMemberships;
 

@@ -39,14 +39,16 @@ CTimer::~CTimer ()
     delete m_pCallback;
 }
 
-void CTimer::Execute ()
+bool CTimer::Execute ()
 {
-    (*m_pCallback) ( m_pUserData );
+    bool bRet = (*m_pCallback) ( m_pUserData );
 
     if ( m_uiTimesToExecute > 0 )
         --m_uiTimesToExecute;
 
     CalculateNextExec ();
+
+    return bRet;
 }
 
 unsigned int CTimer::GetTimeForNextExec () const

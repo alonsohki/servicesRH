@@ -40,33 +40,37 @@ private:
 
     // Parte no estática
 public:
-                    CService        ( const CString& szServiceName, const CConfig& config );
-    virtual         ~CService       ( );
+                    CService            ( const CString& szServiceName, const CConfig& config );
+    virtual         ~CService           ( );
 
-    virtual void    Load            ( );
-    virtual void    Unload          ( );
-    bool            IsLoaded        ( ) const { return m_bIsLoaded; }
+    virtual void    Load                ( );
+    virtual void    Unload              ( );
+    bool            IsLoaded            ( ) const { return m_bIsLoaded; }
 
-    const CString&  GetServiceName  ( ) const { return m_szServiceName; }
+    const CString&  GetServiceName      ( ) const { return m_szServiceName; }
 
-    bool            IsOk            ( ) const { return m_bIsOk; }
-    const CString&  GetError        ( ) const { return m_szError; }
+    bool            IsOk                ( ) const { return m_bIsOk; }
+    const CString&  GetError            ( ) const { return m_szError; }
 
-    void            Msg             ( CUser& pDest, const CString& szMessage );
-    bool            LangMsg         ( CUser& pDest, const char* szTopic, ... );
-    bool            SendSyntax      ( CUser& pDest, const char* szCommand );
-    bool            AccessDenied    ( CUser& pDest );
-    bool            ReportBrokenDB  ( CUser* pDest, CDBStatement* pStatement = 0, const CString& szExtraInfo = CString() );
+    void            Msg                 ( CUser& dest, const CString& szMessage );
+    bool            LangMsg             ( CUser& dest, const char* szTopic, ... );
+    bool            SendSyntax          ( CUser& dest, const char* szCommand );
+    bool            AccessDenied        ( CUser& dest );
+    bool            ReportBrokenDB      ( CUser* pDest, CDBStatement* pStatement = 0, const CString& szExtraInfo = CString() );
 
 protected:
-    void            SetOk           ( bool bOk ) { m_bIsOk = bOk; }
-    void            SetError        ( const CString& szError ) { m_szError = szError; }
+    void            SetOk               ( bool bOk ) { m_bIsOk = bOk; }
+    void            SetError            ( const CString& szError ) { m_szError = szError; }
 
-    void            RegisterCommand ( const char* szCommand, const COMMAND_CALLBACK& pCallback, const COMMAND_CALLBACK& verifyAccess );
-    virtual void    UnknownCommand  ( SCommandInfo& info ) { }
+    void            RegisterCommand     ( const char* szCommand, const COMMAND_CALLBACK& pCallback, const COMMAND_CALLBACK& verifyAccess );
+    virtual void    UnknownCommand      ( SCommandInfo& info ) { }
 
-    bool            ProcessHelp     ( SCommandInfo& info );
-    bool            HasAccess       ( CUser& user, EServicesRank rank );
+    bool            ProcessHelp         ( SCommandInfo& info );
+    bool            HasAccess           ( CUser& user, EServicesRank rank );
+    bool            CheckOrAddTimeRestriction
+                                        ( CUser& user, const CString& szCommand, unsigned int uiTime );
+private:
+    bool            TimeRestrictionCbk  ( void* );
 
 private:
     void            ProcessCommands ( CUser* pSource, const CString& szMessage );
@@ -79,8 +83,18 @@ private:
         COMMAND_CALLBACK* pVerifyCallback;
     };
 
+    struct STimeRestriction
+    {
+        unsigned int uiAddress;
+        CString szCommand;
+        CTimer* pExpirationTimer;
+    };
+
     typedef google::dense_hash_map < const char*, SCommandCallbackInfo, SStringHasher, SStringEquals > t_commandsMap;
+    typedef google::dense_hash_map < unsigned int, std::list < STimeRestriction > > t_timeRestrictionMap;
+
     t_commandsMap       m_commandsMap;
+    t_timeRestrictionMap m_timeRestrictionMap;
     bool                m_bIsOk;
     CString             m_szError;
     CString             m_szServiceName;

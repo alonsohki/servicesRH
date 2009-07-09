@@ -260,7 +260,7 @@ CMessageNICK::CMessageNICK ( const CString& szNick,
                              const CString& szIdent,
                              const CString& szHost,
                              const CString& szModes,
-                             unsigned long ulAddress,
+                             unsigned int uiAddress,
                              unsigned long ulNumeric,
                              const CString& szDesc )
 : m_szNick ( szNick ),
@@ -270,7 +270,7 @@ CMessageNICK::CMessageNICK ( const CString& szNick,
   m_szIdent ( szIdent ),
   m_szHost ( szHost ),
   m_szModes ( szModes ),
-  m_ulAddress ( ulAddress ),
+  m_uiAddress ( uiAddress ),
   m_ulNumeric ( ulNumeric ),
   m_szDesc ( szDesc )
 {
@@ -283,7 +283,7 @@ bool CMessageNICK::BuildMessage ( SProtocolMessage& message ) const
     {
         // Nuevo usuario desde un servidor
         char szIP [ 8 ];
-        inttobase64 ( szIP, m_ulAddress, 6 );
+        inttobase64 ( szIP, m_uiAddress, 6 );
 
         char szServerNumeric [ 4 ];
         unsigned long ulServerNumeric = m_pServer->GetNumeric ();
@@ -337,7 +337,7 @@ bool CMessageNICK::ProcessMessage ( const CString& szLine, const std::vector < C
         m_szIdent = "";
         m_szHost = "";
         m_szModes = "";
-        m_ulAddress = 0;
+        m_uiAddress = 0;
         m_ulNumeric = 0;
         m_szDesc = "";
     }
@@ -355,7 +355,7 @@ bool CMessageNICK::ProcessMessage ( const CString& szLine, const std::vector < C
         m_szIdent = vec [ 5 ];
         m_szHost = vec [ 6 ];
         m_szModes = vec [ 7 ];
-        m_ulAddress = base64toint ( vec [ 8 ] );
+        m_uiAddress = static_cast < unsigned int > ( base64toint ( vec [ 8 ] ) );
         
         if ( vec [ 9 ].length () > 3 )
         {

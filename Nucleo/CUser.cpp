@@ -52,11 +52,11 @@ CUser::CUser ( CServer* pServer,
                const CString& szIdent,
                const CString& szDesc,
                const CString& szHost,
-               unsigned long ulAddress )
+               unsigned int uiAddress )
 : m_ulModes ( 0 )
 {
     m_bDeletingUser = false;
-    Create ( pServer, ulNumeric, szName, szIdent, szDesc, szHost, ulAddress );
+    Create ( pServer, ulNumeric, szName, szIdent, szDesc, szHost, uiAddress );
 }
 
 CUser::~CUser ()
@@ -78,12 +78,12 @@ void CUser::Create ( CServer* pServer,
                const CString& szIdent,
                const CString& szDesc,
                const CString& szHost,
-               unsigned long ulAddress )
+               unsigned int uiAddress )
 {
     CClient::Create ( pServer, ulNumeric, szName, szDesc );
     m_szIdent = szIdent;
     m_szHost = szHost;
-    m_ulAddress = ulAddress;
+    m_uiAddress = uiAddress;
 }
 
 void CUser::FormatNumeric ( char* szDest ) const
