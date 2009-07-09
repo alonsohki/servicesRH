@@ -31,7 +31,8 @@ public:
 
     // Parte estática
 public:
-    static void     RegisterServices        ( const CConfig& config );
+    static void         RegisterServices        ( const CConfig& config );
+    static CService*    GetService              ( const CString& szName );
 private:
     static std::vector < unsigned long >      ms_ulFreeNumerics;
     static std::list < CService* >            ms_listServices;
@@ -41,6 +42,12 @@ private:
 public:
                     CService        ( const CString& szServiceName, const CConfig& config );
     virtual         ~CService       ( );
+
+    virtual void    Load            ( );
+    virtual void    Unload          ( );
+    bool            IsLoaded        ( ) const { return m_bIsLoaded; }
+
+    const CString&  GetName         ( ) const { return m_szServiceName; }
 
     bool            IsOk            ( ) const { return m_bIsOk; }
     const CString&  GetError        ( ) const { return m_szError; }
@@ -52,6 +59,9 @@ public:
     bool            ReportBrokenDB  ( CUser* pDest, CDBStatement* pStatement = 0, const CString& szExtraInfo = CString() );
 
 protected:
+    void            SetOk           ( bool bOk ) { m_bIsOk = bOk; }
+    void            SetError        ( const CString& szError ) { m_szError = szError; }
+
     void            RegisterCommand ( const char* szCommand, const COMMAND_CALLBACK& pCallback, const COMMAND_CALLBACK& verifyAccess );
     virtual void    UnknownCommand  ( SCommandInfo& info ) { }
 
@@ -78,6 +88,14 @@ private:
 protected:
     CProtocol&          m_protocol;
     CLanguageManager&   m_langManager;
+
 private:
+    bool                m_bIsLoaded;
+    CString             m_szNick;
+    CString             m_szIdent;
+    CString             m_szHost;
+    CString             m_szDesc;
+    CString             m_szModes;
+    unsigned long       m_ulNumeric;
 };
 

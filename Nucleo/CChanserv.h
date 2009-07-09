@@ -21,5 +21,4 @@ class CChanserv : public CService
 public:
                 CChanserv   ( const CConfig& config );
     virtual     ~CChanserv  ( );
-private:
 };

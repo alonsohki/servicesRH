@@ -598,7 +598,7 @@ bool CProtocol::evtQuit ( const IMessage& message_ )
             CUser* pUser = static_cast < CUser* > ( message.GetSource () );
             CServer* pServer = static_cast < CServer* > ( pUser->GetParent ( ) );
 
-            if ( pServer )
+            if ( pServer && pServer != &m_me )
             {
                 pServer->RemoveUser ( pUser );
                 return true;
@@ -758,7 +758,7 @@ bool CProtocol::evtCreate ( const IMessage& message_ )
         const CMessageCREATE& message = dynamic_cast < const CMessageCREATE& > ( message_ );
 
         CClient* pSource = message.GetSource ();
-        if ( pSource->GetType () != CClient::USER )
+        if ( !pSource || pSource->GetType () != CClient::USER )
             return false;
 
         CChannelManager& manager = CChannelManager::GetSingleton ();

@@ -159,6 +159,10 @@ con el nick Venganito harías: 12/msg %N GROUP JOIN Venganito 12345
 04¡Contraseña incorrecta!
 %%
 
+%GROUP_JOIN_LIMIT_EXCEEDED%
+04Error: Has excedido el límite de 12%u nicks por grupo.
+%%
+
 %GROUP_JOIN_SUCCESS%
 Tu nick ahora forma parte del grupo de 12%s.
 %%

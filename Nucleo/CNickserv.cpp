@@ -27,17 +27,55 @@ CNickserv::CNickserv ( const CConfig& config )
     REGISTER ( Group,       All );
 #undef REGISTER
 
-    // Registramos los eventos
-    CProtocol& protocol = CProtocol::GetSingleton ();
-    protocol.AddHandler ( CMessageQUIT (), PROTOCOL_CALLBACK ( &CNickserv::evtQuit, this ) );
-    protocol.AddHandler ( CMessageNICK (), PROTOCOL_CALLBACK ( &CNickserv::evtNick, this ) );
-    protocol.AddHandler ( CMessageMODE (), PROTOCOL_CALLBACK ( &CNickserv::evtMode, this ) );
+    // Cargamos la configuración para nickserv
+#define SAFE_LOAD(dest,var) do { \
+    if ( !config.GetValue ( (dest), "nickserv", (var) ) ) \
+    { \
+        SetError ( CString ( "No se pudo leer la variable '%s' de la configuración.", (var) ) ); \
+        SetOk ( false ); \
+        return; \
+    } \
+} while ( 0 )
+
+    CString szTemp;
+    SAFE_LOAD ( szTemp, "maxgroup" );
+    m_uiMaxGroup = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
+
+#undef SAFE_LOAD
 }
 
-CNickserv::~CNickserv ( )
+CNickserv::~CNickserv ()
 {
 }
 
+
+void CNickserv::Load ()
+{
+    if ( !IsLoaded () )
+    {
+        // Registramos los eventos
+        CProtocol& protocol = CProtocol::GetSingleton ();
+        protocol.AddHandler ( CMessageQUIT (), PROTOCOL_CALLBACK ( &CNickserv::evtQuit, this ) );
+        protocol.AddHandler ( CMessageNICK (), PROTOCOL_CALLBACK ( &CNickserv::evtNick, this ) );
+        protocol.AddHandler ( CMessageMODE (), PROTOCOL_CALLBACK ( &CNickserv::evtMode, this ) );
+
+        CService::Load ();
+    }
+}
+
+void CNickserv::Unload ()
+{
+    if ( IsLoaded () )
+    {
+        // Desregistramos los eventos
+        CProtocol& protocol = CProtocol::GetSingleton ();
+        protocol.RemoveHandler ( CMessageQUIT (), PROTOCOL_CALLBACK ( &CNickserv::evtQuit, this ) );
+        protocol.RemoveHandler ( CMessageNICK (), PROTOCOL_CALLBACK ( &CNickserv::evtNick, this ) );
+        protocol.RemoveHandler ( CMessageMODE (), PROTOCOL_CALLBACK ( &CNickserv::evtMode, this ) );
+
+        CService::Unload ();
+    }
+}
 
 unsigned long long CNickserv::GetAccountID ( const CString& szName, bool bCheckGroups )
 {
@@ -505,7 +543,19 @@ COMMAND(Group)
                 );
 
             if ( !SQLAddGroup )
-                return ReportBrokenDB ( info.pSource, SQLAddGroup, "Generando nickserv.SQLAddGroup" );
+                return ReportBrokenDB ( &s, SQLAddGroup, "Generando nickserv.SQLAddGroup" );
+        }
+
+        // Generamos la consulta para comprobar el número de nicks
+        // agrupados.
+        static CDBStatement* SQLGetGroupCount = 0;
+        if ( !SQLGetGroupCount )
+        {
+            SQLGetGroupCount = CDatabase::GetSingleton ().PrepareStatement (
+                  "SELECT COUNT(id) AS count FROM groups WHERE id=? GROUP BY(id)"
+                );
+            if ( !SQLGetGroupCount )
+                return ReportBrokenDB ( &s, SQLGetGroupCount, "Generando nickserv.SQLGetGroupCount" );
         }
 
         // Obtenemos el nick y password con los que quiere agruparse
@@ -540,6 +590,24 @@ COMMAND(Group)
             LangMsg ( s, "GROUP_JOIN_WRONG_PASSWORD" );
             return false;
         }
+
+        // Verificamos que no haya excedido el límite de nicks agrupados
+        if ( ! SQLGetGroupCount->Execute ( "Q", ID ) )
+        {
+            memset ( (void*)szPassword.c_str (), 0, szPassword.length () ); // Eliminamos el password por seguridad
+            return ReportBrokenDB ( &s, SQLGetGroupCount, "Ejecutando nickserv.SQLGetGroupCount" );
+        }
+        unsigned int uiCount;
+        if ( SQLGetGroupCount->Fetch ( 0, 0, "D", &uiCount ) != CDBStatement::FETCH_OK )
+            uiCount = 0;
+        SQLGetGroupCount->FreeResult ();
+
+        if ( uiCount >= ( m_uiMaxGroup - 1 ) )
+        {
+            LangMsg ( s, "GROUP_JOIN_LIMIT_EXCEEDED", m_uiMaxGroup );
+            return false;
+        }
+
 
         // Agrupamos el nick
         if ( ! SQLAddGroup->Execute ( "sQ", s.GetName ().c_str (), ID ) )

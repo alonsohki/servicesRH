@@ -19,7 +19,7 @@
 class CLocalUser : public CUser
 {
 public:
-    inline                  CLocalUser          ( ) : CUser ( ) { }
+    inline                  CLocalUser          ( ) : CUser ( ), m_bCreated ( false ) { }
     inline                  CLocalUser          ( unsigned long ulNumeric,
                                                   const CString& szName,
                                                   const CString& szIdent,
@@ -27,6 +27,7 @@ public:
                                                   const CString& szHost,
                                                   unsigned long ulAddress,
                                                   const CString& szModes )
+                                                  : m_bCreated ( false )
     {
         Create ( ulNumeric, szName, szIdent, szDesc, szHost, ulAddress, szModes );
     }
@@ -40,4 +41,13 @@ public:
                                                   const CString& szHost,
                                                   unsigned long ulAddress,
                                                   const CString& szModes );
+
+    void                    Join                ( const CString& szChannel );
+    void                    Join                ( CChannel* pChannel );
+    void                    Part                ( const CString& szChannel, const CString& szMessage = "" );
+    void                    Part                ( CChannel* pChannel, const CString& szMessage = "" );
+    void                    Quit                ( const CString& szQuitMessage = "" );
+
+private:
+    bool            m_bCreated;
 };

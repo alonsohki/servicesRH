@@ -22,6 +22,9 @@ public:
                     CNickserv       ( const CConfig& config );
     virtual         ~CNickserv      ( );
 
+    void            Load            ( );
+    void            Unload          ( );
+
     unsigned long long
                     GetAccountID    ( const CString& szName, bool bCheckGroups = true );
     void            GetAccountName  ( unsigned long long ID, CString& szDest );
@@ -60,4 +63,7 @@ private:
     bool            evtQuit         ( const IMessage& msg );
     bool            evtNick         ( const IMessage& msg );
     bool            evtMode         ( const IMessage& msg );
+
+private:
+    unsigned int    m_uiMaxGroup;
 };

@@ -16,6 +16,8 @@
 
 #include "stdafx.h"
 
+
+// Parte estática
 std::vector < unsigned long > CService::ms_ulFreeNumerics ( 4096 );
 std::list < CService* > CService::ms_listServices;
 
@@ -31,11 +33,11 @@ void CService::RegisterServices ( const CConfig& config )
 
 #define LOAD_SERVICE(cl, name) do { \
     pService = new cl ( config ); \
-    if ( !pService->IsOk () ) \
+    if ( ! pService->IsOk () ) \
     { \
         printf ( "Error cargando el servicio '%s': %s\n", (name), pService->GetError ().c_str () ); \
-        return; \
     } \
+    else pService->Load (); \
 } while ( 0 )
 
     LOAD_SERVICE(CNickserv, "nickserv");
@@ -46,7 +48,22 @@ void CService::RegisterServices ( const CConfig& config )
 #undef LOAD_SERVICE
 }
 
+CService* CService::GetService ( const CString& szName )
+{
+    for ( std::list < CService* >::const_iterator i = ms_listServices.begin ();
+          i != ms_listServices.end ();
+          ++i )
+    {
+        if ( (*i)->GetName () == szName )
+            return (*i);
+    }
 
+    return NULL;
+}
+
+
+
+// Parte no estática
 CService::CService ( const CString& szServiceName, const CConfig& config )
 : m_bIsOk ( false ),
   m_szServiceName ( szServiceName ),
@@ -54,7 +71,7 @@ CService::CService ( const CString& szServiceName, const CConfig& config )
   m_langManager ( CLanguageManager::GetSingleton () )
 {
     CService::ms_listServices.push_back ( this );
-    unsigned long ulNumeric = CService::ms_ulFreeNumerics.back ( );
+    m_ulNumeric = CService::ms_ulFreeNumerics.back ( );
     CService::ms_ulFreeNumerics.pop_back ( );
 
     // Inicializamos la tabla hash
@@ -70,31 +87,21 @@ CService::CService ( const CString& szServiceName, const CConfig& config )
     } \
 } while ( 0 )
 
-    CString szNick;
-    SAFE_LOAD(szNick, "nick");
-    CString szIdent;
-    SAFE_LOAD(szIdent, "ident");
-    CString szHost;
-    SAFE_LOAD(szHost, "host");
-    CString szDesc;
-    SAFE_LOAD(szDesc, "descripcion");
-    CString szModes;
-    SAFE_LOAD(szModes, "modos");
+    SAFE_LOAD(m_szNick, "nick");
+    SAFE_LOAD(m_szIdent, "ident");
+    SAFE_LOAD(m_szHost, "host");
+    SAFE_LOAD(m_szDesc, "descripcion");
+    SAFE_LOAD(m_szModes, "modos");
 
 #undef SAFE_LOAD
 
-    CLocalUser::Create ( ulNumeric, szNick, szIdent, szDesc,
-                         szHost, 2130706433, szModes ); // 2130706433 = 127.0.0.1
     m_bIsOk = true;
-
-    // Registramos el evento para recibir comandos
-    m_protocol.AddHandler ( CMessagePRIVMSG (), PROTOCOL_CALLBACK ( &CService::evtPrivmsg, this ) );
+    m_bIsLoaded = false;
 }
 
 CService::~CService ( )
 {
-    // Desregistramos los eventos
-    m_protocol.RemoveHandler ( CMessagePRIVMSG (), PROTOCOL_CALLBACK ( &CService::evtPrivmsg, this ) );
+    Unload ();
 
     // Desregistramos el servicio
     for ( std::list < CService* >::iterator i = CService::ms_listServices.begin ();
@@ -120,13 +127,46 @@ CService::~CService ( )
     }
 }
 
+void CService::Load ()
+{
+    if ( ! IsLoaded () )
+    {
+        CLocalUser::Create ( m_ulNumeric, m_szNick, m_szIdent, m_szDesc,
+                             m_szHost, 2130706433, m_szModes ); // 2130706433 = 127.0.0.1
+
+        // Registramos el evento para recibir comandos
+        m_protocol.AddHandler ( CMessagePRIVMSG (), PROTOCOL_CALLBACK ( &CService::evtPrivmsg, this ) );
+
+        m_bIsLoaded = true;
+    }
+}
+
+void CService::Unload ()
+{
+    if ( IsLoaded () )
+    {
+        // Desregistramos el evento para recibir comandos
+        m_protocol.RemoveHandler ( CMessagePRIVMSG (), PROTOCOL_CALLBACK ( &CService::evtPrivmsg, this ) );
+
+        m_bIsLoaded = false;
+
+        Quit ( "Service unloaded" );
+    }
+}
+
 void CService::Msg ( CUser& dest, const CString& szMessage )
 {
+    if ( !m_bIsOk || !m_bIsLoaded )
+        return;
+
     Send ( CMessagePRIVMSG ( &dest, 0, szMessage ) );
 }
 
 bool CService::LangMsg ( CUser& dest, const char* szTopic, ... )
 {
+    if ( !m_bIsOk || !m_bIsLoaded )
+        return false;
+
     va_list vl;
 
     CLanguage* pLanguage = 0;
@@ -173,6 +213,9 @@ bool CService::LangMsg ( CUser& dest, const char* szTopic, ... )
 
 bool CService::SendSyntax ( CUser& dest, const char* szCommand )
 {
+    if ( !m_bIsOk || !m_bIsLoaded )
+        return false;
+
     CString szLangTopic ( "SYNTAX_%s", szCommand );
     LangMsg ( dest, szLangTopic );
     LangMsg ( dest, "HELP_FOR_MORE_INFORMATION", szCommand );
@@ -181,6 +224,9 @@ bool CService::SendSyntax ( CUser& dest, const char* szCommand )
 
 bool CService::AccessDenied ( CUser& dest )
 {
+    if ( !m_bIsOk || !m_bIsLoaded )
+        return false;
+
     LangMsg ( dest, "ACCESS_DENIED" );
     return false;
 }
@@ -208,6 +254,9 @@ bool CService::ReportBrokenDB ( CUser* pDest, CDBStatement* pStatement, const CS
 
 bool CService::ProcessHelp ( SCommandInfo& info )
 {
+    if ( !m_bIsOk || !m_bIsLoaded )
+        return false;
+
     CUser& s = *( info.pSource );
     CString szTopic = info.GetNextParam ();
     if ( szTopic == "" || !CPortability::CompareNoCase ( szTopic, "HELP" ) )
