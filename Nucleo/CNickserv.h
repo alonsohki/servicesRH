@@ -43,7 +43,7 @@ private:
     // Grupos
     bool            CreateDDBGroup  ( CUser& s );
     void            DestroyDDBGroup ( CUser& s );
-    bool            UpdateDDBGroup  ( CUser& s, unsigned char ucTable, const CString& szValue );
+    bool            UpdateDDBGroup  ( CUser& s, unsigned long long ID, unsigned char ucTable, const CString& szValue );
     void            GroupInsertDDB  ( unsigned char ucTable, const CString& szKey, const CString& szValue );
 
     // Comandos
@@ -51,17 +51,20 @@ protected:
     void            UnknownCommand  ( SCommandInfo& info );
 private:
 #define COMMAND(x) bool cmd ## x ( SCommandInfo& info )
+#define SET_COMMAND(x) bool cmd ## x ( SCommandInfo& info, unsigned long long IDTarget )
     COMMAND ( Help );
     COMMAND ( Register );
     COMMAND ( Identify );
     COMMAND ( Group );
     COMMAND ( Set );
-        COMMAND ( Set_Password );
-        COMMAND ( Set_Email );
-        COMMAND ( Set_Vhost );
-        COMMAND ( Set_Private );
-        COMMAND ( Set_Web );
-        COMMAND ( Set_Greetmsg );
+        SET_COMMAND ( Set_Password );
+        SET_COMMAND ( Set_Email );
+        SET_COMMAND ( Set_Vhost );
+        SET_COMMAND ( Set_Private );
+        SET_COMMAND ( Set_Web );
+        SET_COMMAND ( Set_Greetmsg );
+    COMMAND ( Info );
+#undef SET_COMMAND
 #undef COMMAND
 
     // Verificación de acceso a comandos

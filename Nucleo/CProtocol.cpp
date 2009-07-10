@@ -867,8 +867,9 @@ bool CProtocol::evtRaw ( const IMessage& message_ )
         // Logueamos la línea, salvo líneas de base de datos
         std::vector < CString > vec;
         message.GetLine ().Split ( vec );
+
         if ( vec [ 1 ] != "DB" )
-            CLogger::Log ( message.GetLine () );
+            CLogger::Log ( "%s", message.GetLine ().c_str () );
     }
     catch ( std::bad_cast ) { return false; }
     return true;

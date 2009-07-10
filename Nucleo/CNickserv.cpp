@@ -26,6 +26,7 @@ CNickserv::CNickserv ( const CConfig& config )
     REGISTER ( Identify,    All );
     REGISTER ( Group,       All );
     REGISTER ( Set,         All );
+    REGISTER ( Info,        All );
 #undef REGISTER
 
     // Cargamos la configuración para nickserv
@@ -542,7 +543,7 @@ void CNickserv::DestroyDDBGroup ( CUser& s )
     GroupInsertDDB ( 'w', s.GetName (), "" );
 }
 
-bool CNickserv::UpdateDDBGroup ( CUser& s, unsigned char ucTable, const CString& szValue )
+bool CNickserv::UpdateDDBGroup ( CUser& s, unsigned long long ID, unsigned char ucTable, const CString& szValue )
 {
     // Generamos la consulta para obtener los miembros del grupo
     static CDBStatement* SQLGetGroupMembers = 0;
@@ -557,18 +558,12 @@ bool CNickserv::UpdateDDBGroup ( CUser& s, unsigned char ucTable, const CString&
         }
     }
 
-    SServicesData& data = s.GetServicesData ();
-
-    // Por seguridad...
-    if ( data.ID == 0ULL || data.bIdentified == false )
-        return false;
-
     // Obtenemos el nombre de la cuenta principal
     CString szPrimaryName;
-    GetAccountName ( data.ID, szPrimaryName );
+    GetAccountName ( ID, szPrimaryName );
 
     // Ejecutamos la consulta SQL para obtener los miembros del grupo
-    if ( ! SQLGetGroupMembers->Execute ( "Q", data.ID ) )
+    if ( ! SQLGetGroupMembers->Execute ( "Q", ID ) )
         return ReportBrokenDB ( &s, SQLGetGroupMembers, "Ejecutando nickserv.SQLGetGroupMembers" );
 
     // Actualizamos el registro para el nick principal
@@ -618,7 +613,22 @@ void CNickserv::UnknownCommand ( SCommandInfo& info )
 //
 COMMAND(Help)
 {
-    return CService::ProcessHelp ( info );
+    bool bRet = CService::ProcessHelp ( info );
+    if ( bRet )
+    {
+        CUser& s = *( info.pSource );
+
+        if ( HasAccess ( s, RANK_COADMINISTRATOR ) )
+        {
+            info.ResetParamCounter ();
+            info.GetNextParam ();
+            CString& szTopic = info.GetNextParam ();
+
+            if ( ! CPortability::CompareNoCase ( szTopic, "SET" ) )
+                LangMsg ( s, "HELP_SET_COADMINS" );
+        }
+    }
+    return bRet;
 }
 
 
@@ -673,10 +683,6 @@ COMMAND(Register)
         return false;
     }
 
-    // Verificamos las restricciones de tiempo
-    if ( ! CheckOrAddTimeRestriction ( s, "REGISTER", m_options.uiTimeRegister ) )
-        return false;
-
     // Obtenemos el email si hubiere
     CString& szEmail = info.GetNextParam ();
 
@@ -686,6 +692,10 @@ COMMAND(Register)
         LangMsg ( s, "REGISTER_BOGUS_EMAIL" );
         return false;
     }
+
+    // Verificamos las restricciones de tiempo
+    if ( ! CheckOrAddTimeRestriction ( s, "REGISTER", m_options.uiTimeRegister ) )
+        return false;
 
     // Obtenemos la fecha actual
     CDate now;
@@ -1047,34 +1057,51 @@ COMMAND(Group)
 COMMAND(Set)
 {
     CUser& s = *( info.pSource );
-    CString& szOption = info.GetNextParam ();
 
     // Verificamos que esté registrado e identificado
     if ( ! CheckRegistered ( s ) || ! CheckIdentified ( s ) )
         return false;
 
+    // Obtenemos el objetivo del SET si lo ejecuta un admin
+    unsigned long long IDTarget = 0ULL;
+    if ( info.vecParams.size () > 3 && HasAccess ( s, RANK_COADMINISTRATOR ) )
+    {
+        CString& szTarget = info.GetNextParam ();
+        IDTarget = GetAccountID ( szTarget );
+        if ( IDTarget == 0ULL )
+        {
+            LangMsg ( s, "SET_UNKNOWN_ACCOUNT", szTarget.c_str () );
+            return false;
+        }
+    }
+    CString& szOption = info.GetNextParam ();
+
     if ( szOption == "" )
         return SendSyntax ( s, "SET" );
     else if ( ! CPortability::CompareNoCase ( szOption, "PASSWORD" ) )
-        return cmdSet_Password ( info );
+        return cmdSet_Password ( info, IDTarget );
     else if ( ! CPortability::CompareNoCase ( szOption, "EMAIL" ) )
-        return cmdSet_Email ( info );
+        return cmdSet_Email ( info, IDTarget );
     else if ( ! CPortability::CompareNoCase ( szOption, "VHOST" ) )
-        return cmdSet_Vhost ( info );
+        return cmdSet_Vhost ( info, IDTarget );
     else if ( ! CPortability::CompareNoCase ( szOption, "PRIVATE" ) )
-        return cmdSet_Private ( info );
+        return cmdSet_Private ( info, IDTarget );
     else if ( ! CPortability::CompareNoCase ( szOption, "WEB" ) )
-        return cmdSet_Web ( info );
+        return cmdSet_Web ( info, IDTarget );
     else if ( ! CPortability::CompareNoCase ( szOption, "GREETMSG" ) )
-        return cmdSet_Greetmsg ( info );
+        return cmdSet_Greetmsg ( info, IDTarget );
     else
         return SendSyntax ( s, "SET" );
 }
 
-COMMAND(Set_Password)
+#define SET_COMMAND(x) bool CNickserv::cmd ## x ( SCommandInfo& info, unsigned long long IDTarget )
+SET_COMMAND(Set_Password)
 {
     CUser& s = *( info.pSource );
     SServicesData& data = s.GetServicesData ();
+
+    if ( IDTarget == 0ULL )
+        IDTarget = data.ID;
 
     // Construímos la consulta para cambiar el password
     static CDBStatement* SQLSetPassword = 0;
@@ -1110,7 +1137,7 @@ COMMAND(Set_Password)
     }
 
     // Cambiamos el password en la base de datos
-    if ( ! SQLSetPassword->Execute ( "sQ", szPassword.c_str (), data.ID ) )
+    if ( ! SQLSetPassword->Execute ( "sQ", szPassword.c_str (), IDTarget ) )
     {
         memset ( (void *)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, eliminamos el password de memoria
         return ReportBrokenDB ( &s, SQLSetPassword, "Ejecutando nickserv.SQLSetPassword" );
@@ -1118,7 +1145,7 @@ COMMAND(Set_Password)
     SQLSetPassword->FreeResult ();
 
     // Cambiamos el password en la DDB
-    if ( ! UpdateDDBGroup ( s, 'n', szPassword ) )
+    if ( ! UpdateDDBGroup ( s, IDTarget, 'n', szPassword ) )
     {
         memset ( (void *)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, eliminamos el password de memoria
         return false;
@@ -1130,10 +1157,13 @@ COMMAND(Set_Password)
     return true;
 }
 
-COMMAND(Set_Email)
+SET_COMMAND(Set_Email)
 {
     CUser& s = *( info.pSource );
     SServicesData& data = s.GetServicesData ();
+
+    if ( IDTarget == 0ULL )
+        IDTarget = data.ID;
 
     // Construímos la consulta SQL para cambiar el email
     static CDBStatement* SQLSetEmail = 0;
@@ -1159,7 +1189,7 @@ COMMAND(Set_Email)
     }
 
     // Actualizamos el email en la base de datos
-    if ( ! SQLSetEmail->Execute ( "sQ", szEmail.c_str (), data.ID ) )
+    if ( ! SQLSetEmail->Execute ( "sQ", szEmail.c_str (), IDTarget ) )
         return ReportBrokenDB ( &s, SQLSetEmail, "Ejecutando nickserv.SQLSetEmail" );
     SQLSetEmail->FreeResult ();
 
@@ -1168,10 +1198,13 @@ COMMAND(Set_Email)
     return true;
 }
 
-COMMAND(Set_Vhost)
+SET_COMMAND(Set_Vhost)
 {
     CUser& s = *( info.pSource );
     SServicesData& data = s.GetServicesData ();
+
+    if ( IDTarget == 0ULL )
+        IDTarget = data.ID;
 
     // Construímos la consulta SQL para cambiar el vhost
     static CDBStatement* SQLSetVhost = 0;
@@ -1189,19 +1222,19 @@ COMMAND(Set_Vhost)
     if ( szVhost == "" )
         return SendSyntax ( s, "SET VHOST" );
 
-    // Hacemos una comprobación de tiempo
-    if ( ! HasAccess ( s, RANK_OPERATOR ) &&
-         ! CheckOrAddTimeRestriction ( s, "SET VHOST", m_options.uiTimeSetVhost ) )
-        return false;
-
     if ( ! CPortability::CompareNoCase ( szVhost, "OFF" ) )
     {
+        // Hacemos una comprobación de tiempo
+        if ( ! HasAccess ( s, RANK_OPERATOR ) &&
+             ! CheckOrAddTimeRestriction ( s, "SET VHOST", m_options.uiTimeSetVhost ) )
+            return false;
+
         // Desactivamos el vhost
-        if ( ! UpdateDDBGroup ( s, 'w', "" ) )
+        if ( ! UpdateDDBGroup ( s, IDTarget, 'w', "" ) )
             return false;
 
         // Actualizamos el vhost en la base de datos
-        if ( ! SQLSetVhost->Execute ( "NQ", data.ID ) )
+        if ( ! SQLSetVhost->Execute ( "NQ", IDTarget ) )
             return ReportBrokenDB ( &s, SQLSetVhost, "Ejecutando nickserv.SQLSetVhost" );
         SQLSetVhost->FreeResult ();
 
@@ -1217,6 +1250,11 @@ COMMAND(Set_Vhost)
             return false;
         }
 
+        // Hacemos una comprobación de tiempo
+        if ( ! HasAccess ( s, RANK_OPERATOR ) &&
+             ! CheckOrAddTimeRestriction ( s, "SET VHOST", m_options.uiTimeSetVhost ) )
+            return false;
+
         CString szBadword;
         if ( ! VerifyVhost ( szVhost, szBadword ) )
         {
@@ -1228,11 +1266,11 @@ COMMAND(Set_Vhost)
         }
 
         // Actualizamos el vhost en la DDB
-        if ( ! UpdateDDBGroup ( s, 'w', szVhost ) )
+        if ( ! UpdateDDBGroup ( s, IDTarget, 'w', szVhost ) )
             return false;
 
         // Actualizamos el vhost en la base de datos
-        if ( ! SQLSetVhost->Execute ( "sQ", szVhost.c_str (), data.ID ) )
+        if ( ! SQLSetVhost->Execute ( "sQ", szVhost.c_str (), IDTarget ) )
             return ReportBrokenDB ( &s, SQLSetVhost, "Ejecutando nickserv.SQLSetVhost" );
         SQLSetVhost->FreeResult ();
 
@@ -1242,10 +1280,13 @@ COMMAND(Set_Vhost)
     return true;
 }
 
-COMMAND(Set_Private)
+SET_COMMAND(Set_Private)
 {
     CUser& s = *( info.pSource );
     SServicesData& data = s.GetServicesData ();
+
+    if ( IDTarget == 0ULL )
+        IDTarget = data.ID;
 
     // Generamos la consulta SQL para establecer la privacidad
     static CDBStatement* SQLSetPrivate = 0;
@@ -1269,7 +1310,7 @@ COMMAND(Set_Private)
         return SendSyntax ( s, "SET PRIVATE" );
 
     // Ejecutamos la consulta SQL
-    if ( ! SQLSetPrivate->Execute ( "sQ", szDBOption, data.ID ) )
+    if ( ! SQLSetPrivate->Execute ( "sQ", szDBOption, IDTarget ) )
         return ReportBrokenDB ( &s, SQLSetPrivate, "Ejecutando nickserv.SQLSetPrivate" );
     SQLSetPrivate->FreeResult ();
 
@@ -1281,10 +1322,13 @@ COMMAND(Set_Private)
     return true;
 }
 
-COMMAND(Set_Web)
+SET_COMMAND(Set_Web)
 {
     CUser& s = *( info.pSource );
     SServicesData& data = s.GetServicesData ();
+
+    if ( IDTarget == 0ULL )
+        IDTarget = data.ID;
 
     // Construímos la consulta SQL para cambiar la web
     static CDBStatement* SQLSetWeb = 0;
@@ -1313,7 +1357,7 @@ COMMAND(Set_Web)
     if ( ! CPortability::CompareNoCase ( szWeb, "OFF" ) )
     {
         // Eliminamos la web
-        if ( ! SQLSetWeb->Execute ( "NQ", data.ID ) )
+        if ( ! SQLSetWeb->Execute ( "NQ", IDTarget ) )
             return ReportBrokenDB ( &s, SQLSetWeb, "Ejecutando nickserv.SQLSetWeb" );
         SQLSetWeb->FreeResult ();
 
@@ -1322,7 +1366,7 @@ COMMAND(Set_Web)
     else
     {
         // Cambiamos la web
-        if ( ! SQLSetWeb->Execute ( "sQ", szWeb.c_str (), data.ID ) )
+        if ( ! SQLSetWeb->Execute ( "sQ", szWeb.c_str (), IDTarget ) )
             return ReportBrokenDB ( &s, SQLSetWeb, "Ejecutando nickserv.SQLSetWeb" );
         SQLSetWeb->FreeResult ();
 
@@ -1332,10 +1376,13 @@ COMMAND(Set_Web)
     return true;
 }
 
-COMMAND(Set_Greetmsg)
+SET_COMMAND(Set_Greetmsg)
 {
     CUser& s = *( info.pSource );
     SServicesData& data = s.GetServicesData ();
+
+    if ( IDTarget == 0ULL )
+        IDTarget = data.ID;
 
     // Generamos la consulta SQL para cambiar el mensaje de bienvenida
     static CDBStatement* SQLSetGreetmsg = 0;
@@ -1364,7 +1411,7 @@ COMMAND(Set_Greetmsg)
     if ( ! CPortability::CompareNoCase ( szMsg, "OFF" ) )
     {
         // Eliminamos el mensaje
-        if ( ! SQLSetGreetmsg->Execute ( "NQ", data.ID ) )
+        if ( ! SQLSetGreetmsg->Execute ( "NQ", IDTarget ) )
             return ReportBrokenDB ( &s, SQLSetGreetmsg, "Ejecutando nickserv.SQLSetGreetmsg" );
         SQLSetGreetmsg->FreeResult ();
 
@@ -1373,13 +1420,25 @@ COMMAND(Set_Greetmsg)
     else
     {
         // Cambiamos el mensaje
-        if ( ! SQLSetGreetmsg->Execute ( "sQ", szMsg.c_str (), data.ID ) )
+        if ( ! SQLSetGreetmsg->Execute ( "sQ", szMsg.c_str (), IDTarget ) )
             return ReportBrokenDB ( &s, SQLSetGreetmsg, "Ejecutando nickserv.SQLSetGreetmsg" );
         SQLSetGreetmsg->FreeResult ();
 
         LangMsg ( s, "SET_GREETMSG_SUCCESS", szMsg.c_str () );
     }
 
+    return true;
+}
+
+#undef SET_COMMAND
+
+
+
+///////////////////
+// INFO
+//
+COMMAND(Info)
+{
     return true;
 }
 

@@ -16,7 +16,7 @@
 
 #ifndef va_copy
     #ifdef WIN32
-        #define va_copy(dest, orig) (dest) = (orig)
+        #define va_copy(dst, src) ((void)((dst) = (src)))
     #endif
 #endif
 
@@ -76,6 +76,7 @@ public:
         {
             std::string::reserve ( 16 );
             curCapacity = std::string::capacity ();
+            szDest = const_cast < char* > ( std::string::data() );
         }
 
         va_copy ( vlLocal, vl );

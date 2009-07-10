@@ -19,5 +19,5 @@
 class CLogger
 {
 public:
-    static void     Log     ( const CString& szMessage, ... );
+    static void     Log     ( const char* szFormat, ... );
 };

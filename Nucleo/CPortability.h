@@ -19,7 +19,9 @@
 #ifdef WIN32
     #include <sys/timeb.h>
     #define EPOCHFILETIME (116444736000000000i64)
-    #define va_copy(dest, orig) (dest) = (orig)
+    #ifndef va_copy
+        #define va_copy(dst, src) ((void)((dst) = (src)))
+    #endif
     #define close(a) _close(a)
     #define dup(a) _dup(a)
     #define dup2(a,b) _dup2(a,b)

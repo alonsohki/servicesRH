@@ -218,6 +218,18 @@ Para obtener más ayuda acerca de cualquiera de las opciones,
 escribe 12/msg %N HELP SET <opción>.
 %%
 
+%HELP_SET_COADMINS%
+
+03-= Co-administradores =-
+Los co-administradores pueden usar, además, un parámetro extra
+para cambiar las opciones de otro nick. La sintaxis es:
+12/msg %N SET <nick> <opción> <valor>.
+%%
+
+%SET_UNKNOWN_ACCOUNT%
+04Error: No se ha encontrado ninguna cuenta con el nombre 12%s.
+%%
+
 %SYNTAX_SET_PASSWORD%
 Sintaxis: 12SET PASSWORD <nueva contraseña>
 %%
