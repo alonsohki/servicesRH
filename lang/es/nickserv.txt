@@ -226,10 +226,6 @@ para cambiar las opciones de otro nick. La sintaxis es:
 12/msg %N SET <nick> <opción> <valor>.
 %%
 
-%SET_UNKNOWN_ACCOUNT%
-04Error: No se ha encontrado ninguna cuenta con el nombre 12%s.
-%%
-
 %SYNTAX_SET_PASSWORD%
 Sintaxis: 12SET PASSWORD <nueva contraseña>
 %%
@@ -356,4 +352,60 @@ Mensaje de bienvenida eliminado correctamente.
 
 %SET_GREETMSG_SUCCESS%
 Mensaje de bienvenida cambiado a 12%s.
+%%
+
+
+############################
+# INFO
+%SYNTAX_INFO%
+Sintaxis: 12INFO <nick>
+%%
+
+%HELP_INFO%
+Muestra la información del 12nick especificado. Si se trata de tu nick, puedes
+escribir 12/msg %N INFO tuNick ALL para obtener información más completa.
+%%
+
+%INFO_ABOUT%
+Información de 12%s:
+%%
+
+%INFO_IS%
+%s es 12%s
+%%
+
+%INFO_REGISTERED%
+Registrado el 12%s
+%%
+
+%INFO_LAST_SEEN%
+Visto por última vez el 12%s
+%%
+
+%INFO_LAST_QUIT%
+Último mensaje de salida: 12%s
+%%
+
+%INFO_VHOST%
+Dirección IP virtual: 12%s
+%%
+
+%INFO_WEB%
+Página web: 12%s
+%%
+
+%INFO_OPTIONS%
+Opciones: 12%s
+%%
+
+%INFO_USERMASK%
+Máscara de usuario: 12%s@%s
+%%
+
+%INFO_GREETMSG%
+Mensaje de bienvenida: 12%s
+%%
+
+%INFO_LANGUAGE%
+Idioma: 12%s
 %%

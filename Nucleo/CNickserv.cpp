@@ -1070,7 +1070,7 @@ COMMAND(Set)
         IDTarget = GetAccountID ( szTarget );
         if ( IDTarget == 0ULL )
         {
-            LangMsg ( s, "SET_UNKNOWN_ACCOUNT", szTarget.c_str () );
+            LangMsg ( s, "ACCOUNT_NOT_FOUND", szTarget.c_str () );
             return false;
         }
     }
@@ -1439,6 +1439,108 @@ SET_COMMAND(Set_Greetmsg)
 //
 COMMAND(Info)
 {
+    CUser& s = *( info.pSource );
+    SServicesData& data = s.GetServicesData ();
+
+    // Generamos la consulta para obtener la información de un nick
+    static CDBStatement* SQLGetInfo = 0;
+    if ( !SQLGetInfo )
+    {
+        SQLGetInfo = CDatabase::GetSingleton ().PrepareStatement (
+              "SELECT name, lang, username, hostname, fullname, quitmsg,"
+              "vhost, web, greetmsg, private, registered, lastSeen "
+              "FROM account WHERE id=?"
+            );
+        if ( !SQLGetInfo )
+            return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLGetInfo" );
+    }
+
+    // Obtenemos el nick
+    CString& szNick = info.GetNextParam ();
+    if ( szNick == "" )
+        return SendSyntax ( s, "INFO" );
+
+    // Comprobamos si quieren información completa
+    bool bAll = false;
+    CString& szAll = info.GetNextParam ();
+    if ( ! CPortability::CompareNoCase ( szAll, "ALL" ) )
+        bAll = true;
+
+    // Obtenemos el ID del nick del que piden la información
+    unsigned long long ID = GetAccountID ( szNick );
+    if ( ID == 0ULL )
+    {
+        LangMsg ( s, "ACCOUNT_NOT_FOUND", szNick.c_str () );
+        return false;
+    }
+
+    // Filtramos la opción "ALL" a sólo operadores y al propio nick
+    if ( bAll && data.ID != ID && ! HasAccess ( s, RANK_PREOPERATOR ) )
+        bAll = false;
+
+    // Ejecutamos la consulta SQL para obtener la información
+    if ( ! SQLGetInfo->Execute ( "Q", ID ) )
+        return ReportBrokenDB ( &s, SQLGetInfo, "Ejecutando nickserv.SQLGetInfo" );
+
+    // Mostramos la información
+    char szName [ 256 ];
+    char szLang [ 16 ];
+    char szUsername [ 256 ];
+    char szHostname [ 256 ];
+    char szFullname [ 256 ];
+    char szQuitmsg [ 512 ];
+    char szVhost [ 128 ];
+    char szWeb [ 256 ];
+    char szGreetmsg [ 256 ];
+    char szPrivate [ 4 ];
+    CDate dateRegistered;
+    CDate dateLastSeen;
+    bool bNulls [ 12 ];
+
+    if ( SQLGetInfo->Fetch ( 0, bNulls, "ssssssssssTT", szName, sizeof ( szName ),
+                                                        szLang, sizeof ( szLang ),
+                                                        szUsername, sizeof ( szUsername ),
+                                                        szHostname, sizeof ( szHostname ),
+                                                        szFullname, sizeof ( szFullname ),
+                                                        szQuitmsg, sizeof ( szQuitmsg ),
+                                                        szVhost, sizeof ( szVhost ),
+                                                        szWeb, sizeof ( szWeb ),
+                                                        szGreetmsg, sizeof ( szGreetmsg ),
+                                                        szPrivate, sizeof ( szPrivate ),
+                                                        &dateRegistered, &dateLastSeen )
+                                                        == CDBStatement::FETCH_OK )
+    {
+        char szOptions [ 64 ];
+        szOptions [ 0 ] = '\0';
+        if ( *szPrivate == 'Y' )
+            strcat ( szOptions, "Privado" );
+
+        LangMsg ( s, "INFO_ABOUT", szName );
+        LangMsg ( s, "INFO_IS", szName, szFullname );
+        LangMsg ( s, "INFO_REGISTERED", dateRegistered.GetDateString ().c_str () );
+        LangMsg ( s, "INFO_LAST_SEEN", dateLastSeen.GetDateString ().c_str () );
+        if ( bNulls [ 5 ] == false )
+            LangMsg ( s, "INFO_LAST_QUIT", szQuitmsg );
+        if ( bNulls [ 6 ] == false )
+        {
+            strcat ( szVhost, ".virtual" );
+            LangMsg ( s, "INFO_VHOST", szVhost );
+        }
+        if ( bNulls [ 7 ] == false )
+            LangMsg ( s, "INFO_WEB", szWeb );
+        if ( *szOptions != '\0' )
+            LangMsg ( s, "INFO_OPTIONS", szOptions );
+
+        if ( bAll )
+        {
+            LangMsg ( s, "INFO_USERMASK", szUsername, szHostname );
+            if ( bNulls [ 8 ] == false )
+                LangMsg ( s, "INFO_GREETMSG", szGreetmsg );
+            LangMsg ( s, "INFO_LANGUAGE", szLang );
+        }
+    }
+    SQLGetInfo->FreeResult ();
+
     return true;
 }
 
