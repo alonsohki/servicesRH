@@ -25,6 +25,7 @@ CNickserv::CNickserv ( const CConfig& config )
     REGISTER ( Register,    All );
     REGISTER ( Identify,    All );
     REGISTER ( Group,       All );
+    REGISTER ( Set,         All );
 #undef REGISTER
 
     // Cargamos la configuración para nickserv
@@ -38,12 +39,39 @@ CNickserv::CNickserv ( const CConfig& config )
 } while ( 0 )
 
     CString szTemp;
-    SAFE_LOAD ( szTemp, "options", "group.maxMembers" );
+
+    // Límites de password
+    SAFE_LOAD ( szTemp, "options", "nickserv.password.minLength" );
+    m_options.uiPasswordMinLength = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
+    SAFE_LOAD ( szTemp, "options", "nickserv.password.maxLength" );
+    m_options.uiPasswordMaxLength = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
+
+    // Límites de vhost
+    SAFE_LOAD ( szTemp, "options", "nickserv.vhost.minLength" );
+    m_options.uiVhostMinLength = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
+    SAFE_LOAD ( szTemp, "options", "nickserv.vhost.maxLength" );
+    m_options.uiVhostMaxLength = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
+    for ( unsigned int i = 1; true; ++i )
+    {
+        CString szKey ( "nickserv.vhost.badwords[%u]", i );
+        if ( ! config.GetValue ( szTemp, "options", szKey ) )
+            break;
+        m_options.vecVhostBadwords.push_back ( szTemp );
+    }
+
+    // Límites de grupos
+    SAFE_LOAD ( szTemp, "options", "nickserv.group.maxMembers" );
     m_options.uiMaxGroup = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
-    SAFE_LOAD ( szTemp, "options", "time.register" );
+
+    // Límites de tiempo
+    SAFE_LOAD ( szTemp, "options", "nickserv.time.register" );
     m_options.uiTimeRegister = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
-    SAFE_LOAD ( szTemp, "options", "time.group" );
+    SAFE_LOAD ( szTemp, "options", "nickserv.time.group" );
     m_options.uiTimeGroup = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
+    SAFE_LOAD ( szTemp, "options", "nickserv.time.set_password" );
+    m_options.uiTimeSetPassword = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
+    SAFE_LOAD ( szTemp, "options", "nickserv.time.set_vhost" );
+    m_options.uiTimeSetVhost = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
 
 #undef SAFE_LOAD
 }
@@ -320,22 +348,243 @@ bool CNickserv::CheckPassword ( unsigned long long ID, const CString& szPassword
     return bResult;
 }
 
+bool CNickserv::VerifyEmail ( const CString& szEmail )
+{
+    bool bValid = true;
+
+    size_t atPos = szEmail.find ( '@' );
+    if ( atPos == CString::npos || atPos == 0 || atPos == szEmail.length () - 1 )
+        bValid = false;
+    else
+    {
+        size_t secondAtPos = szEmail.find ( '@', atPos + 1 );
+        if ( secondAtPos != CString::npos )
+            bValid = false;
+        else
+        {
+            size_t dotPos = szEmail.find ( '.', atPos + 1 );
+            if ( dotPos == CString::npos || dotPos == szEmail.length () - 1 )
+                bValid = false;
+            else
+            {
+                // Verificamos los caracteres
+                for ( unsigned int i = 0; bValid && i < szEmail.length (); ++i )
+                {
+                    char c = szEmail [ i ];
+                    switch ( c )
+                    {
+                        case '.':
+                        case '_':
+                        case '-':
+                        case '@':
+                        case 'ç': case 'Ç': case 'ñ': case 'Ñ':
+                            break;
+                        default:
+                            if ( c >= '0' && c <= '9' )
+                                break;
+                            if ( c >= 'A' && c <= 'Z' )
+                                break;
+                            if ( c >= 'a' && c <= 'z' )
+                                break;
+                            bValid = false;
+                    }
+                }
+            }
+        }
+    }
+
+    return bValid;
+}
+
+bool CNickserv::VerifyVhost ( const CString& szVhost, CString& szBadword )
+{
+    szBadword = "";
+
+    // Hacemos una primera pasada verificando los caracteres
+    bool bValid = true;
+    for ( unsigned int i = 0; bValid && i < szVhost.length (); ++i )
+    {
+        char c = szVhost [ i ];
+        switch ( c )
+        {
+            case '.':
+            case '_':
+            case '-':
+            case 'ç': case 'Ç': case 'ñ': case 'Ñ':
+                break;
+            default:
+                if ( c >= '0' && c <= '9' )
+                    break;
+                if ( c >= 'A' && c <= 'Z' )
+                    break;
+                if ( c >= 'a' && c <= 'z' )
+                    break;
+                bValid = false;
+        }
+    }
+
+    if ( ! bValid )
+        return false;
+
+    // Hacemos una verificación de badwords
+    CString szWord;
+    size_t dotPos;
+    size_t prevPos = 0;
+    while ( ( dotPos = szVhost.find ( '.', prevPos ) ) != CString::npos )
+    {
+        if ( dotPos != prevPos )
+        {
+            szWord = szVhost.substr ( prevPos, dotPos - prevPos );
+            for ( std::vector < CString >::const_iterator i = m_options.vecVhostBadwords.begin ();
+                  i != m_options.vecVhostBadwords.end ();
+                  ++i )
+            {
+                if ( ! CPortability::CompareNoCase ( (*i), szWord ) )
+                {
+                    szBadword = szWord;
+                    return false;
+                }
+            }
+        }
+        prevPos = dotPos + 1;
+    }
+    szWord = szVhost.substr ( prevPos );
+    for ( std::vector < CString >::const_iterator i = m_options.vecVhostBadwords.begin ();
+          i != m_options.vecVhostBadwords.end ();
+          ++i )
+    {
+        if ( ! CPortability::CompareNoCase ( (*i), szWord ) )
+        {
+            szBadword = szWord;
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool CNickserv::CheckIdentified ( CUser& user )
+{
+    if ( user.GetServicesData ().bIdentified == false )
+    {
+        LangMsg ( user, "NOT_IDENTIFIED" );
+        return false;
+    }
+    return true;
+}
+
+bool CNickserv::CheckRegistered ( CUser& user )
+{
+    if ( user.GetServicesData ().ID == 0ULL )
+    {
+        LangMsg ( user, "NOT_REGISTERED" );
+        return false;
+    }
+    return true;
+}
 
 
 // Grupos
-void CNickserv::CreateDBGroup ( CUser& s, unsigned long long ID )
+bool CNickserv::CreateDDBGroup ( CUser& s )
 {
-    // TODO: Aquí iría crear la vhost y todo lo relacionado para la DB
+    // Construímos la consulta SQL para obtener la información
+    // del nick principal para copiarla.
+    static CDBStatement* SQLGetAccountDetails = 0;
+    if ( !SQLGetAccountDetails )
+    {
+        SQLGetAccountDetails = CDatabase::GetSingleton ().PrepareStatement (
+              "SELECT vhost FROM account WHERE id=?"
+            );
+        if ( !SQLGetAccountDetails )
+            return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLGetAccountDetails" );
+    }
+
+    SServicesData& data = s.GetServicesData ();
+
+    // Por seguridad...
+    if ( data.ID == 0ULL || data.bIdentified == false )
+        return false;
+
+    // Ejecutamos la consulta
+    if ( ! SQLGetAccountDetails->Execute ( "Q", data.ID ) )
+        return ReportBrokenDB ( &s, SQLGetAccountDetails, "Ejecutando nickserv.SQLGetAccountDetails" );
+
+    // Obtenemos los datos
+    char szVhost [ 128 ];
+    bool bNulls [ 1 ];
+    if ( SQLGetAccountDetails->Fetch ( 0, bNulls, "s", szVhost, sizeof ( szVhost ) ) == CDBStatement::FETCH_OK )
+    {
+        if ( bNulls [ 0 ] == false )
+        {
+            // Tiene vhost
+            GroupInsertDDB ( 'w', s.GetName (), szVhost );
+        }
+    }
+    SQLGetAccountDetails->FreeResult ();
+
+    return true;
 }
 
-void CNickserv::DestroyDBGroup ( CUser& s )
+void CNickserv::DestroyDDBGroup ( CUser& s )
 {
-    // TODO: Aquí iría borrar de la DB la vhost y todo lo relacionado
+    GroupInsertDDB ( 'w', s.GetName (), "" );
 }
 
-void CNickserv::UpdateDBGroup ( CUser& s, unsigned char ucTable, const CString& szKey, const CString& szValue )
+bool CNickserv::UpdateDDBGroup ( CUser& s, unsigned char ucTable, const CString& szValue )
 {
-    // TODO: Introducimos un registro en la base de datos, pero para todo el grupo
+    // Generamos la consulta para obtener los miembros del grupo
+    static CDBStatement* SQLGetGroupMembers = 0;
+    if ( !SQLGetGroupMembers )
+    {
+        SQLGetGroupMembers = CDatabase::GetSingleton ().PrepareStatement (
+              "SELECT name FROM groups WHERE id=?"
+            );
+        if ( !SQLGetGroupMembers )
+        {
+            return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLGetGroupMembers" );
+        }
+    }
+
+    SServicesData& data = s.GetServicesData ();
+
+    // Por seguridad...
+    if ( data.ID == 0ULL || data.bIdentified == false )
+        return false;
+
+    // Obtenemos el nombre de la cuenta principal
+    CString szPrimaryName;
+    GetAccountName ( data.ID, szPrimaryName );
+
+    // Ejecutamos la consulta SQL para obtener los miembros del grupo
+    if ( ! SQLGetGroupMembers->Execute ( "Q", data.ID ) )
+        return ReportBrokenDB ( &s, SQLGetGroupMembers, "Ejecutando nickserv.SQLGetGroupMembers" );
+
+    // Actualizamos el registro para el nick principal
+    GroupInsertDDB ( ucTable, szPrimaryName, szValue );
+
+    // Iteramos por todos los miembros del grupo para actualizarlos
+    char szNick [ 64 ];
+    while ( SQLGetGroupMembers->Fetch ( 0, 0, "s", szNick, sizeof ( szNick ) ) == CDBStatement::FETCH_OK )
+        GroupInsertDDB ( ucTable, szNick, szValue );
+
+    SQLGetGroupMembers->FreeResult ();
+
+    return true;
+}
+
+void CNickserv::GroupInsertDDB ( unsigned char ucTable, const CString& szKey, const CString& szValue )
+{
+    if ( ucTable == 'n' )
+    {
+        // La tabla 'n' es un caso especial, requiere cifrar el password con el nick.
+        char szHash [ 32 ];
+        CifraNick ( szHash, szKey, szValue );
+        CProtocol::GetSingleton ().InsertIntoDDB ( 'n', szKey, szHash );
+    }
+    else
+    {
+        CProtocol::GetSingleton ().InsertIntoDDB ( ucTable, szKey, szValue );
+    }
 }
 
 
@@ -418,6 +667,13 @@ COMMAND(Register)
 
     // Obtenemos el email si hubiere
     CString& szEmail = info.GetNextParam ();
+
+    // Verificamos el email
+    if ( szEmail != "" && ! VerifyEmail ( szEmail ) )
+    {
+        LangMsg ( s, "REGISTER_BOGUS_EMAIL" );
+        return false;
+    }
 
     // Obtenemos la fecha actual
     CDate now;
@@ -505,10 +761,10 @@ COMMAND(Identify)
     }
 
     // Comprobamos si tiene una cuenta
-    if ( data.ID == 0ULL )
+    if ( !CheckRegistered ( s ) )
     {
         memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
-        LangMsg ( s, "NOT_REGISTERED" );
+        return false;
     }
     else
     {
@@ -610,14 +866,15 @@ COMMAND(Group)
             uiCount = 0;
         SQLGetGroupCount->FreeResult ();
 
-        if ( uiCount >= ( m_options.uiMaxGroup - 1 ) )
+        if ( uiCount >= ( m_options.uiMaxGroup - 1 ) && ! HasAccess ( s, RANK_COADMINISTRATOR ) )
         {
             LangMsg ( s, "GROUP_JOIN_LIMIT_EXCEEDED", m_options.uiMaxGroup );
             return false;
         }
 
         // Verificamos las restricciones de tiempo
-        if ( ! CheckOrAddTimeRestriction ( s, "GROUP", m_options.uiTimeGroup ) )
+        if ( ! HasAccess ( s, RANK_COADMINISTRATOR ) &&
+             ! CheckOrAddTimeRestriction ( s, "GROUP", m_options.uiTimeGroup ) )
             return false;
 
         // Agrupamos el nick
@@ -633,12 +890,16 @@ COMMAND(Group)
         CifraNick ( szHash, s.GetName (), szPassword );
         CProtocol::GetSingleton ().InsertIntoDDB ( 'n', s.GetName (), szHash );
 
-        // Copiamos a la DDB los datos específicos de esta
-        CreateDBGroup ( s, ID );
-
         // Identificamos al usuario
         data.ID = ID;
         Identify ( s );
+
+        // Copiamos a la DDB los datos específicos de esta
+        if ( ! CreateDDBGroup ( s ) )
+        {
+            memset ( (void*)szPassword.c_str (), 0, szPassword.length () ); // Eliminamos el password por seguridad
+            return false;
+        }
 
         // Informamos al usuario del agrupamiento correcto
         memset ( (void*)szPassword.c_str (), 0, szPassword.length () ); // Eliminamos el password por seguridad
@@ -667,11 +928,8 @@ COMMAND(Group)
         }
 
         // Comprobamos que esté identificado
-        if ( data.bIdentified == false )
-        {
-            LangMsg ( s, "NOT_IDENTIFIED" );
+        if ( ! CheckIdentified ( s ) )
             return false;
-        }
 
         // Nos aseguramos de que sea un group y no el nick principal
         unsigned long long ID = GetAccountID ( s.GetName (), false );
@@ -682,7 +940,8 @@ COMMAND(Group)
         }
 
         // Verificamos las restricciones de tiempo
-        if ( ! CheckOrAddTimeRestriction ( s, "GROUP", m_options.uiTimeGroup ) )
+        if ( ! HasAccess ( s, RANK_COADMINISTRATOR ) &&
+             ! CheckOrAddTimeRestriction ( s, "GROUP", m_options.uiTimeGroup ) )
             return false;
 
         // Obtenemos el nick de la cuenta principal
@@ -697,7 +956,7 @@ COMMAND(Group)
         SQLUngroup->FreeResult ();
 
         // Eliminamos de la DDB los datos específicos
-        DestroyDBGroup ( s );
+        DestroyDDBGroup ( s );
 
         // Eliminamos el registro de la cuenta de la DDB
         CProtocol::GetSingleton ().InsertIntoDDB ( 'n', s.GetName (), "" );
@@ -723,19 +982,9 @@ COMMAND(Group)
                 return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLGetNicksInGroup" );
         }
 
-        // Verificamos que el usuario está registrado
-        if ( data.ID == 0ULL )
-        {
-            LangMsg ( s, "NOT_REGISTERED" );
+        // Verificamos que el usuario está registrado e identificado
+        if ( !CheckRegistered ( s ) || !CheckIdentified ( s ) )
             return false;
-        }
-
-        // Verificamos que el usuario está identificado
-        if ( data.bIdentified == false )
-        {
-            LangMsg ( s, "NOT_IDENTIFIED" );
-            return false;
-        }
 
         // Verificamos si es un operador para permitir visualizar
         // los grupos ajenos.
@@ -778,6 +1027,243 @@ COMMAND(Group)
     return true;
 }
 
+
+
+///////////////////
+// SET
+//
+COMMAND(Set)
+{
+    CUser& s = *( info.pSource );
+    CString& szOption = info.GetNextParam ();
+
+    // Verificamos que esté registrado e identificado
+    if ( ! CheckRegistered ( s ) || ! CheckIdentified ( s ) )
+        return false;
+
+    if ( szOption == "" )
+        return SendSyntax ( s, "SET" );
+    else if ( ! CPortability::CompareNoCase ( szOption, "PASSWORD" ) )
+        return cmdSet_Password ( info );
+    else if ( ! CPortability::CompareNoCase ( szOption, "EMAIL" ) )
+        return cmdSet_Email ( info );
+    else if ( ! CPortability::CompareNoCase ( szOption, "VHOST" ) )
+        return cmdSet_Vhost ( info );
+    else if ( ! CPortability::CompareNoCase ( szOption, "PRIVATE" ) )
+        return cmdSet_Private ( info );
+    else
+        return SendSyntax ( s, "SET" );
+}
+
+COMMAND(Set_Password)
+{
+    CUser& s = *( info.pSource );
+    SServicesData& data = s.GetServicesData ();
+
+    // Construímos la consulta para cambiar el password
+    static CDBStatement* SQLSetPassword = 0;
+    if ( !SQLSetPassword )
+    {
+        SQLSetPassword = CDatabase::GetSingleton ().PrepareStatement (
+              "UPDATE account SET password=MD5(?) WHERE id=?"
+            );
+        if ( !SQLSetPassword )
+            return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLSetPassword" );
+    }
+
+    // Obtenemos el password
+    const CString& szPassword = info.GetNextParam ();
+    if ( szPassword == "" )
+        return SendSyntax ( s, "SET PASSWORD" );
+
+    // Verificamos la longitud del nuevo password
+    if ( szPassword.length () < m_options.uiPasswordMinLength ||
+         szPassword.length () > m_options.uiPasswordMaxLength )
+    {
+        memset ( (void *)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, eliminamos el password de memoria
+        LangMsg ( s, "SET_PASSWORD_BAD_LENGTH", m_options.uiPasswordMinLength, m_options.uiPasswordMaxLength );
+        return false;
+    }
+
+    // Hacemos una verificación de tiempo
+    if ( ! HasAccess ( s, RANK_PREOPERATOR ) &&
+         ! CheckOrAddTimeRestriction ( s, "SET PASSWORD", m_options.uiTimeSetPassword ) )
+    {
+        memset ( (void *)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, eliminamos el password de memoria
+        return false;
+    }
+
+    // Cambiamos el password en la base de datos
+    if ( ! SQLSetPassword->Execute ( "sQ", szPassword.c_str (), data.ID ) )
+    {
+        memset ( (void *)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, eliminamos el password de memoria
+        return ReportBrokenDB ( &s, SQLSetPassword, "Ejecutando nickserv.SQLSetPassword" );
+    }
+    SQLSetPassword->FreeResult ();
+
+    // Cambiamos el password en la DDB
+    if ( ! UpdateDDBGroup ( s, 'n', szPassword ) )
+    {
+        memset ( (void *)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, eliminamos el password de memoria
+        return false;
+    }
+
+    LangMsg ( s, "SET_PASSWORD_SUCCESS", szPassword.c_str () );
+    memset ( (void *)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, eliminamos el password de memoria
+
+    return true;
+}
+
+COMMAND(Set_Email)
+{
+    CUser& s = *( info.pSource );
+    SServicesData& data = s.GetServicesData ();
+
+    // Construímos la consulta SQL para cambiar el email
+    static CDBStatement* SQLSetEmail = 0;
+    if ( !SQLSetEmail )
+    {
+        SQLSetEmail = CDatabase::GetSingleton ().PrepareStatement (
+              "UPDATE account SET email=? WHERE id=?"
+            );
+        if ( !SQLSetEmail )
+            return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLSetEmail" );
+    }
+
+    // Obtenemos el nuevo email
+    CString& szEmail = info.GetNextParam ();
+    if ( szEmail == "" )
+        return SendSyntax ( s, "SET EMAIL" );
+
+    // Verificamos que es un email válido
+    if ( ! VerifyEmail ( szEmail ) )
+    {
+        LangMsg ( s, "SET_EMAIL_BOGUS_EMAIL" );
+        return false;
+    }
+
+    // Actualizamos el email en la base de datos
+    if ( ! SQLSetEmail->Execute ( "sQ", szEmail.c_str (), data.ID ) )
+        return ReportBrokenDB ( &s, SQLSetEmail, "Ejecutando nickserv.SQLSetEmail" );
+    SQLSetEmail->FreeResult ();
+
+    LangMsg ( s, "SET_EMAIL_SUCCESS", szEmail.c_str () );
+
+    return true;
+}
+
+COMMAND(Set_Vhost)
+{
+    CUser& s = *( info.pSource );
+    SServicesData& data = s.GetServicesData ();
+
+    // Construímos la consulta SQL para cambiar el vhost
+    static CDBStatement* SQLSetVhost = 0;
+    if ( ! SQLSetVhost )
+    {
+        SQLSetVhost = CDatabase::GetSingleton ().PrepareStatement (
+              "UPDATE account SET vhost=? WHERE id=?"
+            );
+        if ( ! SQLSetVhost )
+            return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLSetVhost" );
+    }
+
+    // Obtenemos el vhost
+    CString& szVhost = info.GetNextParam ();
+    if ( szVhost == "" )
+        return SendSyntax ( s, "SET VHOST" );
+
+    // Hacemos una comprobación de tiempo
+    if ( ! HasAccess ( s, RANK_OPERATOR ) &&
+         ! CheckOrAddTimeRestriction ( s, "SET VHOST", m_options.uiTimeSetVhost ) )
+        return false;
+
+    if ( ! CPortability::CompareNoCase ( szVhost, "OFF" ) )
+    {
+        // Desactivamos el vhost
+        if ( ! UpdateDDBGroup ( s, 'w', "" ) )
+            return false;
+
+        // Actualizamos el vhost en la base de datos
+        if ( ! SQLSetVhost->Execute ( "NQ", data.ID ) )
+            return ReportBrokenDB ( &s, SQLSetVhost, "Ejecutando nickserv.SQLSetVhost" );
+        SQLSetVhost->FreeResult ();
+
+        LangMsg ( s, "SET_VHOST_REMOVED" );
+    }
+    else
+    {
+        // Comprobamos la longitud del vhost
+        if ( szVhost.length () < m_options.uiVhostMinLength ||
+             szVhost.length () > m_options.uiVhostMaxLength )
+        {
+            LangMsg ( s, "SET_VHOST_BAD_LENGTH", m_options.uiVhostMinLength, m_options.uiVhostMaxLength );
+            return false;
+        }
+
+        CString szBadword;
+        if ( ! VerifyVhost ( szVhost, szBadword ) )
+        {
+            if ( szBadword == "" )
+                LangMsg ( s, "SET_VHOST_INVALID_CHARACTERS" );
+            else
+                LangMsg ( s, "SET_VHOST_BADWORD", szBadword.c_str () );
+            return false;
+        }
+
+        // Actualizamos el vhost en la DDB
+        if ( ! UpdateDDBGroup ( s, 'w', szVhost ) )
+            return false;
+
+        // Actualizamos el vhost en la base de datos
+        if ( ! SQLSetVhost->Execute ( "sQ", szVhost.c_str (), data.ID ) )
+            return ReportBrokenDB ( &s, SQLSetVhost, "Ejecutando nickserv.SQLSetVhost" );
+        SQLSetVhost->FreeResult ();
+
+        LangMsg ( s, "SET_VHOST_SUCCESS", szVhost.c_str () );
+    }
+
+    return true;
+}
+
+COMMAND(Set_Private)
+{
+    CUser& s = *( info.pSource );
+    SServicesData& data = s.GetServicesData ();
+
+    // Generamos la consulta SQL para establecer la privacidad
+    static CDBStatement* SQLSetPrivate = 0;
+    if ( !SQLSetPrivate )
+    {
+        SQLSetPrivate = CDatabase::GetSingleton ().PrepareStatement (
+              "UPDATE account SET private=? WHERE id=?"
+            );
+        if ( !SQLSetPrivate )
+            return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLSetPrivate" );
+    }
+
+    // Obtenemos la opción
+    const char* szDBOption;
+    CString& szOption = info.GetNextParam ();
+    if ( ! CPortability::CompareNoCase ( szOption, "ON" ) )
+        szDBOption = "Y";
+    else if ( ! CPortability::CompareNoCase ( szOption, "OFF" ) )
+        szDBOption = "N";
+    else
+        return SendSyntax ( s, "SET PRIVATE" );
+
+    // Ejecutamos la consulta SQL
+    if ( ! SQLSetPrivate->Execute ( "sQ", szDBOption, data.ID ) )
+        return ReportBrokenDB ( &s, SQLSetPrivate, "Ejecutando nickserv.SQLSetPrivate" );
+    SQLSetPrivate->FreeResult ();
+
+    if ( *szDBOption == 'Y' )
+        LangMsg ( s, "SET_PRIVATE_SUCCESS_ON" );
+    else
+        LangMsg ( s, "SET_PRIVATE_SUCCESS_OFF" );
+
+    return true;
+}
 
 
 #undef COMMAND

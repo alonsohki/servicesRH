@@ -232,7 +232,12 @@ bool CService::SendSyntax ( CUser& dest, const char* szCommand )
     if ( !m_bIsOk || !m_bIsLoaded )
         return false;
 
-    CString szLangTopic ( "SYNTAX_%s", szCommand );
+    CString szCommandUnderscored = szCommand;
+    size_t pos = -1;
+    while ( ( pos = szCommandUnderscored.find ( ' ', pos + 1 ) ) != CString::npos )
+        szCommandUnderscored [ pos ] = '_';
+
+    CString szLangTopic ( "SYNTAX_%s", szCommandUnderscored.c_str () );
     LangMsg ( dest, szLangTopic );
     LangMsg ( dest, "HELP_FOR_MORE_INFORMATION", szCommand );
     return false;

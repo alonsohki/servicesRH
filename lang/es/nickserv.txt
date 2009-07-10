@@ -24,6 +24,7 @@ Lista de comandos disponibles:
     12REGISTER             Registro de un nick
     12IDENTIFY             Identificación de un nick registrado
     12GROUP                Agrupamiento de nicks
+    12SET                  Cambia varias opciones de tu nick
 
 Para obtener ayuda detallada sobre cualquier comando, escribe 12/msg %N HELP <comando>.
 %%
@@ -85,6 +86,10 @@ en las futuras sesiones para verificar que eres el dueño de este nick.
 
 Opcionalmente, puedes definir una 12dirección de email para poder
 recuperar tu contraseña si en el futuro la olvidas.
+%%
+
+%REGISTER_BOGUS_EMAIL%
+04Error: La dirección de correo suministrada es inválida.
 %%
 
 %REGISTER_COMPLETE%
@@ -185,4 +190,111 @@ Te has desagrupado del nick 12%s.
 
 %GROUP_LIST%
 Lista de nicks en el grupo de 12%s:
+%%
+
+
+
+############################
+# SET
+%SYNTAX_SET%
+Sintaxis: 12SET <opción> <valor>
+%%
+
+%HELP_SET%
+Establece las diferentes opciones para tu nick. Debes especificar qué
+12opción deseas cambiar y darle un valor.
+
+Las posibles opciones son:
+
+    12PASSWORD       Cambia la contraseña
+    12EMAIL          Cambia la dirección de correo electrónico
+    12VHOST          Cambia la dirección IP virtual personalizada
+    12PRIVATE        Cambia la opción de privacidad de tu nick en listados
+
+Para obtener más ayuda acerca de cualquiera de las opciones,
+escribe 12/msg %N HELP SET <opción>.
+%%
+
+%SYNTAX_SET_PASSWORD%
+Sintaxis: 12SET PASSWORD <nueva contraseña>
+%%
+
+%HELP_SET_PASSWORD%
+Cambia la contraseña de tu nick por la 12nueva contraseña especificada.
+Ejemplo: Para cambiar tu contraseña a 12345,
+escribe 12/msg %N SET PASSWORD 12345.
+%%
+
+%SET_PASSWORD_BAD_LENGTH%
+04Error: La contraseña debe tener al menos 12%u caracteres y un máximo de 12%u caracteres.
+%%
+
+%SET_PASSWORD_SUCCESS%
+Contraseña cambiada a 12%s.
+%%
+
+%SYNTAX_SET_EMAIL%
+Sintaxis: 12SET EMAIL <nuevo email>
+%%
+
+%HELP_SET_EMAIL%
+Cambia la dirección de correo electrónico asociada a tu nick a 12nuevo email.
+Este email podrá ser utilizado en el futuro para enviar recordatorios de contraseña.
+%%
+
+%SET_EMAIL_BOGUS_EMAIL%
+04Error: Dirección de correo electrónico no válida.
+%%
+
+%SET_EMAIL_SUCCESS%
+Dirección de correo electrónico cambiada a 12%s.
+%%
+
+%SYNTAX_SET_VHOST%
+Sintaxis: 12SET VHOST <nuevo vhost>
+%%
+
+%HELP_SET_VHOST%
+Cambia tu dirección IP virtual personalizada a un 12nuevo vhost.
+Si escribes 12OFF como 12nuevo vhost, se eliminará el que
+tengas ahora.
+%%
+
+%SET_VHOST_BAD_LENGTH%
+04Error: La dirección IP virtual debe tener al menos 12%u caracteres y un máximo de 12%u caracteres.
+%%
+
+%SET_VHOST_INVALID_CHARACTERS%
+04Error: La dirección IP virtual contiene caracteres inválidos.
+Sólo se admiten 12números y letras y los caracteres: 12_ . - ç ñ.
+%%
+
+%SET_VHOST_BADWORD%
+04Error: La palabra 12%s no es válida para direcciones IP virtuales.
+%%
+
+%SET_VHOST_REMOVED%
+Tu dirección IP virtual ha sido eliminada con éxito.
+%%
+
+%SET_VHOST_SUCCESS%
+Dirección IP virtual cambiada a 12%s.
+%%
+
+%SYNTAX_SET_PRIVATE%
+Sintaxis: 12SET PRIVATE {ON|OFF}
+%%
+
+%HELP_SET_PRIVATE%
+Activa o desactiva la opción de privacidad en los listados de nicks.
+Si activas esta opción, tu nick no aparecerá en estos listados.
+Para más información acerca del listado de nicks, escribe 12/msg %N HELP LIST.
+%%
+
+%SET_PRIVATE_SUCCESS_ON%
+Opción de privacidad 12activada correctamente.
+%%
+
+%SET_PRIVATE_SUCCESS_OFF%
+Opción de privacidad 12desactivada correctamente.
 %%

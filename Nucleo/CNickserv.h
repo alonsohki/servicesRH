@@ -32,12 +32,19 @@ public:
     void            Identify        ( CUser& user );
     char*           CifraNick       ( char* dest, const char* szNick, const char* szPassword );
     bool            CheckPassword   ( unsigned long long ID, const CString& szPassword );
+    bool            VerifyEmail     ( const CString& szEmail );
+    bool            VerifyVhost     ( const CString& szVhost, CString& szBadword );
+
+private:
+    bool            CheckIdentified ( CUser& user );
+    bool            CheckRegistered ( CUser& user );
 
 private:
     // Grupos
-    void            CreateDBGroup   ( CUser& s, unsigned long long ID );
-    void            DestroyDBGroup  ( CUser& s );
-    void            UpdateDBGroup   ( CUser& s, unsigned char ucTable, const CString& szKey, const CString& szValue );
+    bool            CreateDDBGroup  ( CUser& s );
+    void            DestroyDDBGroup ( CUser& s );
+    bool            UpdateDDBGroup  ( CUser& s, unsigned char ucTable, const CString& szValue );
+    void            GroupInsertDDB  ( unsigned char ucTable, const CString& szKey, const CString& szValue );
 
     // Comandos
 protected:
@@ -48,6 +55,11 @@ private:
     COMMAND ( Register );
     COMMAND ( Identify );
     COMMAND ( Group );
+    COMMAND ( Set );
+        COMMAND ( Set_Password );
+        COMMAND ( Set_Email );
+        COMMAND ( Set_Vhost );
+        COMMAND ( Set_Private );
 #undef COMMAND
 
     // Verificación de acceso a comandos
@@ -67,8 +79,16 @@ private:
 private:
     struct
     {
+        unsigned int    uiPasswordMinLength;
+        unsigned int    uiPasswordMaxLength;
+        unsigned int    uiVhostMinLength;
+        unsigned int    uiVhostMaxLength;
+        std::vector < CString >
+                        vecVhostBadwords;
         unsigned int    uiMaxGroup;
         unsigned int    uiTimeRegister;
         unsigned int    uiTimeGroup;
+        unsigned int    uiTimeSetPassword;
+        unsigned int    uiTimeSetVhost;
     } m_options;
 };

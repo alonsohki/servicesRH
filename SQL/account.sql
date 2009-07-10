@@ -11,8 +11,12 @@ CREATE TABLE account (
 	fullname	VARCHAR ( 128 )		NOT NULL,
 	quitmsg		VARCHAR ( 256 )		NULL,
 	
+	vhost		VARCHAR ( 32 )		NULL,
+	
 	registered	TIMESTAMP			NOT NULL DEFAULT '0000-00-00 00:00:00',
 	lastSeen	TIMESTAMP			NOT NULL DEFAULT '0000-00-00 00:00:00',
+	
+	private		ENUM('Y', 'N')		NOT NULL DEFAULT 'N',
 	
 	PRIMARY KEY ( id ),
 	KEY ( name, password ),
