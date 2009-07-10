@@ -210,6 +210,7 @@ Las posibles opciones son:
     12EMAIL          Cambia la dirección de correo electrónico
     12VHOST          Cambia la dirección IP virtual personalizada
     12PRIVATE        Cambia la opción de privacidad de tu nick en listados
+    12WEB            Cambia la dirección de tu página web personal
 
 Para obtener más ayuda acerca de cualquiera de las opciones,
 escribe 12/msg %N HELP SET <opción>.
@@ -297,4 +298,26 @@ Opción de privacidad 12activada correctamente.
 
 %SET_PRIVATE_SUCCESS_OFF%
 Opción de privacidad 12desactivada correctamente.
+%%
+
+%SYNTAX_SET_WEB%
+Sintaxis: 12SET WEB <página web>
+%%
+
+%HELP_SET_WEB%
+Si deseas que los demás puedan conocer cuál es tu página web personal, utiliza esta opción.
+La 12página web especificada se mostrará en el 12INFO de tu nick.
+Para eliminar la 12página web, escribe 12/msg %N SET WEB OFF.
+%%
+
+%SET_WEB_BAD_LENGTH%
+04Error: El tamaño de la dirección web debe estar entre 12%u y 12%u caracteres.
+%%
+
+%SET_WEB_SUCCESS_DELETED%
+Página web eliminada correctamente.
+%%
+
+%SET_WEB_SUCCESS%
+Página web cambiada a 12%s.
 %%

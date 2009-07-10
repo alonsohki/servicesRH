@@ -60,6 +60,7 @@ private:
         COMMAND ( Set_Email );
         COMMAND ( Set_Vhost );
         COMMAND ( Set_Private );
+        COMMAND ( Set_Web );
 #undef COMMAND
 
     // Verificación de acceso a comandos
@@ -85,6 +86,8 @@ private:
         unsigned int    uiVhostMaxLength;
         std::vector < CString >
                         vecVhostBadwords;
+        unsigned int    uiWebMinLength;
+        unsigned int    uiWebMaxLength;
         unsigned int    uiMaxGroup;
         unsigned int    uiTimeRegister;
         unsigned int    uiTimeGroup;

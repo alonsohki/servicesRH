@@ -59,6 +59,12 @@ CNickserv::CNickserv ( const CConfig& config )
         m_options.vecVhostBadwords.push_back ( szTemp );
     }
 
+    // Límites de web
+    SAFE_LOAD ( szTemp, "options", "nickserv.web.minLength" );
+    m_options.uiWebMinLength = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
+    SAFE_LOAD ( szTemp, "options", "nickserv.web.maxLength" );
+    m_options.uiWebMaxLength = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
+
     // Límites de grupos
     SAFE_LOAD ( szTemp, "options", "nickserv.group.maxMembers" );
     m_options.uiMaxGroup = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
@@ -1051,6 +1057,8 @@ COMMAND(Set)
         return cmdSet_Vhost ( info );
     else if ( ! CPortability::CompareNoCase ( szOption, "PRIVATE" ) )
         return cmdSet_Private ( info );
+    else if ( ! CPortability::CompareNoCase ( szOption, "WEB" ) )
+        return cmdSet_Web ( info );
     else
         return SendSyntax ( s, "SET" );
 }
@@ -1261,6 +1269,57 @@ COMMAND(Set_Private)
         LangMsg ( s, "SET_PRIVATE_SUCCESS_ON" );
     else
         LangMsg ( s, "SET_PRIVATE_SUCCESS_OFF" );
+
+    return true;
+}
+
+COMMAND(Set_Web)
+{
+    CUser& s = *( info.pSource );
+    SServicesData& data = s.GetServicesData ();
+
+    // Construímos la consulta SQL para cambiar la web
+    static CDBStatement* SQLSetWeb = 0;
+    if ( !SQLSetWeb )
+    {
+        SQLSetWeb = CDatabase::GetSingleton ().PrepareStatement (
+              "UPDATE account SET web=? WHERE id=?"
+            );
+        if ( !SQLSetWeb )
+            return ReportBrokenDB ( &s, 0, "Generando nickerv.SQLSetWeb" );
+    }
+
+    // Obtenemos la web
+    CString& szWeb = info.GetNextParam ();
+    if ( szWeb == "" )
+        return SendSyntax ( s, "SET WEB" );
+
+    // Verificamos la longitud
+    if ( szWeb.length () < m_options.uiWebMinLength ||
+         szWeb.length () > m_options.uiWebMaxLength )
+    {
+        LangMsg ( s, "SET_WEB_BAD_LENGTH", m_options.uiWebMinLength, m_options.uiWebMaxLength );
+        return false;
+    }
+
+    if ( ! CPortability::CompareNoCase ( szWeb, "OFF" ) )
+    {
+        // Eliminamos la web
+        if ( ! SQLSetWeb->Execute ( "NQ", data.ID ) )
+            return ReportBrokenDB ( &s, SQLSetWeb, "Ejecutando nickserv.SQLSetWeb" );
+        SQLSetWeb->FreeResult ();
+
+        LangMsg ( s, "SET_WEB_SUCCESS_DELETED" );
+    }
+    else
+    {
+        // Cambiamos la web
+        if ( ! SQLSetWeb->Execute ( "sQ", szWeb.c_str (), data.ID ) )
+            return ReportBrokenDB ( &s, SQLSetWeb, "Ejecutando nickserv.SQLSetWeb" );
+        SQLSetWeb->FreeResult ();
+
+        LangMsg ( s, "SET_WEB_SUCCESS", szWeb.c_str () );
+    }
 
     return true;
 }

@@ -12,6 +12,7 @@ CREATE TABLE account (
 	quitmsg		VARCHAR ( 256 )		NULL,
 	
 	vhost		VARCHAR ( 32 )		NULL,
+	web			VARCHAR ( 128 )		NULL,
 	
 	registered	TIMESTAMP			NOT NULL DEFAULT '0000-00-00 00:00:00',
 	lastSeen	TIMESTAMP			NOT NULL DEFAULT '0000-00-00 00:00:00',
