@@ -209,6 +209,7 @@ Las posibles opciones son:
 
     12PASSWORD       Cambia la contraseña
     12EMAIL          Cambia la dirección de correo electrónico
+    12LANG           Cambia el idioma con el que te hablarán los servicios
     12VHOST          Cambia la dirección IP virtual personalizada
     12PRIVATE        Cambia la opción de privacidad de tu nick en listados
     12WEB            Cambia la dirección de tu página web personal
@@ -259,6 +260,26 @@ Este email podrá ser utilizado en el futuro para enviar recordatorios de contras
 
 %SET_EMAIL_SUCCESS%
 Dirección de correo electrónico cambiada a 12%s.
+%%
+
+%SYNTAX_SET_LANG%
+Sintaxis: 12SET LANG <idioma>
+%%
+
+%HELP_SET_LANG%
+Cambia el idioma con el que te hablarán los servicios.
+%%
+
+%AVAILABLE_LANGS%
+Idiomas disponibles: 12%s
+%%
+
+%SET_LANG_UNAVAILABLE%
+Idioma 12%s no disponible.
+%%
+
+%SET_LANG_SUCCESS%
+Idioma cambiado a 12%s.
 %%
 
 %SYNTAX_SET_VHOST%

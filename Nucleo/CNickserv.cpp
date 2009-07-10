@@ -617,15 +617,44 @@ COMMAND(Help)
     if ( bRet )
     {
         CUser& s = *( info.pSource );
+        info.ResetParamCounter ();
+        info.GetNextParam ();
+        CString& szTopic = info.GetNextParam ();
 
-        if ( HasAccess ( s, RANK_COADMINISTRATOR ) )
+        if ( ! CPortability::CompareNoCase ( szTopic, "SET" ) )
         {
-            info.ResetParamCounter ();
-            info.GetNextParam ();
-            CString& szTopic = info.GetNextParam ();
+            CString& szOption = info.GetNextParam ();
 
-            if ( ! CPortability::CompareNoCase ( szTopic, "SET" ) )
-                LangMsg ( s, "HELP_SET_COADMINS" );
+            if ( szOption == "" )
+            {
+                if ( HasAccess ( s, RANK_COADMINISTRATOR ) )
+                    LangMsg ( s, "HELP_SET_COADMINS" );
+            }
+            else if ( ! CPortability::CompareNoCase ( szOption, "LANG" ) )
+            {
+                // Obtenemos la lista de idiomas
+                std::vector < CString > vecLanguages;
+                CLanguageManager::GetSingleton ().GetLanguageList ( vecLanguages );
+
+                // Los concatenamos en un string
+                CString szOutput = "";
+                for ( std::vector < CString >::iterator i = vecLanguages.begin ();
+                      i != vecLanguages.end ();
+                      ++i )
+                {
+                    if ( szOutput == "" )
+                        szOutput = (*i);
+                    else
+                    {
+                        szOutput.append ( ", " );
+                        szOutput.append ( (*i) );
+                    }
+                }
+
+                // Enviamos la lista de idiomas
+                if ( szOutput != "" )
+                    LangMsg ( s, "AVAILABLE_LANGS", szOutput.c_str () );
+            }
         }
     }
     return bRet;
@@ -1082,6 +1111,8 @@ COMMAND(Set)
         return cmdSet_Password ( info, IDTarget );
     else if ( ! CPortability::CompareNoCase ( szOption, "EMAIL" ) )
         return cmdSet_Email ( info, IDTarget );
+    else if ( ! CPortability::CompareNoCase ( szOption, "LANG" ) )
+        return cmdSet_Lang ( info, IDTarget );
     else if ( ! CPortability::CompareNoCase ( szOption, "VHOST" ) )
         return cmdSet_Vhost ( info, IDTarget );
     else if ( ! CPortability::CompareNoCase ( szOption, "PRIVATE" ) )
@@ -1194,6 +1225,48 @@ SET_COMMAND(Set_Email)
     SQLSetEmail->FreeResult ();
 
     LangMsg ( s, "SET_EMAIL_SUCCESS", szEmail.c_str () );
+
+    return true;
+}
+
+SET_COMMAND(Set_Lang)
+{
+    CUser& s = *( info.pSource );
+    SServicesData& data = s.GetServicesData ();
+
+    if ( IDTarget == 0ULL )
+        IDTarget = data.ID;
+
+    // Construímos la consulta SQL para cambiar el idioma
+    static CDBStatement* SQLSetLang = 0;
+    if ( !SQLSetLang )
+    {
+        SQLSetLang = CDatabase::GetSingleton ().PrepareStatement (
+              "UPDATE account SET lang=? WHERE id=?"
+            );
+        if ( !SQLSetLang )
+            return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLSetLang" );
+    }
+
+    // Obtenemos el lenguaje solicitado
+    CString& szLang = info.GetNextParam ();
+    if ( szLang == "" )
+        return SendSyntax ( s, "SET LANG" );
+
+    // Comprobamos que exista el lenguaje solicitado
+    CLanguage* pLanguage;
+    if ( ( pLanguage = CLanguageManager::GetSingleton ().GetLanguage ( szLang ) ) == NULL )
+    {
+        LangMsg ( s, "SET_LANG_UNAVAILABLE", szLang.c_str () );
+        return false;
+    }
+
+    // Cambiamos su idioma
+    if ( ! SQLSetLang->Execute ( "sQ", pLanguage->GetName ().c_str (), data.ID ) )
+        return ReportBrokenDB ( &s, SQLSetLang, "Ejecutando nickserv.SQLSetLang" );
+    SQLSetLang->FreeResult ();
+
+    LangMsg ( s, "SET_LANG_SUCCESS", pLanguage->GetName ().c_str () );
 
     return true;
 }

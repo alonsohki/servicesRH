@@ -59,6 +59,7 @@ private:
     COMMAND ( Set );
         SET_COMMAND ( Set_Password );
         SET_COMMAND ( Set_Email );
+        SET_COMMAND ( Set_Lang );
         SET_COMMAND ( Set_Vhost );
         SET_COMMAND ( Set_Private );
         SET_COMMAND ( Set_Web );
