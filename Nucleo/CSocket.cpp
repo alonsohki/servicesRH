@@ -171,7 +171,7 @@ int CSocket::ReadLine ( CString& szDest )
         if ( m_bufferSize > 0 )
         {
             char* p = strchr ( m_buffer, '\n' );
-            if ( p )
+            if ( p && ( p <= ( m_buffer + m_bufferSize ) ) )
             {
                 char* p2 = p;
                 while ( p2 > m_buffer && ( *p2 == '\n' || *p2 == '\r' ) )
@@ -184,6 +184,7 @@ int CSocket::ReadLine ( CString& szDest )
                 }
 
                 size_t len2 = static_cast < size_t > ( p - m_buffer );
+                assert ( m_bufferSize >= len2 );
                 memcpy ( m_buffer, p + 1, m_bufferSize - len2 );
                 m_bufferSize -= len2 + 1;
 
@@ -221,6 +222,8 @@ int CSocket::ReadLine ( CString& szDest )
         {
             // Leemos datos desde el socket
             iSize = recv ( m_socket, m_buffer + m_bufferSize, BUFFER_SIZE - m_bufferSize, 0 );
+            assert ( iSize <= ( BUFFER_SIZE - m_bufferSize ) );
+
             if ( iSize > 0 )
             {
                 m_bufferSize += iSize;

@@ -13,6 +13,7 @@ CREATE TABLE account (
 	
 	vhost		VARCHAR ( 32 )		NULL,
 	web			VARCHAR ( 128 )		NULL,
+	greetmsg	VARCHAR ( 150 )		NULL,
 	
 	registered	TIMESTAMP			NOT NULL DEFAULT '0000-00-00 00:00:00',
 	lastSeen	TIMESTAMP			NOT NULL DEFAULT '0000-00-00 00:00:00',

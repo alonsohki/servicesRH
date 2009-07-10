@@ -25,6 +25,7 @@ Lista de comandos disponibles:
     12IDENTIFY             Identificación de un nick registrado
     12GROUP                Agrupamiento de nicks
     12SET                  Cambia varias opciones de tu nick
+    12INFO                 Muestra información acerca de un nick
 
 Para obtener ayuda detallada sobre cualquier comando, escribe 12/msg %N HELP <comando>.
 %%
@@ -211,6 +212,7 @@ Las posibles opciones son:
     12VHOST          Cambia la dirección IP virtual personalizada
     12PRIVATE        Cambia la opción de privacidad de tu nick en listados
     12WEB            Cambia la dirección de tu página web personal
+    12GREETMSG       Cambia el mensaje de bienvenida al entrar en canales
 
 Para obtener más ayuda acerca de cualquiera de las opciones,
 escribe 12/msg %N HELP SET <opción>.
@@ -320,4 +322,26 @@ Página web eliminada correctamente.
 
 %SET_WEB_SUCCESS%
 Página web cambiada a 12%s.
+%%
+
+%SYNTAX_SET_GREETMSG%
+Sintaxis: 12SET GREETMSG <mensaje>
+%%
+
+%HELP_SET_GREETMSG%
+Cambia el mensaje con el que los bots te darán la bienvenida a los
+canales en los que tengas acceso.
+Si deseas deshabilitar este mensaje, escribe 12/msg %N SET GREETMSG OFF.
+%%
+
+%SET_GREETMSG_BAD_LENGTH%
+04Error: El tamaño del mensaje de bienvenida debe estar entre 12%u y 12%u caracteres.
+%%
+
+%SET_GREETMSG_SUCCESS_DELETED%
+Mensaje de bienvenida eliminado correctamente.
+%%
+
+%SET_GREETMSG_SUCCESS%
+Mensaje de bienvenida cambiado a 12%s.
 %%

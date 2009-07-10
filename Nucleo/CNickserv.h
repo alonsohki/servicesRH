@@ -61,6 +61,7 @@ private:
         COMMAND ( Set_Vhost );
         COMMAND ( Set_Private );
         COMMAND ( Set_Web );
+        COMMAND ( Set_Greetmsg );
 #undef COMMAND
 
     // Verificación de acceso a comandos
@@ -88,6 +89,8 @@ private:
                         vecVhostBadwords;
         unsigned int    uiWebMinLength;
         unsigned int    uiWebMaxLength;
+        unsigned int    uiGreetmsgMinLength;
+        unsigned int    uiGreetmsgMaxLength;
         unsigned int    uiMaxGroup;
         unsigned int    uiTimeRegister;
         unsigned int    uiTimeGroup;

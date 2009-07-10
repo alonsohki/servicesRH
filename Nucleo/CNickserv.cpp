@@ -65,6 +65,12 @@ CNickserv::CNickserv ( const CConfig& config )
     SAFE_LOAD ( szTemp, "options", "nickserv.web.maxLength" );
     m_options.uiWebMaxLength = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
 
+    // Límites de mensaje de bienvenida
+    SAFE_LOAD ( szTemp, "options", "nickserv.greetmsg.minLength" );
+    m_options.uiGreetmsgMinLength = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
+    SAFE_LOAD ( szTemp, "options", "nickserv.greetmsg.maxLength" );
+    m_options.uiGreetmsgMaxLength = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
+
     // Límites de grupos
     SAFE_LOAD ( szTemp, "options", "nickserv.group.maxMembers" );
     m_options.uiMaxGroup = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
@@ -1059,6 +1065,8 @@ COMMAND(Set)
         return cmdSet_Private ( info );
     else if ( ! CPortability::CompareNoCase ( szOption, "WEB" ) )
         return cmdSet_Web ( info );
+    else if ( ! CPortability::CompareNoCase ( szOption, "GREETMSG" ) )
+        return cmdSet_Greetmsg ( info );
     else
         return SendSyntax ( s, "SET" );
 }
@@ -1319,6 +1327,57 @@ COMMAND(Set_Web)
         SQLSetWeb->FreeResult ();
 
         LangMsg ( s, "SET_WEB_SUCCESS", szWeb.c_str () );
+    }
+
+    return true;
+}
+
+COMMAND(Set_Greetmsg)
+{
+    CUser& s = *( info.pSource );
+    SServicesData& data = s.GetServicesData ();
+
+    // Generamos la consulta SQL para cambiar el mensaje de bienvenida
+    static CDBStatement* SQLSetGreetmsg = 0;
+    if ( ! SQLSetGreetmsg )
+    {
+        SQLSetGreetmsg = CDatabase::GetSingleton ().PrepareStatement (
+              "UPDATE account SET greetmsg=? WHERE id=?"
+            );
+        if ( !SQLSetGreetmsg )
+            return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLSetGreetmsg" );
+    }
+
+    // Obtenemos el mensaje de bienvenida
+    CString& szMsg = info.GetNextParam ();
+    if ( szMsg == "" )
+        return SendSyntax ( s, "SET GREETMSG" );
+
+    // Comprobamos la longitud del mensaje
+    if ( szMsg.length () < m_options.uiGreetmsgMinLength ||
+         szMsg.length () > m_options.uiGreetmsgMaxLength )
+    {
+        LangMsg ( s, "SET_GREETMSG_BAD_LENGTH", m_options.uiGreetmsgMinLength, m_options.uiGreetmsgMaxLength );
+        return false;
+    }
+
+    if ( ! CPortability::CompareNoCase ( szMsg, "OFF" ) )
+    {
+        // Eliminamos el mensaje
+        if ( ! SQLSetGreetmsg->Execute ( "NQ", data.ID ) )
+            return ReportBrokenDB ( &s, SQLSetGreetmsg, "Ejecutando nickserv.SQLSetGreetmsg" );
+        SQLSetGreetmsg->FreeResult ();
+
+        LangMsg ( s, "SET_GREETMSG_SUCCESS_DELETED" );
+    }
+    else
+    {
+        // Cambiamos el mensaje
+        if ( ! SQLSetGreetmsg->Execute ( "sQ", szMsg.c_str (), data.ID ) )
+            return ReportBrokenDB ( &s, SQLSetGreetmsg, "Ejecutando nickserv.SQLSetGreetmsg" );
+        SQLSetGreetmsg->FreeResult ();
+
+        LangMsg ( s, "SET_GREETMSG_SUCCESS", szMsg.c_str () );
     }
 
     return true;
