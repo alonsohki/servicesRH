@@ -1071,9 +1071,9 @@ COMMAND(Group)
 
         // Le mostramos la lista en el grupo
         char szNick [ 128 ];
-        LangMsg ( s, "GROUP_LIST", szPrimaryName.c_str () );
+        LangMsg ( s, "GROUP_LIST_HEADER", szPrimaryName.c_str () );
         while ( SQLGetNicksInGroup->Fetch ( 0, 0, "s", szNick, sizeof ( szNick ) ) == CDBStatement::FETCH_OK )
-            Msg ( s, CString ( "- %s", szNick ) );
+            LangMsg ( s, "GROUP_LIST_ENTRY", szNick );
         SQLGetNicksInGroup->FreeResult ();
     }
 
@@ -1629,6 +1629,8 @@ COMMAND(Info)
 //
 COMMAND(List)
 {
+    static const unsigned int uiQueryLimit = 200;
+
     CUser& s = *( info.pSource );
     SServicesData& data = s.GetServicesData ();
 
@@ -1637,7 +1639,12 @@ COMMAND(List)
     if ( !SQLListAccounts )
     {
         SQLListAccounts = CDatabase::GetSingleton ().PrepareStatement (
-              "SELECT name,private FROM account WHERE name LIKE ? LIMIT 200"
+              "SELECT * FROM ("
+              "SELECT name,private FROM account WHERE name LIKE ? LIMIT ? UNION "
+              "SELECT groups.name AS name, account.private AS private "
+              "FROM groups LEFT JOIN account ON groups.id=account.id "
+              "WHERE groups.name LIKE ? LIMIT ?"
+              ") AS registered ORDER BY name ASC LIMIT ?"
             );
         if ( !SQLListAccounts )
             return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLListAccounts" );
@@ -1682,13 +1689,21 @@ COMMAND(List)
 
 
     // Ejecutamos la consulta SQL
-    if ( ! SQLListAccounts->Execute ( "s", szPattern.c_str () ) )
+    if ( ! SQLListAccounts->Execute ( "sDsDD", szPattern.c_str (),
+                                               uiQueryLimit,
+                                               szPattern.c_str (),
+                                               uiQueryLimit,
+                                               uiQueryLimit ) )
+    {
         return ReportBrokenDB ( &s, SQLListAccounts, "Ejecutando nickserv.SQLListAccounts" );
+    }
 
     // Almacenamos el resultado de la consulta
     char szName [ 128 ];
     char szPrivate [ 8 ];
-    if ( ! SQLListAccounts->Store ( 0, 0, "ss", szName, sizeof ( szName ), szPrivate, sizeof ( szPrivate ) ) )
+
+    if ( ! SQLListAccounts->Store ( 0, 0, "ss", szName, sizeof ( szName ),
+                                                szPrivate, sizeof ( szPrivate ) ) )
     {
         ReportBrokenDB ( &s, SQLListAccounts, "Almacenando nickserv.SQLListAccounts" );
         SQLListAccounts->FreeResult ();
@@ -1704,7 +1719,7 @@ COMMAND(List)
     // Obtenemos y mostramos los resultados
     unsigned int uiShownCount = 0;
     unsigned int uiNumPrivate = 0;
-    unsigned int uiTotal = SQLListAccounts->NumRows ();
+    unsigned int uiTotal = static_cast < unsigned int > ( SQLListAccounts->NumRows () );
     unsigned int uiMax = m_options.uiMaxList;
 
     if ( bIsAdmin )
@@ -1721,13 +1736,13 @@ COMMAND(List)
             if ( bIsOper && uiShownCount < uiMax )
             {
                 ++uiShownCount;
-                Msg ( s, CString ( "      %s", szName ) );
+                LangMsg ( s, "LIST_ENTRY", szName );
             }
         }
         else if ( uiShownCount < uiMax )
         {
             ++uiShownCount;
-            Msg ( s, CString ( "      %s", szName ) );
+            LangMsg ( s, "LIST_ENTRY", szName );
         }
     }
 

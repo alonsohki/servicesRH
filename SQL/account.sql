@@ -22,5 +22,5 @@ CREATE TABLE account (
 	
 	PRIMARY KEY ( id ),
 	KEY ( name, password ),
-	UNIQUE ( name )
+	KEY ( name )
 ) engine=InnoDB;

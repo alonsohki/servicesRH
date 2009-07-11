@@ -190,8 +190,12 @@ Tu nick ahora forma parte del grupo de 12%s.
 Te has desagrupado del nick 12%s.
 %%
 
-%GROUP_LIST%
+%GROUP_LIST_HEADER%
 Lista de nicks en el grupo de 12%s:
+%%
+
+%GROUP_LIST_ENTRY%
+      %s
 %%
 
 
@@ -451,6 +455,10 @@ Los nicks que tienen activada la opción PRIVATE no se mostrarán en estos listado
 
 %LIST_HEADER%
 Listado de nicks con el patrón 12%s:
+%%
+
+%LIST_ENTRY%
+      %s
 %%
 
 %LIST_FOOTER%
