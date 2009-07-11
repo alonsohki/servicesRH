@@ -24,6 +24,9 @@ class CChannel;
 class IMessage
 {
 public:
+    typedef std::vector < IMessage* >   t_vecMessages;
+
+public:
     virtual                 ~IMessage       ( ) { }
 
     virtual IMessage*       Copy            ( ) const = 0;
@@ -35,8 +38,29 @@ public:
     inline void             SetSource       ( CClient* pSource ) { m_pSource = pSource; }
     inline CClient*         GetSource       ( ) const { return m_pSource; }
 
+    bool                    IsMultiMessage  ( ) const { return ( m_vecMessages.size () > 0 ); }
+    const t_vecMessages&    GetMessages     ( ) const { return m_vecMessages; }
+
+    void                    Cleanup         ( )
+    {
+        for ( t_vecMessages::iterator i = m_vecMessages.begin ();
+              i != m_vecMessages.end ();
+              ++i )
+        {
+            delete (*i);
+        }
+        m_vecMessages.clear ();
+    }
+
+protected:
+    void                    PushMessage     ( IMessage* pMessage )
+    {
+        m_vecMessages.push_back ( pMessage );
+    }
+
 private:
-    CClient*                m_pSource;
+    CClient*        m_pSource;
+    t_vecMessages   m_vecMessages;
 };
 
 #define BEGIN_MESSAGE_DECLARATION_NOPARAMS(msg) \

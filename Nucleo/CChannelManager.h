@@ -33,6 +33,7 @@ public:
     void                    RemoveChannel       ( CChannel* pChannel );
 
     CChannel*               GetChannel          ( const CString& szName );
+    void                    GetChannels         ( std::vector < CChannel* >& vecDest ) const;
 
 private:
     typedef google::dense_hash_map < const char*, CChannel*, SStringHasher, SStringEquals > t_mapChannels;

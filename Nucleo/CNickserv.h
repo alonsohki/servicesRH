@@ -65,6 +65,7 @@ private:
         SET_COMMAND ( Set_Web );
         SET_COMMAND ( Set_Greetmsg );
     COMMAND ( Info );
+    COMMAND ( List );
 #undef SET_COMMAND
 #undef COMMAND
 

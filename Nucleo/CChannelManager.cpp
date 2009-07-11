@@ -50,6 +50,15 @@ CChannel* CChannelManager::GetChannel ( const CString& szName )
     return NULL;
 }
 
+void CChannelManager::GetChannels ( std::vector < CChannel* >& vecDest ) const
+{
+    for ( t_mapChannels::const_iterator i = m_mapChannels.begin ();
+          i != m_mapChannels.end ();
+          ++i )
+    {
+        vecDest.push_back ( (*i).second );
+    }
+}
 
 // Parte estática
 CChannelManager CChannelManager::ms_instance;

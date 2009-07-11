@@ -274,7 +274,21 @@ bool CProtocol::Process ( const CString& szLine )
     if ( ! pMessage->ProcessMessage ( szLine, vec ) )
         return false;
 
-    TriggerMessageHandlers ( ulStage, *pMessage );
+    if ( pMessage->IsMultiMessage () )
+    {
+        const IMessage::t_vecMessages& vecMessages = pMessage->GetMessages ();
+        for ( IMessage::t_vecMessages::const_iterator i = vecMessages.begin ();
+              i != vecMessages.end ();
+              ++i )
+        {
+            TriggerMessageHandlers ( ulStage, *(*i) );
+        }
+    }
+    else
+        TriggerMessageHandlers ( ulStage, *pMessage );
+
+    pMessage->Cleanup ();
+
     return true;
 }
 

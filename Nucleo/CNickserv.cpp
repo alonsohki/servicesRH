@@ -27,6 +27,7 @@ CNickserv::CNickserv ( const CConfig& config )
     REGISTER ( Group,       All );
     REGISTER ( Set,         All );
     REGISTER ( Info,        All );
+    REGISTER ( List,        All );
 #undef REGISTER
 
     // Cargamos la configuración para nickserv
@@ -1617,6 +1618,15 @@ COMMAND(Info)
     return true;
 }
 
+
+
+///////////////////
+// LIST
+//
+COMMAND(List)
+{
+    return true;
+}
 
 #undef COMMAND
 

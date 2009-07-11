@@ -26,6 +26,7 @@ Lista de comandos disponibles:
     12GROUP                Agrupamiento de nicks
     12SET                  Cambia varias opciones de tu nick
     12INFO                 Muestra información acerca de un nick
+    12LIST                 Lista de los nicks registrados
 
 Para obtener ayuda detallada sobre cualquier comando, escribe 12/msg %N HELP <comando>.
 %%
@@ -224,7 +225,7 @@ escribe 12/msg %N HELP SET <opción>.
 03-= Co-administradores =-
 Los co-administradores pueden usar, además, un parámetro extra
 para cambiar las opciones de otro nick. La sintaxis es:
-12/msg %N SET <nick> <opción> <valor>.
+12/msg %N SET <nick> <opción> <valor>
 %%
 
 %SYNTAX_SET_PASSWORD%
@@ -429,4 +430,11 @@ Mensaje de bienvenida: 12%s
 
 %INFO_LANGUAGE%
 Idioma: 12%s
+%%
+
+
+############################
+# LIST
+%SYNTAX_LIST%
+Sintaxis: 12LIST [patrón de búsqueda]
 %%

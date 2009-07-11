@@ -674,6 +674,7 @@ CMessageCREATE::CMessageCREATE ( const CString& szName, time_t timeCreation )
 : m_szName ( szName ), m_timeCreation ( timeCreation )
 {
 }
+
 CMessageCREATE::~CMessageCREATE ( ) { }
 
 bool CMessageCREATE::BuildMessage ( SProtocolMessage& message ) const
@@ -689,6 +690,23 @@ bool CMessageCREATE::ProcessMessage ( const CString& szLine, const std::vector <
 
     m_szName = vec [ 2 ];
     m_timeCreation = static_cast < time_t > ( atol ( vec [ 3 ] ) );
+    size_t multiChannel = m_szName.find ( ',' );
+
+    if ( multiChannel != CString::npos )
+    {
+        // Multi-canal
+        std::vector < CString > vecChannels;
+        m_szName.Split ( vecChannels, ',' );
+
+        for ( std::vector < CString >::iterator i = vecChannels.begin ();
+              i != vecChannels.end ();
+              ++i )
+        {
+            CMessageCREATE* pNewMessage = new CMessageCREATE ( (*i), m_timeCreation );
+            pNewMessage->SetSource ( GetSource () );
+            IMessage::PushMessage ( pNewMessage );
+        }
+    }
 
     return true;
 }
@@ -716,10 +734,41 @@ bool CMessageJOIN::ProcessMessage ( const CString& szLine, const std::vector < C
     if ( vec.size () < 4 )
         return false;
 
-    m_pChannel = CChannelManager::GetSingleton ().GetChannel ( vec [ 2 ] );
-    if ( !m_pChannel )
-        return false;
     m_joinTime = static_cast < time_t > ( atol ( vec [ 3 ] ) );
+
+    CChannelManager& manager = CChannelManager::GetSingleton ();
+    const CString& szChannel = vec [ 3 ];
+    size_t multiChannel = szChannel.find ( ',' );
+
+    if ( multiChannel == CString::npos )
+    {
+        m_pChannel = manager.GetChannel ( szChannel );
+        if ( !m_pChannel )
+            return false;
+    }
+    else
+    {
+        bool bAny = false;
+        std::vector < CString > vecChannels;
+        szChannel.Split ( vecChannels, ',' );
+
+        for ( std::vector < CString >::iterator i = vecChannels.begin ();
+              i != vecChannels.end ();
+              ++i )
+        {
+            CChannel* pChannel = manager.GetChannel ( (*i) );
+            if ( pChannel )
+            {
+                bAny = true;
+                CMessageJOIN* pNewMessage = new CMessageJOIN ( pChannel, m_joinTime );
+                pNewMessage->SetSource ( GetSource () );
+                IMessage::PushMessage ( pNewMessage );
+            }
+        }
+
+        if ( ! bAny )
+            return false;
+    }
 
     return true;
 }
@@ -749,9 +798,6 @@ bool CMessagePART::ProcessMessage ( const CString& szLine, const std::vector < C
     if ( vec.size () < 3 )
         return false;
 
-    m_pChannel = CChannelManager::GetSingleton ().GetChannel ( vec [ 2 ] );
-    if ( !m_pChannel )
-        return false;
 
     if ( vec.size () == 3 )
     {
@@ -760,6 +806,40 @@ bool CMessagePART::ProcessMessage ( const CString& szLine, const std::vector < C
     }
     else
         m_szMessage = vec [ 3 ];
+
+    CChannelManager& manager = CChannelManager::GetSingleton ();
+    const CString& szChannel = vec [ 2 ];
+    size_t multiChannel = szChannel.find ( ',' );
+
+    if ( multiChannel == CString::npos )
+    {
+        m_pChannel = manager.GetChannel ( szChannel );
+        if ( !m_pChannel )
+            return false;
+    }
+    else
+    {
+        bool bAny = false;
+        std::vector < CString > vecChannels;
+        szChannel.Split ( vecChannels, ',' );
+
+        for ( std::vector < CString >::iterator i = vecChannels.begin ();
+              i != vecChannels.end ();
+              ++i )
+        {
+            CChannel* pChannel = manager.GetChannel ( (*i) );
+            if ( pChannel )
+            {
+                bAny = true;
+                CMessagePART* pNewMessage = new CMessagePART ( pChannel, m_szMessage );
+                pNewMessage->SetSource ( GetSource () );
+                IMessage::PushMessage ( pNewMessage );
+            }
+        }
+
+        if ( ! bAny )
+            return false;
+    }
 
     return true;
 }
