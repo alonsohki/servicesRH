@@ -28,11 +28,11 @@ public:
         : std::string ()
     { }
 
-    explicit CString ( const char* szText )
+    CString ( const char* szText )
         : std::string ( szText ? szText : "" )
     { }
 
-    CString ( const char* szFormat, ... )
+    explicit CString ( const char* szFormat, ... )
         : std::string ()
     {
         if ( szFormat )

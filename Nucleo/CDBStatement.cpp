@@ -27,6 +27,9 @@ CDBStatement::CDBStatement ( MYSQL* pHandle )
         m_iErrno = mysql_errno ( m_pHandler );
         m_szError = mysql_error ( m_pHandler );
     }
+    m_pStoredBinds = 0;
+    m_pStoredDates = 0;
+    m_uiStoredDates = 0;
 }
 
 CDBStatement::~CDBStatement ()
@@ -240,36 +243,17 @@ bool CDBStatement::Execute ( const char* szParamTypes, ... )
     return false;
 }
 
-int CDBStatement::Fetch ( unsigned long* ulLengths, bool* bNulls, const char* szParamTypes, ... )
+void CDBStatement::BindResults ( MYSQL_BIND* results,
+                                 unsigned long* ulLengths,
+                                 my_bool* my_bNulls,
+                                 my_bool* my_bErrors,
+                                 DateConversion* dates,
+                                 unsigned int& uiNumDates,
+                                 const char* szParamTypes,
+                                 va_list vl )
 {
-    va_list vl;
-    unsigned int uiNumParams = strlen ( szParamTypes );
-#ifdef WIN32
-    MYSQL_BIND* results = reinterpret_cast < MYSQL_BIND* > ( _alloca ( sizeof ( MYSQL_BIND ) * uiNumParams ) );
-    unsigned long* _ulLengths = reinterpret_cast < unsigned long* > ( _alloca ( sizeof ( unsigned long ) * uiNumParams ) );
-    my_bool* my_bNulls = reinterpret_cast < my_bool* > ( _alloca ( sizeof ( my_bool ) * uiNumParams ) );
-    my_bool* my_bErrors = reinterpret_cast < my_bool* > ( _alloca ( sizeof ( my_bool ) * uiNumParams ) );
-#else
-    MYSQL_BIND results [ uiNumParams ];
-    unsigned long _ulLengths [ uiNumParams ];
-    my_bool my_bNulls [ uiNumParams ];
-    my_bool my_bErrors [ uiNumParams ];
-#endif
-
-    struct DateConversion
-    {
-        CDate*      pDate;
-        MYSQL_TIME  myDate;
-    };
-    unsigned int uiNumDates = 0;
-    DateConversion dates [ 128 ];
-
-    if ( ulLengths == 0 )
-        ulLengths = &_ulLengths [ 0 ];
-
-    va_start ( vl, szParamTypes );
-
     unsigned int uiCurParam = 0;
+
     while ( *szParamTypes )
     {
         switch ( *szParamTypes )
@@ -373,51 +357,104 @@ int CDBStatement::Fetch ( unsigned long* ulLengths, bool* bNulls, const char* sz
             }
         }
 
-        results [ uiCurParam ].is_null = &my_bNulls [ uiCurParam ];
-        results [ uiCurParam ].error = &my_bErrors [ uiCurParam ];
-        results [ uiCurParam ].length = &ulLengths [ uiCurParam ];
+        if ( my_bNulls )
+            results [ uiCurParam ].is_null = &my_bNulls [ uiCurParam ];
+        else
+            results [ uiCurParam ].is_null = 0;
+        if ( my_bErrors )
+            results [ uiCurParam ].error = &my_bErrors [ uiCurParam ];
+        else
+            results [ uiCurParam ].error = 0;
+        if ( ulLengths )
+            results [ uiCurParam ].length = &ulLengths [ uiCurParam ];
+        else
+            results [ uiCurParam ].length = 0;
 
         ++uiCurParam;
         ++szParamTypes;
     }
+}
 
+bool CDBStatement::Store ( unsigned long* ulLengths, bool* bNulls, const char* szParamTypes, ... )
+{
+    va_list vl;
+    unsigned int uiNumParams = strlen ( szParamTypes );
+
+    m_pStoredBinds = new MYSQL_BIND [ uiNumParams ];
+    m_pStoredDates = new DateConversion [ uiNumParams ];
+
+    va_start ( vl, szParamTypes );
+    BindResults ( m_pStoredBinds,
+                  ulLengths,
+                  reinterpret_cast < my_bool* > ( bNulls ),
+                  0,
+                  m_pStoredDates,
+                  m_uiStoredDates,
+                  szParamTypes,
+                  vl );
+    va_end ( vl );
+
+    mysql_stmt_bind_result ( m_pStatement, m_pStoredBinds );
+
+    return ( mysql_stmt_store_result ( m_pStatement ) == 0 );
+}
+
+CDBStatement::EFetchStatus CDBStatement::Fetch ( unsigned long* ulLengths, bool* bNulls, const char* szParamTypes, ... )
+{
+    va_list vl;
+    unsigned int uiNumParams = strlen ( szParamTypes );
+#ifdef WIN32
+    MYSQL_BIND* results = reinterpret_cast < MYSQL_BIND* > ( _alloca ( sizeof ( MYSQL_BIND ) * uiNumParams ) );
+    my_bool* my_bErrors = reinterpret_cast < my_bool* > ( _alloca ( sizeof ( my_bool ) * uiNumParams ) );
+#else
+    MYSQL_BIND results [ uiNumParams ];
+    my_bool my_bErrors [ uiNumParams ];
+#endif
+
+    unsigned int uiNumDates = 0;
+    DateConversion dates [ 256 ];
+
+    va_start ( vl, szParamTypes );
+    BindResults ( results,
+                  ulLengths,
+                  reinterpret_cast < my_bool * > ( bNulls ),
+                  my_bErrors,
+                  dates,
+                  uiNumDates,
+                  szParamTypes,
+                  vl );
     va_end ( vl );
 
     mysql_stmt_bind_result ( m_pStatement, results );
 
-    unsigned int uiResult;
+    EFetchStatus eResult;
     switch ( mysql_stmt_fetch ( m_pStatement ) )
     {
         case 0:
         {
-            uiResult = FETCH_OK;
+            eResult = FETCH_OK;
             break;
         }
         case 1:
         {
             m_iErrno = mysql_stmt_errno ( m_pStatement );
             m_szError = mysql_stmt_error ( m_pStatement );
-            uiResult = FETCH_ERROR;
+            eResult = FETCH_ERROR;
             break;
         }
         case MYSQL_NO_DATA:
         {
-            uiResult = FETCH_NO_DATA;
+            eResult = FETCH_NO_DATA;
             break;
         }
         case MYSQL_DATA_TRUNCATED:
         {
-            uiResult = FETCH_DATA_TRUNCATED;
+            eResult = FETCH_DATA_TRUNCATED;
             break;
         }
         default:
-            uiResult = FETCH_UNKNOWN;
+            eResult = FETCH_UNKNOWN;
     }
-
-    // Volcamos los datos de nulidad al parámetro si así lo han pedido
-    if ( bNulls )
-        for ( unsigned int i = 0; i < uiNumParams; ++i )
-            bNulls [ i ] = static_cast < bool > ( my_bNulls [ i ] == static_cast < my_bool > ( true ) );
 
     // Volcamos las fechas
     for ( unsigned int i = 0; i < uiNumDates; ++i )
@@ -427,12 +464,63 @@ int CDBStatement::Fetch ( unsigned long* ulLengths, bool* bNulls, const char* sz
                                     myDate.day, myDate.month, myDate.year );
     }
 
-    return uiResult;
+    return eResult;
+}
+
+CDBStatement::EFetchStatus CDBStatement::FetchStored ( )
+{
+    EFetchStatus eResult;
+    switch ( mysql_stmt_fetch ( m_pStatement ) )
+    {
+        case 0:
+        {
+            eResult = FETCH_OK;
+            break;
+        }
+        case 1:
+        {
+            m_iErrno = mysql_stmt_errno ( m_pStatement );
+            m_szError = mysql_stmt_error ( m_pStatement );
+            eResult = FETCH_ERROR;
+            break;
+        }
+        case MYSQL_NO_DATA:
+        {
+            eResult = FETCH_NO_DATA;
+            break;
+        }
+        case MYSQL_DATA_TRUNCATED:
+        {
+            eResult = FETCH_DATA_TRUNCATED;
+            break;
+        }
+        default:
+            eResult = FETCH_UNKNOWN;
+    }
+
+    // Volcamos las fechas
+    for ( unsigned int i = 0; i < m_uiStoredDates; ++i )
+    {
+        MYSQL_TIME& myDate = m_pStoredDates [ i ].myDate;
+        m_pStoredDates [ i ].pDate->Create ( myDate.hour, myDate.minute, myDate.second,
+                                             myDate.day, myDate.month, myDate.year );
+    }
+
+    return eResult;
 }
 
 bool CDBStatement::FreeResult ( )
 {
-    return ( mysql_stmt_free_result ( m_pStatement ) == 0 );
+    bool bRet = ( mysql_stmt_free_result ( m_pStatement ) == 0 );
+    if ( m_pStoredBinds )
+        delete [] m_pStoredBinds;
+    if ( m_pStoredDates )
+        delete [] m_pStoredDates;
+    m_pStoredBinds = 0;
+    m_pStoredDates = 0;
+    m_uiStoredDates = 0;
+
+    return bRet;
 }
 
 

@@ -97,6 +97,7 @@ private:
         unsigned int    uiGreetmsgMinLength;
         unsigned int    uiGreetmsgMaxLength;
         unsigned int    uiMaxGroup;
+        unsigned int    uiMaxList;
         unsigned int    uiTimeRegister;
         unsigned int    uiTimeGroup;
         unsigned int    uiTimeSetPassword;

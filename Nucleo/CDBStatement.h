@@ -21,13 +21,19 @@ class CDBStatement
     friend class CDatabase;
 
 public:
-    enum
+    enum EFetchStatus
     {
         FETCH_OK,
         FETCH_ERROR,
         FETCH_NO_DATA,
         FETCH_DATA_TRUNCATED,
         FETCH_UNKNOWN
+    };
+private:
+    struct DateConversion
+    {
+        CDate*      pDate;
+        MYSQL_TIME  myDate;
     };
 
 private:
@@ -38,7 +44,12 @@ private:
 
 public:
     bool                    Execute         ( const char* szParamTypes = "", ... );
-    int                     Fetch           ( unsigned long* ulLengths, bool* bNulls, const char* szParamTypes, ... );
+private:
+    void                    BindResults     ( MYSQL_BIND* results, unsigned long* ulLengths, my_bool* bNulls, my_bool* bErrors, DateConversion* dates, unsigned int& uiNumDates, const char* szParamTypes, va_list vl );
+public:
+    bool                    Store           ( unsigned long* ulLengths, bool* bNulls, const char* szParamTypes, ... );
+    EFetchStatus            Fetch           ( unsigned long* ulLengths, bool* bNulls, const char* szParamTypes, ... );
+    EFetchStatus            FetchStored     ( );
     bool                    FreeResult      ( );
 
     unsigned long long      InsertID        ( );
@@ -54,4 +65,8 @@ private:
 
     int                     m_iErrno;
     CString                 m_szError;
+
+    MYSQL_BIND*             m_pStoredBinds;
+    DateConversion*         m_pStoredDates;
+    unsigned int            m_uiStoredDates;
 };

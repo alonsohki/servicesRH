@@ -438,3 +438,21 @@ Idioma: 12%s
 %SYNTAX_LIST%
 Sintaxis: 12LIST [patrón de búsqueda]
 %%
+
+%HELP_LIST%
+Muestra una lista de los nicks registrados. Además puedes suministrar un patrón
+de búsqueda para filtrar los resultados, ya que la salida está limitada. Los
+patrones de búsqueda admiten los comodines 12* y 12?. Así por ejemplo,
+para buscar los nicks que empiezan por la letra 'a' y tienen al menos dos caracteres
+usarías: 12/msg %N LIST a?*.
+
+Los nicks que tienen activada la opción PRIVATE no se mostrarán en estos listados.
+%%
+
+%LIST_HEADER%
+Listado de nicks con el patrón 12%s:
+%%
+
+%LIST_FOOTER%
+Fin del listado, 12%u/12%u mostrados. Hubo 12%u nicks privados.
+%%

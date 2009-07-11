@@ -77,6 +77,10 @@ CNickserv::CNickserv ( const CConfig& config )
     SAFE_LOAD ( szTemp, "options", "nickserv.group.maxMembers" );
     m_options.uiMaxGroup = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
 
+    // Límites de listado
+    SAFE_LOAD ( szTemp, "options", "nickserv.list.maxOutput" );
+    m_options.uiMaxList = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
+
     // Límites de tiempo
     SAFE_LOAD ( szTemp, "options", "nickserv.time.register" );
     m_options.uiTimeRegister = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
@@ -1625,8 +1629,114 @@ COMMAND(Info)
 //
 COMMAND(List)
 {
+    CUser& s = *( info.pSource );
+    SServicesData& data = s.GetServicesData ();
+
+    // Generamos la consulta SQL para obtener el listado de nicks
+    static CDBStatement* SQLListAccounts = 0;
+    if ( !SQLListAccounts )
+    {
+        SQLListAccounts = CDatabase::GetSingleton ().PrepareStatement (
+              "SELECT name,private FROM account WHERE name LIKE ? LIMIT 200"
+            );
+        if ( !SQLListAccounts )
+            return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLListAccounts" );
+    }
+
+    CString& szParam = info.GetNextParam ();
+    if ( szParam == "" )
+        szParam = "*";
+
+    // Transformamos el patrón a un patrón de MySQL
+    // Empezamos escapando los % y los _
+    CString szPattern = szParam;
+    size_t pos;
+    size_t prevPos = 0;
+    while ( ( pos = szPattern.find ( '%', prevPos ) ) != CString::npos )
+    {
+        szPattern.replace ( pos, 1, "\\%" );
+        prevPos = pos + 2;
+    }
+
+    prevPos = 0;
+    while ( ( pos = szPattern.find ( '_', prevPos ) ) != CString::npos )
+    {
+        szPattern.replace ( pos, 1, "\\_" );
+        prevPos = pos + 2;
+    }
+
+    // Transformamos los * y ? a % y _
+    prevPos = 0;
+    while ( ( pos = szPattern.find ( '*', prevPos ) ) != CString::npos )
+    {
+        szPattern.replace ( pos, 1, "%" );
+        prevPos = pos + 1;
+    }
+
+    prevPos = 0;
+    while ( ( pos = szPattern.find ( '?', prevPos ) ) != CString::npos )
+    {
+        szPattern.replace ( pos, 1, "_" );
+        prevPos = pos + 1;
+    }
+
+
+    // Ejecutamos la consulta SQL
+    if ( ! SQLListAccounts->Execute ( "s", szPattern.c_str () ) )
+        return ReportBrokenDB ( &s, SQLListAccounts, "Ejecutando nickserv.SQLListAccounts" );
+
+    // Almacenamos el resultado de la consulta
+    char szName [ 128 ];
+    char szPrivate [ 8 ];
+    if ( ! SQLListAccounts->Store ( 0, 0, "ss", szName, sizeof ( szName ), szPrivate, sizeof ( szPrivate ) ) )
+    {
+        ReportBrokenDB ( &s, SQLListAccounts, "Almacenando nickserv.SQLListAccounts" );
+        SQLListAccounts->FreeResult ();
+        return false;
+    }
+
+    // Verificamos los permisos del usuario para aplicar distintas restricciones
+    bool bIsOper = true;
+    bool bIsAdmin = HasAccess ( s, RANK_COADMINISTRATOR );
+    if ( ! bIsAdmin )
+        bIsOper = HasAccess ( s, RANK_OPERATOR );
+
+    // Obtenemos y mostramos los resultados
+    unsigned int uiShownCount = 0;
+    unsigned int uiNumPrivate = 0;
+    unsigned int uiTotal = SQLListAccounts->NumRows ();
+    unsigned int uiMax = m_options.uiMaxList;
+
+    if ( bIsAdmin )
+        uiMax = (unsigned int)-1;
+
+    LangMsg ( s, "LIST_HEADER", szParam.c_str () );
+
+    while ( SQLListAccounts->FetchStored () == CDBStatement::FETCH_OK )
+    {
+        // Si es privado, sólo lo mostramos a operadores
+        if ( *szPrivate == 'Y' )
+        {
+            ++uiNumPrivate;
+            if ( bIsOper && uiShownCount < uiMax )
+            {
+                ++uiShownCount;
+                Msg ( s, CString ( "      %s", szName ) );
+            }
+        }
+        else if ( uiShownCount < uiMax )
+        {
+            ++uiShownCount;
+            Msg ( s, CString ( "      %s", szName ) );
+        }
+    }
+
+    LangMsg ( s, "LIST_FOOTER", uiShownCount, uiTotal, uiNumPrivate );
+
+    SQLListAccounts->FreeResult ();
     return true;
 }
+
 
 #undef COMMAND
 
