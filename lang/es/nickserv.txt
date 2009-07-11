@@ -224,7 +224,7 @@ Para obtener más ayuda acerca de cualquiera de las opciones,
 escribe 12/msg %N HELP SET <opción>.
 %%
 
-%HELP_SET_COADMINS%
+%COADMINS_HELP_SET%
 
 03-= Co-administradores =-
 Los co-administradores pueden usar, además, un parámetro extra

@@ -633,7 +633,7 @@ COMMAND(Help)
             if ( szOption == "" )
             {
                 if ( HasAccess ( s, RANK_COADMINISTRATOR ) )
-                    LangMsg ( s, "HELP_SET_COADMINS" );
+                    LangMsg ( s, "COADMINS_HELP_SET" );
             }
             else if ( ! CPortability::CompareNoCase ( szOption, "LANG" ) )
             {
