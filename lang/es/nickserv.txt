@@ -461,6 +461,10 @@ Listado de nicks con el patrón 12%s:
       %s
 %%
 
+%LIST_ENTRY_GROUPED%
+      %s (agrupado)
+%%
+
 %LIST_FOOTER%
 Fin del listado, 12%u/12%u mostrados. Hubo 12%u nicks privados.
 %%

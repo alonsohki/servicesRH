@@ -1640,8 +1640,8 @@ COMMAND(List)
     {
         SQLListAccounts = CDatabase::GetSingleton ().PrepareStatement (
               "SELECT * FROM ("
-              "SELECT name,private FROM account WHERE name LIKE ? LIMIT ? UNION "
-              "SELECT groups.name AS name, account.private AS private "
+              "SELECT name,private,'N' AS grouped FROM account WHERE name LIKE ? LIMIT ? UNION "
+              "SELECT groups.name AS name, account.private AS private, 'Y' AS grouped "
               "FROM groups LEFT JOIN account ON groups.id=account.id "
               "WHERE groups.name LIKE ? LIMIT ?"
               ") AS registered ORDER BY name ASC LIMIT ?"
@@ -1701,9 +1701,11 @@ COMMAND(List)
     // Almacenamos el resultado de la consulta
     char szName [ 128 ];
     char szPrivate [ 8 ];
+    char szGrouped [ 8 ];
 
-    if ( ! SQLListAccounts->Store ( 0, 0, "ss", szName, sizeof ( szName ),
-                                                szPrivate, sizeof ( szPrivate ) ) )
+    if ( ! SQLListAccounts->Store ( 0, 0, "sss", szName, sizeof ( szName ),
+                                                 szPrivate, sizeof ( szPrivate ),
+                                                 szGrouped, sizeof ( szGrouped ) ) )
     {
         ReportBrokenDB ( &s, SQLListAccounts, "Almacenando nickserv.SQLListAccounts" );
         SQLListAccounts->FreeResult ();
@@ -1736,13 +1738,19 @@ COMMAND(List)
             if ( bIsOper && uiShownCount < uiMax )
             {
                 ++uiShownCount;
-                LangMsg ( s, "LIST_ENTRY", szName );
+                if ( *szGrouped == 'N' )
+                    LangMsg ( s, "LIST_ENTRY", szName );
+                else
+                    LangMsg ( s, "LIST_ENTRY_GROUPED", szName );
             }
         }
         else if ( uiShownCount < uiMax )
         {
             ++uiShownCount;
-            LangMsg ( s, "LIST_ENTRY", szName );
+            if ( *szGrouped == 'N' )
+                LangMsg ( s, "LIST_ENTRY", szName );
+            else
+                LangMsg ( s, "LIST_ENTRY_GROUPED", szName );
         }
     }
 
