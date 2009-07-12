@@ -21,6 +21,10 @@
 class CDate
 {
 public:
+    static CDate    GetDateFromTimeMark     ( const CString& szTimeMark );
+
+public:
+                    CDate           ( time_t timestamp );
                     CDate           ( unsigned int uiHour = 0, unsigned int uiMinute = 0, unsigned int uiSecond = 0,
                                       unsigned int uiDay = 0, unsigned int uiMonth = 0, unsigned int uiYear = 0 );
     virtual         ~CDate          ();
@@ -48,6 +52,16 @@ public:
     time_t          GetTimestamp    ( ) const;
 
     CString         GetDateString   ( const char* szFormat = 0 ) const;
+
+    // Operadores
+    CDate           operator+       ( const CDate& Right ) const;
+    CDate           operator-       ( const CDate& Right ) const;
+    CDate&          operator+=      ( const CDate& Right );
+    CDate&          operator-=      ( const CDate& Right );
+    bool            operator<       ( const CDate& Right ) const;
+    bool            operator<=      ( const CDate& Right ) const;
+    bool            operator>       ( const CDate& Right ) const;
+    bool            operator>=      ( const CDate& Right ) const;
 
 private:
     void            GetTimeStruct   ( struct tm* pTm ) const;

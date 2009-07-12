@@ -393,6 +393,9 @@ void CService::ProcessCommands ( CUser* pSource, const CString& szMessage )
     szMessage.Split ( info.vecParams );
     CString& szCommand = info.GetNextParam ( );
 
+    SServicesData& data = pSource->GetServicesData ();
+    data.access.bCached = false;
+
     if ( szCommand.length () > 0 )
     {
         t_commandsMap::iterator find = m_commandsMap.find ( szCommand.c_str () );
@@ -433,16 +436,19 @@ bool CService::HasAccess ( CUser& user, EServicesRank rank )
     if ( data.ID == 0ULL || data.bIdentified == false )
         return false;
 
-    // Obtenemos el rango
-    int iRank;
-    if ( ! SQLHasAccess->Execute ( "Q", data.ID ) )
-        return ReportBrokenDB ( &user, SQLHasAccess, "Ejecutando CService.SQLHasAccess" );
-    if ( SQLHasAccess->Fetch ( 0, 0, "d", &iRank ) != CDBStatement::FETCH_OK )
-        iRank = -1;
-    SQLHasAccess->FreeResult ();
+    if ( ! data.access.bCached )
+    {
+        // Obtenemos el rango
+        if ( ! SQLHasAccess->Execute ( "Q", data.ID ) )
+            return ReportBrokenDB ( &user, SQLHasAccess, "Ejecutando CService.SQLHasAccess" );
+        if ( SQLHasAccess->Fetch ( 0, 0, "d", &(data.access.iRank) ) != CDBStatement::FETCH_OK )
+            data.access.iRank = -1;
+        SQLHasAccess->FreeResult ();
+        data.access.bCached = true;
+    }
 
     // Verificamos el acceso
-    if ( iRank == -1 || static_cast < EServicesRank > ( iRank ) > rank )
+    if ( data.access.iRank == -1 || static_cast < EServicesRank > ( data.access.iRank ) > rank )
         return false;
     return true;
 }

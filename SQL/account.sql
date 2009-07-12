@@ -6,6 +6,9 @@ CREATE TABLE account (
 	lang		VARCHAR ( 8 )		NOT NULL DEFAULT 'EN',
 	rank		INT					NOT NULL DEFAULT '-1',
 	
+	suspended	VARCHAR ( 256 )		NULL,
+	suspendExp	TIMESTAMP			NULL,
+	
 	username	VARCHAR ( 64 )		NOT NULL,
 	hostname	VARCHAR ( 128 )		NOT NULL,
 	fullname	VARCHAR ( 128 )		NOT NULL,

@@ -31,6 +31,13 @@ Lista de comandos disponibles:
 Para obtener ayuda detallada sobre cualquier comando, escribe 12/msg %N HELP <comando>.
 %%
 
+%PREOPERS_HELP%
+
+03-= Pre-operadores =-
+    12SUSPEND              Suspende un nick
+    12UNSUSPEND            Anula la suspensión de un nick
+%%
+
 %ADMINS_HELP%
 
 03-= Administradores =-
@@ -80,6 +87,11 @@ Si deseas saber cómo registrarlo, escribe 12/msg %N HELP REGISTER.
 %TIME_RESTRICTION%
 04Error: Sólo puedes ejecutar el comando 12%s cada 12%u segundos.
 %%
+
+%YOU_HAVE_BEEN_UNSUSPENDED%
+La suspensión para tu nick ha sido eliminada o ha expirado Ahora puedes identificarte.
+%%
+
 
 ############################
 # REGISTER
@@ -133,8 +145,16 @@ Te identifica como el legítimo dueño de este nick frente a los servicios.
 %IDENTIFY_IDENTIFIED%
 Ya estás autentificado.
 %%
+
+%IDENTIFY_SUSPENDED%
+Tu nick está suspendido hasta el 12%s.
+Motivo: %s
+%%
+
 #
 ############################
+
+
 
 ############################
 # GROUP
@@ -203,6 +223,9 @@ Lista de nicks en el grupo de 12%s:
 %GROUP_LIST_ENTRY%
       %s
 %%
+
+#
+############################
 
 
 
@@ -386,6 +409,10 @@ Mensaje de bienvenida eliminado correctamente.
 Mensaje de bienvenida cambiado a 12%s.
 %%
 
+#
+############################
+
+
 
 ############################
 # INFO
@@ -404,6 +431,10 @@ Información de 12%s:
 
 %INFO_IS%
 %s es 12%s
+%%
+
+%INFO_SUSPENDED%
+Este nick está SUSPENDIDO: 12%s
 %%
 
 %INFO_REGISTERED%
@@ -442,6 +473,10 @@ Mensaje de bienvenida: 12%s
 Idioma: 12%s
 %%
 
+#
+############################
+
+
 
 ############################
 # LIST
@@ -475,6 +510,9 @@ Listado de nicks con el patrón 12%s:
 Fin del listado, 12%u/12%u mostrados. Hubo 12%u nicks privados.
 %%
 
+#
+############################
+
 
 
 ############################
@@ -490,3 +528,73 @@ Elimina un nick y sus nicks agrupados de la base de datos.
 %DROP_SUCCESS%
 El nick 12%s y sus nicks agrupados han sido eliminados correctamente.
 %%
+
+#
+############################
+
+
+
+############################
+# SUSPEND
+%SYNTAX_SUSPEND%
+Sintaxis: 12SUSPEND <nick> <tiempo> <motivo>
+%%
+
+%HELP_SUSPEND%
+Suspende un 12nick durante un 12tiempo dado. El tiempo se especifica
+en segundos, aunque puedes usar marcas de tiempo como por ejemplo: 124d3m, que
+suspenderá el nick por cuatro días y tres minutos. Las posibles marcas de tiempo son:
+      12s   Segundos
+      12m   Minutos
+      12h   Horas
+      12d   Días
+      12w   Semanas
+      12y   Años
+Un nick suspendido seguirá estando registrado y será utilizable, pero no podrá
+identificarse hasta que la suspensión expire.
+%%
+
+%SUSPEND_NO_TIME%
+04Error: El tiempo de suspensión debe ser mayor que 0 segundos.
+%%
+
+%SUSPEND_YOU_HAVE_BEEN_SUSPENDED%
+Tu nick ha sido SUSPENDIDO hasta el 12%s.
+Motivo: %s
+%%
+
+%SUSPEND_ALREADY_SUSPENDED%
+04Error: Este nick ya está suspendido.
+%%
+
+%SUSPEND_SUCCESS%
+El nick 12%s ha sido suspendido satisfactoriamente.
+%%
+
+#
+############################
+
+
+
+############################
+# UNSUSPEND
+%SYNTAX_UNSUSPEND%
+Sintaxis: 12UNSUSPEND <nick>
+%%
+
+%HELP_UNSUSPEND%
+Cancela la suspensión de un 12nick previamente suspendido mediante el
+comando 12SUSPEND. Para más información acerca de la suspensión de nicks,
+escribe 12/msg %N HELP SUSPEND.
+%%
+
+%UNSUSPEND_ACCOUNT_NOT_SUSPENDED%
+04Error: Este nick no está suspendido.
+%%
+
+%UNSUSPEND_SUCCESS%
+Eliminada la suspensión del nick 12%s correctamente.
+%%
+
+#
+############################

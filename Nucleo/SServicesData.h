@@ -26,4 +26,12 @@ struct SServicesData
     CString             szLang;
     bool                bIdentified;
     unsigned long long  ID;
+
+    struct
+    {
+        friend class CService;
+    private:
+        bool bCached;
+        int iRank;
+    } access;
 };

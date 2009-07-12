@@ -29,6 +29,8 @@ CNickserv::CNickserv ( const CConfig& config )
     REGISTER ( Info,        All );
     REGISTER ( List,        All );
     REGISTER ( Drop,        Administrator );
+    REGISTER ( Suspend,     Preoperator );
+    REGISTER ( Unsuspend,   Preoperator );
 #undef REGISTER
 
     // Cargamos la configuración para nickserv
@@ -223,7 +225,100 @@ void CNickserv::GetAccountName ( unsigned long long ID, CString& szDest )
     SQLGetName->FreeResult ();
 }
 
-void CNickserv::Identify ( CUser& user )
+bool CNickserv::CheckSuspension ( unsigned long long ID, CString& szReason, CDate& dateExpiration )
+{
+    // Construímos la consulta para obtener los datos de suspensión
+    static CDBStatement* SQLCheckSuspension = 0;
+    if ( !SQLCheckSuspension )
+    {
+        SQLCheckSuspension = CDatabase::GetSingleton ().PrepareStatement (
+              "SELECT suspended,suspendExp FROM account WHERE id=?"
+            );
+        if ( !SQLCheckSuspension )
+            return ReportBrokenDB ( 0, 0, "Generando nickserv.SQLCheckSuspension" );
+    }
+
+    // Ejecutamos la consulta
+    if ( ! SQLCheckSuspension->Execute ( "Q", ID ) )
+        return ReportBrokenDB ( 0, SQLCheckSuspension, "Ejecutando nickserv.SQLCheckSuspension" );
+
+    // Obtenemos los datos
+    char szReason_ [ 512 ];
+    bool bNulls [ 2 ];
+    if ( SQLCheckSuspension->Fetch ( 0, bNulls, "sT", szReason_, sizeof ( szReason_ ), &dateExpiration ) != CDBStatement::FETCH_OK )
+    {
+        ReportBrokenDB ( 0, SQLCheckSuspension, "Extrayendo nickserv.SQLCheckSuspension" );
+        SQLCheckSuspension->FreeResult ();
+        return false;
+    }
+    SQLCheckSuspension->FreeResult ();
+
+    // Verificamos si está suspendido
+    if ( bNulls [ 0 ] == true )
+        return false;
+
+    // Comprobamos si la suspensión ha expirado
+    CDate now;
+    if ( now >= dateExpiration )
+    {
+        RemoveSuspension ( ID );
+        return false;
+    }
+
+    szReason = szReason_;
+    return true;
+}
+
+bool CNickserv::RemoveSuspension ( unsigned long long ID )
+{
+    // Generamos la consulta para eliminar suspensiones
+    static CDBStatement* SQLRemoveSuspension = 0;
+    if ( !SQLRemoveSuspension )
+    {
+        SQLRemoveSuspension = CDatabase::GetSingleton ().PrepareStatement (
+              "UPDATE account SET suspended=NULL,suspendExp=NULL WHERE id=?"
+            );
+        if ( !SQLRemoveSuspension )
+            return ReportBrokenDB ( 0, 0, "Generando nickserv.SQLRemoveSuspension" );
+    }
+
+    // Ejecutamos la consulta
+    if ( ! SQLRemoveSuspension->Execute ( "Q", ID ) )
+        return ReportBrokenDB ( 0, SQLRemoveSuspension, "Ejecutando nickserv.SQLRemoveSuspension" );
+    SQLRemoveSuspension->FreeResult ();
+
+    // Levantamos la suspensión en la DDB
+    CProtocol& protocol = CProtocol::GetSingleton ();
+    std::vector < CString > vecMembers;
+    if ( ! GetGroupMembers ( 0, ID, vecMembers ) )
+        return false;
+
+    for ( std::vector < CString >::iterator i = vecMembers.begin ();
+          i != vecMembers.end ();
+          ++i )
+    {
+        CString& szMember = (*i);
+        const char* szHash = protocol.GetDDBValue ( 'n', szMember );
+        if ( szHash )
+        {
+            // Eliminamos el caracter de suspensión del hash del nick en la tabla n
+            CString szUnsuspendedHash = szHash;
+            size_t pos;
+            while ( ( pos = szUnsuspendedHash.rfind ( '+' ) ) != CString::npos )
+                szUnsuspendedHash.replace ( pos, 1, "" );
+            protocol.InsertIntoDDB ( 'n', szMember, szUnsuspendedHash );
+        }
+
+        // Si está online el miembro, le notificamos del levantamiento de la suspensión
+        CUser* pTarget = protocol.GetMe ().GetUserAnywhere ( szMember );
+        if ( pTarget )
+            LangMsg ( *pTarget, "UNSUSPEND_YOU_HAVE_BEEN_UNSUSPENDED" );
+    }
+
+    return true;
+}
+
+bool CNickserv::Identify ( CUser& user )
 {
     // Construímos la consulta para obtener el idioma del usuario
     static CDBStatement* SQLGetLang = 0;
@@ -231,10 +326,7 @@ void CNickserv::Identify ( CUser& user )
     {
         SQLGetLang = CDatabase::GetSingleton ().PrepareStatement ( "SELECT lang FROM account WHERE id=?" );
         if ( !SQLGetLang )
-        {
-            ReportBrokenDB ( 0, 0, "Generando nickserv.SQLGetLang" );
-            return;
-        }
+            return ReportBrokenDB ( 0, 0, "Generando nickserv.SQLGetLang" );
     }
 
     // Construímos la consulta para almacenar los datos del usuario
@@ -245,30 +337,37 @@ void CNickserv::Identify ( CUser& user )
               "UPDATE account SET username=?,hostname=?,fullname=? WHERE id=?"
             );
         if ( !SQLSaveAccountDetails )
-        {
-            ReportBrokenDB ( 0, 0, "Generando nickserv.SQLSaveAccountDetails" );
-            return;
-        }
+            return ReportBrokenDB ( 0, 0, "Generando nickserv.SQLSaveAccountDetails" );
     }
 
     SServicesData& data = user.GetServicesData ();
 
     // Obtenemos el idioma
     if ( ! SQLGetLang->Execute ( "Q", data.ID ) )
-    {
-        ReportBrokenDB ( 0, SQLGetLang, "Ejecutando nickserv.SQLGetLang" );
-        return;
-    }
+        return ReportBrokenDB ( 0, SQLGetLang, "Ejecutando nickserv.SQLGetLang" );
 
     char szLang [ 16 ];
-    if ( SQLGetLang->Fetch ( 0, 0, "s", szLang, sizeof ( szLang ) ) == CDBStatement::FETCH_OK )
+    if ( SQLGetLang->Fetch ( 0, 0, "s", szLang, sizeof ( szLang ) ) != CDBStatement::FETCH_OK )
     {
-        data.bIdentified = true;
-        data.szLang = szLang;
-        CProtocol::GetSingleton ().GetMe ().Send ( CMessageIDENTIFY ( &user ) );
+        ReportBrokenDB ( 0, SQLGetLang, "Extrayendo nickserv.SQLGetLang" );
+        SQLGetLang->FreeResult ();
+        return false;
+    }
+    SQLGetLang->FreeResult ();
+    data.szLang = szLang;
+
+    // Comprobamos que no esté suspendido
+    CString szReason;
+    CDate expirationTime;
+    if ( CheckSuspension ( data.ID, szReason, expirationTime ) )
+    {
+        LangMsg ( user, "IDENTIFY_SUSPENDED", expirationTime.GetDateString ().c_str (), szReason.c_str () );
+        return false;
     }
 
-    SQLGetLang->FreeResult ();
+    // Identificamos al usuario
+    data.bIdentified = true;
+    CProtocol::GetSingleton ().GetMe ().Send ( CMessageIDENTIFY ( &user ) );
 
     // Actualizamos los datos de la cuenta
     if ( ! SQLSaveAccountDetails->Execute ( "sssQ", user.GetIdent ().c_str (),
@@ -276,10 +375,11 @@ void CNickserv::Identify ( CUser& user )
                                                     user.GetDesc ().c_str (),
                                                     data.ID ) )
     {
-        ReportBrokenDB ( 0, SQLSaveAccountDetails, "Ejecutando nickserv.SQLSaveAccountDetails" );
-        return;
+        return ReportBrokenDB ( 0, SQLSaveAccountDetails, "Ejecutando nickserv.SQLSaveAccountDetails" );
     }
     SQLSaveAccountDetails->FreeResult ();
+
+    return true;
 }
 
 char* CNickserv::CifraNick ( char* dest, const char* szNick, const char* szPassword )
@@ -504,7 +604,7 @@ bool CNickserv::CheckRegistered ( CUser& user )
 
 
 // Grupos
-bool CNickserv::CreateDDBGroupMember ( CUser& s )
+bool CNickserv::CreateDDBGroupMember ( CUser& s, const CString& szPassword )
 {
     // Construímos la consulta SQL para obtener la información
     // del nick principal para copiarla.
@@ -519,12 +619,18 @@ bool CNickserv::CreateDDBGroupMember ( CUser& s )
     }
 
     SServicesData& data = s.GetServicesData ();
+    CProtocol& protocol = CProtocol::GetSingleton ();
 
     // Por seguridad...
     if ( data.ID == 0ULL || data.bIdentified == false )
         return false;
 
-    // Ejecutamos la consulta
+    // Registramos el nick
+    char szHash [ 64 ];
+    CifraNick ( szHash, s.GetName (), szPassword );
+    protocol.InsertIntoDDB ( 'n', s.GetName (), szHash );
+
+    // Ejecutamos la consulta para obtener los datos específicos
     if ( ! SQLGetAccountDetails->Execute ( "Q", data.ID ) )
         return ReportBrokenDB ( &s, SQLGetAccountDetails, "Ejecutando nickserv.SQLGetAccountDetails" );
 
@@ -536,7 +642,7 @@ bool CNickserv::CreateDDBGroupMember ( CUser& s )
         if ( bNulls [ 0 ] == false )
         {
             // Tiene vhost
-            GroupInsertDDB ( 'w', s.GetName (), szVhost );
+            protocol.InsertIntoDDB ( 'w', s.GetName (), szVhost );
         }
     }
     SQLGetAccountDetails->FreeResult ();
@@ -546,64 +652,59 @@ bool CNickserv::CreateDDBGroupMember ( CUser& s )
 
 void CNickserv::DestroyDDBGroupMember ( CUser& s )
 {
-    GroupInsertDDB ( 'w', s.GetName (), "" );
+    CProtocol& protocol = CProtocol::GetSingleton ();
+    protocol.InsertIntoDDB ( 'w', s.GetName (), "" );
+    protocol.InsertIntoDDB ( 'n', s.GetName (), "" );
 }
 
-void CNickserv::DestroyFullDDBGroup ( CUser& s, unsigned long long ID )
+bool CNickserv::DestroyFullDDBGroup ( CUser& s, unsigned long long ID )
 {
-    UpdateDDBGroup ( s, ID, 'w', "" );
-    UpdateDDBGroup ( s, ID, 'n', "" );
+    // Obtenemos los miembros del grupo
+    std::vector < CString > vecMembers;
+    if ( !GetGroupMembers ( &s, ID, vecMembers ) )
+        return false;
+
+    // Iteramos por ellos y eliminamos sus registros
+    CProtocol& protocol = CProtocol::GetSingleton ();
+    for ( std::vector < CString >::iterator i = vecMembers.begin ();
+          i != vecMembers.end ();
+          ++i )
+    {
+        CString& szMember = (*i);
+        protocol.InsertIntoDDB ( 'w', szMember, "" );
+        protocol.InsertIntoDDB ( 'n', szMember, "" );
+    }
+
+    return true;
 }
 
-bool CNickserv::UpdateDDBGroup ( CUser& s, unsigned long long ID, unsigned char ucTable, const CString& szValue )
+bool CNickserv::GetGroupMembers ( CUser* pUser, unsigned long long ID, std::vector < CString >& vecDest )
 {
     // Generamos la consulta para obtener los miembros del grupo
     static CDBStatement* SQLGetGroupMembers = 0;
     if ( !SQLGetGroupMembers )
     {
         SQLGetGroupMembers = CDatabase::GetSingleton ().PrepareStatement (
+              "SELECT name FROM account WHERE id=? UNION "
               "SELECT name FROM groups WHERE id=?"
             );
         if ( !SQLGetGroupMembers )
         {
-            return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLGetGroupMembers" );
+            return ReportBrokenDB ( pUser, 0, "Generando nickserv.SQLGetGroupMembers" );
         }
     }
 
-    // Obtenemos el nombre de la cuenta principal
-    CString szPrimaryName;
-    GetAccountName ( ID, szPrimaryName );
-
     // Ejecutamos la consulta SQL para obtener los miembros del grupo
-    if ( ! SQLGetGroupMembers->Execute ( "Q", ID ) )
-        return ReportBrokenDB ( &s, SQLGetGroupMembers, "Ejecutando nickserv.SQLGetGroupMembers" );
+    if ( ! SQLGetGroupMembers->Execute ( "QQ", ID, ID ) )
+        return ReportBrokenDB ( pUser, SQLGetGroupMembers, "Ejecutando nickserv.SQLGetGroupMembers" );
 
-    // Actualizamos el registro para el nick principal
-    GroupInsertDDB ( ucTable, szPrimaryName, szValue );
-
-    // Iteramos por todos los miembros del grupo para actualizarlos
-    char szNick [ 64 ];
+    // Iteramos por todos los miembros del grupo
+    char szNick [ 256 ];
     while ( SQLGetGroupMembers->Fetch ( 0, 0, "s", szNick, sizeof ( szNick ) ) == CDBStatement::FETCH_OK )
-        GroupInsertDDB ( ucTable, szNick, szValue );
+        vecDest.push_back ( szNick );
 
     SQLGetGroupMembers->FreeResult ();
-
     return true;
-}
-
-void CNickserv::GroupInsertDDB ( unsigned char ucTable, const CString& szKey, const CString& szValue )
-{
-    if ( ucTable == 'n' && szValue != "" )
-    {
-        // La tabla 'n' es un caso especial, requiere cifrar el password con el nick.
-        char szHash [ 32 ];
-        CifraNick ( szHash, szKey, szValue );
-        CProtocol::GetSingleton ().InsertIntoDDB ( 'n', szKey, szHash );
-    }
-    else
-    {
-        CProtocol::GetSingleton ().InsertIntoDDB ( ucTable, szKey, szValue );
-    }
 }
 
 static inline void ClearPassword ( CString& szPassword )
@@ -649,8 +750,12 @@ COMMAND(Help)
 
         if ( szTopic == "" )
         {
-            if ( HasAccess ( s, RANK_ADMINISTRATOR ) )
-                LangMsg ( s, "ADMINS_HELP" );
+            if ( HasAccess ( s, RANK_PREOPERATOR ) )
+            {
+                LangMsg ( s, "PREOPERS_HELP" );
+                if ( HasAccess ( s, RANK_ADMINISTRATOR ) )
+                    LangMsg ( s, "ADMINS_HELP" );
+            }
         }
 
         else if ( ! CPortability::CompareNoCase ( szTopic, "SET" ) )
@@ -855,8 +960,8 @@ COMMAND(Identify)
             LangMsg ( s, "IDENTIFY_WRONG_PASSWORD" );
         else
         {
-            LangMsg ( s, "IDENTIFY_SUCCESS" );
-            Identify ( s );
+            if ( Identify ( s ) )
+                LangMsg ( s, "IDENTIFY_SUCCESS" );
         }
 
         ClearPassword ( szPassword ); // Por seguridad, limpiamos el password
@@ -968,17 +1073,12 @@ COMMAND(Group)
         }
         SQLAddGroup->FreeResult ();
 
-        // Insertamos el registro en la base de datos
-        char szHash [ 32 ];
-        CifraNick ( szHash, s.GetName (), szPassword );
-        CProtocol::GetSingleton ().InsertIntoDDB ( 'n', s.GetName (), szHash );
-
         // Identificamos al usuario
         data.ID = ID;
         Identify ( s );
 
         // Copiamos a la DDB los datos específicos de esta
-        if ( ! CreateDDBGroupMember ( s ) )
+        if ( ! CreateDDBGroupMember ( s, szPassword ) )
         {
             ClearPassword ( szPassword ); // Por seguridad, limpiamos el password
             return false;
@@ -1040,9 +1140,6 @@ COMMAND(Group)
 
         // Eliminamos de la DDB los datos específicos
         DestroyDDBGroupMember ( s );
-
-        // Eliminamos el registro de la cuenta de la DDB
-        CProtocol::GetSingleton ().InsertIntoDDB ( 'n', s.GetName (), "" );
 
         // Le desidentificamos
         data.bIdentified = false;
@@ -1118,6 +1215,7 @@ COMMAND(Group)
 COMMAND(Set)
 {
     CUser& s = *( info.pSource );
+    CString szOption;
 
     // Verificamos que esté registrado e identificado
     if ( ! CheckRegistered ( s ) || ! CheckIdentified ( s ) )
@@ -1128,14 +1226,27 @@ COMMAND(Set)
     if ( info.vecParams.size () > 3 && HasAccess ( s, RANK_COADMINISTRATOR ) )
     {
         CString& szTarget = info.GetNextParam ();
-        IDTarget = GetAccountID ( szTarget );
-        if ( IDTarget == 0ULL )
+        if ( CPortability::CompareNoCase ( szTarget, "GREETMSG" ) )
         {
-            LangMsg ( s, "ACCOUNT_NOT_FOUND", szTarget.c_str () );
-            return false;
+            IDTarget = GetAccountID ( szTarget );
+            if ( IDTarget == 0ULL )
+            {
+                LangMsg ( s, "ACCOUNT_NOT_FOUND", szTarget.c_str () );
+                return false;
+            }
+            szOption = info.GetNextParam ();
+
+            if ( ! CPortability::CompareNoCase ( szOption, "PASSWORD" ) && ! HasAccess ( s, RANK_ADMINISTRATOR ) )
+            {
+                LangMsg ( s, "ACCESS_DENIED" );
+                return false;
+            }
         }
+        else
+            szOption = szTarget;
     }
-    CString& szOption = info.GetNextParam ();
+    else
+        szOption = info.GetNextParam ();
 
     if ( szOption == "" )
         return SendSyntax ( s, "SET" );
@@ -1208,10 +1319,22 @@ SET_COMMAND(Set_Password)
     SQLSetPassword->FreeResult ();
 
     // Cambiamos el password en la DDB
-    if ( ! UpdateDDBGroup ( s, IDTarget, 'n', szPassword ) )
+    std::vector < CString > vecMembers;
+    if ( ! GetGroupMembers ( &s, IDTarget, vecMembers ) )
     {
-        ClearPassword ( szPassword ); // Por seguridad, limpiamos el password
+        ClearPassword ( szPassword );
         return false;
+    }
+
+    CProtocol& protocol = CProtocol::GetSingleton ();
+    char szHash [ 64 ];
+    for ( std::vector < CString >::iterator i = vecMembers.begin ();
+          i != vecMembers.end ();
+          ++i )
+    {
+        CString& szMember = (*i);
+        CifraNick ( szHash, szMember, szPassword );
+        protocol.InsertIntoDDB ( 'n', szMember, szHash );
     }
 
     LangMsg ( s, "SET_PASSWORD_SUCCESS", szPassword.c_str () );
@@ -1334,9 +1457,19 @@ SET_COMMAND(Set_Vhost)
              ! CheckOrAddTimeRestriction ( s, "SET VHOST", m_options.uiTimeSetVhost ) )
             return false;
 
-        // Desactivamos el vhost
-        if ( ! UpdateDDBGroup ( s, IDTarget, 'w', "" ) )
+        // Desactivamos el vhost para todo el grupo
+        CProtocol& protocol = CProtocol::GetSingleton ();
+        std::vector < CString > vecMembers;
+        if ( ! GetGroupMembers ( &s, IDTarget, vecMembers ) )
             return false;
+
+        for ( std::vector < CString >::iterator i = vecMembers.begin ();
+              i != vecMembers.end ();
+              ++i )
+        {
+            CString& szMember = (*i);
+            protocol.InsertIntoDDB ( 'w', szMember, "" );
+        }
 
         // Actualizamos el vhost en la base de datos
         if ( ! SQLSetVhost->Execute ( "NQ", IDTarget ) )
@@ -1370,9 +1503,19 @@ SET_COMMAND(Set_Vhost)
             return false;
         }
 
-        // Actualizamos el vhost en la DDB
-        if ( ! UpdateDDBGroup ( s, IDTarget, 'w', szVhost ) )
+        // Actualizamos el vhost en la DDB para todo el grupo
+        CProtocol& protocol = CProtocol::GetSingleton ();
+        std::vector < CString > vecMembers;
+        if ( ! GetGroupMembers ( &s, IDTarget, vecMembers ) )
             return false;
+
+        for ( std::vector < CString >::iterator i = vecMembers.begin ();
+              i != vecMembers.end ();
+              ++i )
+        {
+            CString& szMember = (*i);
+            protocol.InsertIntoDDB ( 'w', szMember, szVhost );
+        }
 
         // Actualizamos el vhost en la base de datos
         if ( ! SQLSetVhost->Execute ( "sQ", szVhost.c_str (), IDTarget ) )
@@ -1501,7 +1644,8 @@ SET_COMMAND(Set_Greetmsg)
     }
 
     // Obtenemos el mensaje de bienvenida
-    CString& szMsg = info.GetNextParam ();
+    CString szMsg;
+    info.GetRemainingText ( szMsg );
     if ( szMsg == "" )
         return SendSyntax ( s, "SET GREETMSG" );
 
@@ -1583,6 +1727,11 @@ COMMAND(Info)
     if ( bAll && data.ID != ID && ! HasAccess ( s, RANK_PREOPERATOR ) )
         bAll = false;
 
+    // Comprobamos si está suspendido
+    CString szSuspendReason;
+    CDate expirationTime;
+    bool bSuspended = CheckSuspension ( ID, szSuspendReason, expirationTime );
+
     // Ejecutamos la consulta SQL para obtener la información
     if ( ! SQLGetInfo->Execute ( "Q", ID ) )
         return ReportBrokenDB ( &s, SQLGetInfo, "Ejecutando nickserv.SQLGetInfo" );
@@ -1622,8 +1771,18 @@ COMMAND(Info)
 
         LangMsg ( s, "INFO_ABOUT", szName );
         LangMsg ( s, "INFO_IS", szName, szFullname );
+
+        // Si está suspendido, enviamos el motivo
+        if ( bSuspended )
+        {
+            LangMsg ( s, "INFO_SUSPENDED", szSuspendReason.c_str () );
+        }
+
+        // Enviamos las fechas de registro y última vez visto
         LangMsg ( s, "INFO_REGISTERED", dateRegistered.GetDateString ().c_str () );
         LangMsg ( s, "INFO_LAST_SEEN", dateLastSeen.GetDateString ().c_str () );
+
+        // Enviamos datos opcionales: último mensaje de salida, ip virtual, web, opciones
         if ( bNulls [ 5 ] == false )
             LangMsg ( s, "INFO_LAST_QUIT", szQuitmsg );
         if ( bNulls [ 6 ] == false )
@@ -1636,6 +1795,8 @@ COMMAND(Info)
         if ( *szOptions != '\0' )
             LangMsg ( s, "INFO_OPTIONS", szOptions );
 
+        // Si nos piden mostrar toda la información, mostramos el usermask, el
+        // mensaje de bienvenida y el idioma.
         if ( bAll )
         {
             LangMsg ( s, "INFO_USERMASK", szUsername, szHostname );
@@ -1823,7 +1984,8 @@ COMMAND(Drop)
     }
 
     // Eliminamos el grupo entero de la DDB
-    DestroyFullDDBGroup ( s, ID );
+    if ( ! DestroyFullDDBGroup ( s, ID ) )
+        return false;
 
     // Ejecutamos la consulta SQL para eliminar el nick
     if ( ! SQLDropNick->Execute ( "Q", ID ) )
@@ -1831,6 +1993,142 @@ COMMAND(Drop)
     SQLDropNick->FreeResult ();
 
     LangMsg ( s, "DROP_SUCCESS", szTarget.c_str () );
+
+    return true;
+}
+
+
+COMMAND(Suspend)
+{
+    CUser& s = *( info.pSource );
+    SServicesData& data = s.GetServicesData ();
+
+    // Generamos la consulta SQL para suspender nicks
+    static CDBStatement* SQLSuspend = 0;
+    if ( !SQLSuspend )
+    {
+        SQLSuspend = CDatabase::GetSingleton ().PrepareStatement (
+              "UPDATE account SET suspended=?,suspendExp=? WHERE id=?"
+            );
+        if ( !SQLSuspend )
+            return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLSuspend" );
+    }
+
+    // Obtenemos el nick que desean suspender
+    CString& szTarget = info.GetNextParam ();
+    if ( szTarget == "" )
+        return SendSyntax ( s, "SUSPEND" );
+
+    // Obtenemos el tiempo de suspensión
+    CString& szTime = info.GetNextParam ();
+    if ( szTime == "" )
+        return SendSyntax ( s, "SUSPEND" );
+
+    // Obtenemos el motivo de la suspensión
+    CString szReason;
+    info.GetRemainingText ( szReason );
+    if ( szReason == "" )
+        return SendSyntax ( s, "SUSPEND" );
+
+    // Obtenemos el ID del usuario a suspender
+    unsigned long long ID = GetAccountID ( szTarget );
+    if ( ID == 0ULL )
+    {
+        LangMsg ( s, "ACCOUNT_NOT_FOUND", szTarget.c_str () );
+        return false;
+    }
+
+    // Verificamos que no esté ya suspendido
+    CString szPrevReason;
+    CDate prevExpiration;
+    if ( CheckSuspension ( ID, szPrevReason, prevExpiration ) )
+    {
+        LangMsg ( s, "SUSPEND_ALREADY_SUSPENDED" );
+        return false;
+    }
+
+    // Obtenemos la fecha de expiración del suspend
+    CDate expirationTime = CDate::GetDateFromTimeMark ( szTime );
+    if ( expirationTime.GetTimestamp () == 0 )
+    {
+        LangMsg ( s, "SUSPEND_NO_TIME" );
+        return false;
+    }
+    expirationTime += CDate ();
+
+    // Suspendemos a todos los miembros del grupo en la DDB
+    CString szExpirationString = expirationTime.GetDateString ();
+    CProtocol& protocol = CProtocol::GetSingleton ();
+    std::vector < CString > vecMembers;
+    if ( ! GetGroupMembers ( &s, ID, vecMembers ) )
+        return false;
+
+    for ( std::vector < CString >::iterator i = vecMembers.begin ();
+          i != vecMembers.end ();
+          ++i )
+    {
+        CString& szMember = (*i);
+        const char* szHash = protocol.GetDDBValue ( 'n', szMember );
+        if ( szHash )
+        {
+            CString szSuspendedHash ( "%s+", szHash );
+            protocol.InsertIntoDDB ( 'n', szMember, szSuspendedHash );
+        }
+
+        // Si está online, le informamos de la suspensión y le desidentificamos
+        CUser* pTarget = protocol.GetMe ().GetUserAnywhere ( szMember );
+        if ( pTarget && pTarget->GetServicesData ().bIdentified )
+        {
+            LangMsg ( *pTarget, "SUSPEND_YOU_HAVE_BEEN_SUSPENDED", szExpirationString.c_str (), szReason.c_str () );
+            pTarget->GetServicesData ().bIdentified = false;
+        }
+    }
+
+    // Actualizamos la base de datos
+    if ( ! SQLSuspend->Execute ( "sTQ", szReason.c_str (), &expirationTime, ID ) )
+        return ReportBrokenDB ( &s, SQLSuspend, "Ejecutando nickserv.SQLSuspend" );
+    SQLSuspend->FreeResult ();
+
+    LangMsg ( s, "SUSPEND_SUCCESS", szTarget.c_str () );
+    return true;
+}
+
+
+COMMAND(Unsuspend)
+{
+    CUser& s = *( info.pSource );
+    SServicesData& data = s.GetServicesData ();
+
+    // Obtenemos el nick a levantar la suspensión
+    CString& szTarget = info.GetNextParam ();
+    if ( szTarget == "" )
+        return SendSyntax ( s, "UNSUSPEND" );
+
+    // Obtenemos el ID del usuario
+    unsigned long long ID = GetAccountID ( szTarget );
+    if ( ID == 0ULL )
+    {
+        LangMsg ( s, "ACCOUNT_NOT_FOUND", szTarget.c_str () );
+        return false;
+    }
+
+    // Verificamos que esté suspendido
+    CString szReason;
+    CDate expirationTime;
+    if ( ! CheckSuspension ( ID, szReason, expirationTime ) )
+    {
+        LangMsg ( s, "UNSUSPEND_ACCOUNT_NOT_SUSPENDED" );
+        return false;
+    }
+
+    // Levantamos la suspensión en la base de datos
+    if ( ! RemoveSuspension ( ID ) )
+    {
+        LangMsg ( s, "BROKEN_DB" );
+        return false;
+    }
+
+    LangMsg ( s, "UNSUSPEND_SUCCESS", szTarget.c_str () );
 
     return true;
 }

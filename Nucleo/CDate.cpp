@@ -17,6 +17,58 @@
 #include "stdafx.h"
 #include <time.h>
 
+CDate CDate::GetDateFromTimeMark ( const CString& szMark )
+{
+    time_t totalSeconds = 0;
+    time_t accumSeconds = 0;
+
+    for ( unsigned int i = 0; i < szMark.length (); ++i )
+    {
+        char c = szMark [ i ];
+
+        switch ( c )
+        {
+            case 's':
+                totalSeconds += accumSeconds;
+                accumSeconds = 0UL;
+                break;
+            case 'm':
+                totalSeconds += accumSeconds * 60;
+                accumSeconds = 0UL;
+                break;
+            case 'h':
+                totalSeconds += accumSeconds * 3600;
+                accumSeconds = 0UL;
+                break;
+            case 'd':
+                totalSeconds += accumSeconds * 86400;
+                accumSeconds = 0UL;
+                break;
+            case 'w':
+                totalSeconds += accumSeconds * 86400 * 7;
+                accumSeconds = 0UL;
+                break;
+            case 'y':
+                totalSeconds += accumSeconds * ( 86400 * 365 + 86400 * 6 );
+                accumSeconds = 0UL;
+                break;
+            case '0': case '1': case '2': case '3': case '4':
+            case '5': case '6': case '7': case '8': case '9':
+                accumSeconds *= 10;
+                accumSeconds += c - '0';
+                break;
+        }
+    }
+    totalSeconds += accumSeconds;
+
+    return CDate ( totalSeconds );
+}
+
+CDate::CDate ( time_t timestamp )
+{
+    SetTimestamp ( timestamp );
+}
+
 CDate::CDate ( unsigned int uiHour, unsigned int uiMinute, unsigned int uiSecond,
                unsigned int uiDay, unsigned int uiMonth, unsigned int uiYear )
 {
@@ -29,11 +81,7 @@ void CDate::Create ( unsigned int uiHour, unsigned int uiMinute, unsigned int ui
     if ( uiHour == 0 && uiMinute == 0 && uiSecond == 0 && uiDay == 0 && uiMonth == 0 && uiYear == 0 )
     {
         // Si no nos dan ningún dato, crearlo con la fecha actual
-        time_t t_now = time ( NULL );
-        struct tm* pNow = localtime ( &t_now );
-        struct tm& now = *pNow;
-
-        Create ( now.tm_hour, now.tm_min, now.tm_sec, now.tm_mday, now.tm_mon + 1, now.tm_year + 1900 );
+        SetTimestamp ( time ( NULL ) );
     }
     else
     {
@@ -63,27 +111,45 @@ inline void CDate::GetTimeStruct ( struct tm* pTm ) const
     temp.tm_mday = m_uiDay;
     temp.tm_mon  = m_uiMonth;
     temp.tm_year = m_uiYear;
-    temp.tm_isdst = 1;
-    time_t t_time = mktime ( &temp );
+    temp.tm_isdst = 0;
 
-    struct tm* tmLocal = localtime ( &t_time );
-    if ( tmLocal )
-        *pTm = *tmLocal;
-    else
-        memset ( pTm, 0, sizeof ( struct tm ) );
+    time_t t_time = mktime ( &temp );
+    if ( temp.tm_isdst != 0 )
+    {
+        temp.tm_sec  = m_uiSecond;
+        temp.tm_min  = m_uiMinute;
+        temp.tm_hour = m_uiHour;
+        temp.tm_mday = m_uiDay;
+        temp.tm_mon  = m_uiMonth;
+        temp.tm_year = m_uiYear;
+        temp.tm_isdst = 1;
+        t_time = mktime ( &temp );
+    }
+
+    struct tm tmLocal;
+#ifdef WIN32
+    localtime_s ( &tmLocal, &t_time );
+#else
+    localtime_r ( &t_time, &tmLocal );
+#endif
+    *pTm = tmLocal;
 }
 
 void CDate::SetTimestamp ( time_t timestamp )
 {
-    struct tm* pTime = localtime ( &timestamp );
-    struct tm& myTime = *pTime;
+    struct tm myTime;
+#ifdef WIN32
+    localtime_s ( &myTime, &timestamp );
+#else
+    localtime_r ( &timestamp, &myTime );
+#endif
 
     SetHour   ( myTime.tm_hour );
     SetMinute ( myTime.tm_min );
     SetSecond ( myTime.tm_sec );
     SetDay    ( myTime.tm_mday );
-    SetMonth  ( myTime.tm_mon );
-    SetYear   ( myTime.tm_year );
+    SetMonth  ( myTime.tm_mon + 1 );
+    SetYear   ( myTime.tm_year + 1900 );
 }
 
 time_t CDate::GetTimestamp ( ) const
@@ -106,4 +172,72 @@ CString CDate::GetDateString ( const char* szFormat ) const
     strftime ( szDate, sizeof ( szDate ), szFormat, &myTime );
 
     return szDate;
+}
+
+
+// Operadores
+CDate CDate::operator+ ( const CDate& Right ) const
+{
+    time_t thisTime = GetTimestamp ();
+    time_t rightTime = Right.GetTimestamp ();
+
+    return CDate ( thisTime + rightTime );
+}
+
+CDate CDate::operator- ( const CDate& Right ) const
+{
+    time_t thisTime = GetTimestamp ();
+    time_t rightTime = Right.GetTimestamp ();
+
+    return CDate ( thisTime - rightTime );
+}
+
+CDate& CDate::operator+= ( const CDate& Right )
+{
+    time_t thisTime = GetTimestamp ();
+    time_t rightTime = Right.GetTimestamp ();
+
+    SetTimestamp ( thisTime + rightTime );
+    return *this;
+}
+
+CDate& CDate::operator-= ( const CDate& Right )
+{
+    time_t thisTime = GetTimestamp ();
+    time_t rightTime = Right.GetTimestamp ();
+
+    SetTimestamp ( thisTime - rightTime );
+    return *this;
+}
+
+bool CDate::operator< ( const CDate& Right ) const
+{
+    time_t thisTime = GetTimestamp ();
+    time_t rightTime = Right.GetTimestamp ();
+
+    return ( thisTime < rightTime );
+}
+
+bool CDate::operator<= ( const CDate& Right ) const
+{
+    time_t thisTime = GetTimestamp ();
+    time_t rightTime = Right.GetTimestamp ();
+
+    return ( thisTime <= rightTime );
+}
+
+bool CDate::operator> ( const CDate& Right ) const
+{
+    time_t thisTime = GetTimestamp ();
+    time_t rightTime = Right.GetTimestamp ();
+
+    return ( thisTime > rightTime );
+}
+
+bool CDate::operator>= ( const CDate& Right ) const
+{
+    time_t thisTime = GetTimestamp ();
+    time_t rightTime = Right.GetTimestamp ();
+
+    return ( thisTime >= rightTime );
 }

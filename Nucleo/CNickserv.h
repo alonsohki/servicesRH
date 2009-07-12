@@ -28,8 +28,10 @@ public:
     unsigned long long
                     GetAccountID    ( const CString& szName, bool bCheckGroups = true );
     void            GetAccountName  ( unsigned long long ID, CString& szDest );
+    bool            CheckSuspension ( unsigned long long ID, CString& szReason, CDate& dateExpiration );
+    bool            RemoveSuspension( unsigned long long ID );
 
-    void            Identify        ( CUser& user );
+    bool            Identify        ( CUser& user );
     char*           CifraNick       ( char* dest, const char* szNick, const char* szPassword );
     bool            CheckPassword   ( unsigned long long ID, const CString& szPassword );
     bool            VerifyEmail     ( const CString& szEmail );
@@ -41,16 +43,11 @@ private:
 
 private:
     // Grupos
-    bool            CreateDDBGroupMember    ( CUser& s );
+    bool            GetGroupMembers         ( CUser* pUser, unsigned long long ID, std::vector < CString >& vecDest );
+
+    bool            CreateDDBGroupMember    ( CUser& s, const CString& szPassword );
     void            DestroyDDBGroupMember   ( CUser& s );
-    void            DestroyFullDDBGroup     ( CUser& s, unsigned long long ID );
-    bool            UpdateDDBGroup          ( CUser& s,
-                                              unsigned long long ID,
-                                              unsigned char ucTable,
-                                              const CString& szValue );
-    void            GroupInsertDDB          ( unsigned char ucTable,
-                                              const CString& szKey,
-                                              const CString& szValue );
+    bool            DestroyFullDDBGroup     ( CUser& s, unsigned long long ID );
 
     // Comandos
 protected:
@@ -73,6 +70,8 @@ private:
     COMMAND ( Info );
     COMMAND ( List );
     COMMAND ( Drop );
+    COMMAND ( Suspend );
+    COMMAND ( Unsuspend );
 #undef SET_COMMAND
 #undef COMMAND
 
