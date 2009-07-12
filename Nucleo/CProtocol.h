@@ -67,6 +67,7 @@ public:
                                                   const CString& szKey,
                                                   const CString& szValue,
                                                   const CString& szTarget = "*" );
+    const char*             GetDDBValue         ( unsigned char ucTable, const CString& szKey ) const;
 
 private:
     void                    InternalAddHandler      ( unsigned long ulStage,
@@ -110,7 +111,9 @@ private:
     bool                    m_bGotServer;
 
     // Distributed database
+    typedef google::dense_hash_map < char*, char*, SStringHasher, SStringEquals > t_mapDDB;
     bool                    m_bDDBInitialized;
     unsigned int            m_uiDDBVersion;
     unsigned int            m_uiDDBSerials [ 256 ];
+    t_mapDDB                m_mapDDB [ 256 ];
 };

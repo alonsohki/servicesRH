@@ -27,6 +27,11 @@ CProtocol::CProtocol ( )
     m_commandsMapBefore.set_empty_key ( (const char *)HASH_STRING_EMPTY );
     m_commandsMapAfter.set_deleted_key ( (const char *)HASH_STRING_DELETED );
     m_commandsMapAfter.set_empty_key ( (const char *)HASH_STRING_EMPTY );
+    for ( unsigned int i = 0; i < 256; ++i )
+    {
+        m_mapDDB [ i ].set_deleted_key ( (char *)HASH_STRING_DELETED );
+        m_mapDDB [ i ].set_empty_key ( (char *)HASH_STRING_EMPTY );
+    }
 
     // Inicializamos los serials de la base de datos
     for ( unsigned int i = 0; i < 256; ++i )
@@ -81,6 +86,19 @@ CProtocol::~CProtocol ( )
         {
             delete (*j);
         }
+    }
+
+    // Eliminamos los registros de la DDB
+    for ( unsigned int i = 0; i < 256; ++i )
+    {
+        for ( t_mapDDB::iterator iter = m_mapDDB [ i ].begin ();
+              iter != m_mapDDB [ i ].end ();
+              ++iter )
+        {
+            free ( (*iter).first );
+            free ( (*iter).second );
+        }
+        m_mapDDB [ i ].clear ();
     }
 }
 
@@ -492,6 +510,15 @@ void CProtocol::InsertIntoDDB ( unsigned char ucTable,
     Send ( CMessageDB ( szTarget, 0, m_uiDDBSerials [ ucTable ], ucTable, szKey, szValue, 0 ), &m_me );
 }
 
+const char* CProtocol::GetDDBValue ( unsigned char ucTable, const CString& szKey ) const
+{
+    t_mapDDB::const_iterator find = m_mapDDB [ ucTable ].find ( const_cast < char* > ( szKey.c_str () ) );
+    if ( find != m_mapDDB [ ucTable ].end () )
+        return (*find).second;
+    return NULL;
+}
+
+
 // Parte estática
 CProtocol* CProtocol::ms_pInstance = 0;
 
@@ -863,9 +890,42 @@ bool CProtocol::evtDB ( const IMessage& message_ )
         {
             unsigned char ucTable = message.GetTable ();
             unsigned int uiSerial = message.GetSerial ();
+            const CString& szKey = message.GetKey ();
+            const CString& szValue = message.GetValue ();
+
+            // Actualizamos el serial
             if ( uiSerial < m_uiDDBSerials [ ucTable ] )
                 return false;
             m_uiDDBSerials [ ucTable ] = uiSerial;
+
+            if ( szValue != "" )
+            {
+                // Insertamos el registro
+                t_mapDDB::iterator find = m_mapDDB [ ucTable ].find ( const_cast < char* > ( szKey.c_str () ) );
+                if ( find != m_mapDDB [ ucTable ].end () )
+                {
+                    // Actualizamos un registro ya existente
+                    free ( (*find).second );
+                    (*find).second = strdup ( szValue );
+                }
+                else
+                {
+                    char* szNewKey = strdup ( szKey );
+                    char* szNewValue = strdup ( szValue );
+                    m_mapDDB [ ucTable ].insert ( t_mapDDB::value_type ( szNewKey, szNewValue ) );
+                }
+            }
+            else
+            {
+                // Eliminamos el registro
+                t_mapDDB::iterator find = m_mapDDB [ ucTable ].find ( const_cast < char* > ( szKey.c_str () ) );
+                if ( find != m_mapDDB [ ucTable ].end () )
+                {
+                    free ( (*find).first );
+                    free ( (*find).second );
+                    m_mapDDB [ ucTable ].erase ( find );
+                }
+            }
         }
     }
     catch ( std::bad_cast ) { return false; }
