@@ -41,10 +41,16 @@ private:
 
 private:
     // Grupos
-    bool            CreateDDBGroup  ( CUser& s );
-    void            DestroyDDBGroup ( CUser& s );
-    bool            UpdateDDBGroup  ( CUser& s, unsigned long long ID, unsigned char ucTable, const CString& szValue );
-    void            GroupInsertDDB  ( unsigned char ucTable, const CString& szKey, const CString& szValue );
+    bool            CreateDDBGroupMember    ( CUser& s );
+    void            DestroyDDBGroupMember   ( CUser& s );
+    void            DestroyFullDDBGroup     ( CUser& s, unsigned long long ID );
+    bool            UpdateDDBGroup          ( CUser& s,
+                                              unsigned long long ID,
+                                              unsigned char ucTable,
+                                              const CString& szValue );
+    void            GroupInsertDDB          ( unsigned char ucTable,
+                                              const CString& szKey,
+                                              const CString& szValue );
 
     // Comandos
 protected:
@@ -66,6 +72,7 @@ private:
         SET_COMMAND ( Set_Greetmsg );
     COMMAND ( Info );
     COMMAND ( List );
+    COMMAND ( Drop );
 #undef SET_COMMAND
 #undef COMMAND
 

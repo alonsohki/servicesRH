@@ -31,6 +31,12 @@ Lista de comandos disponibles:
 Para obtener ayuda detallada sobre cualquier comando, escribe 12/msg %N HELP <comando>.
 %%
 
+%ADMINS_HELP%
+
+03-= Administradores =-
+    12DROP                 Elimina el registro de un nick
+%%
+
 %UNKNOWN_COMMAND%
 Comando 12%s desconocido. Escribe 12/msg %N HELP para recibir ayuda.
 %%
@@ -467,4 +473,20 @@ Listado de nicks con el patrón 12%s:
 
 %LIST_FOOTER%
 Fin del listado, 12%u/12%u mostrados. Hubo 12%u nicks privados.
+%%
+
+
+
+############################
+# DROP
+%SYNTAX_DROP%
+Sintaxis: 12DROP <nick>
+%%
+
+%HELP_DROP%
+Elimina un nick y sus nicks agrupados de la base de datos.
+%%
+
+%DROP_SUCCESS%
+El nick 12%s y sus nicks agrupados han sido eliminados correctamente.
 %%

@@ -28,6 +28,7 @@ CNickserv::CNickserv ( const CConfig& config )
     REGISTER ( Set,         All );
     REGISTER ( Info,        All );
     REGISTER ( List,        All );
+    REGISTER ( Drop,        Administrator );
 #undef REGISTER
 
     // Cargamos la configuración para nickserv
@@ -503,7 +504,7 @@ bool CNickserv::CheckRegistered ( CUser& user )
 
 
 // Grupos
-bool CNickserv::CreateDDBGroup ( CUser& s )
+bool CNickserv::CreateDDBGroupMember ( CUser& s )
 {
     // Construímos la consulta SQL para obtener la información
     // del nick principal para copiarla.
@@ -543,9 +544,15 @@ bool CNickserv::CreateDDBGroup ( CUser& s )
     return true;
 }
 
-void CNickserv::DestroyDDBGroup ( CUser& s )
+void CNickserv::DestroyDDBGroupMember ( CUser& s )
 {
     GroupInsertDDB ( 'w', s.GetName (), "" );
+}
+
+void CNickserv::DestroyFullDDBGroup ( CUser& s, unsigned long long ID )
+{
+    UpdateDDBGroup ( s, ID, 'w', "" );
+    UpdateDDBGroup ( s, ID, 'n', "" );
 }
 
 bool CNickserv::UpdateDDBGroup ( CUser& s, unsigned long long ID, unsigned char ucTable, const CString& szValue )
@@ -586,7 +593,7 @@ bool CNickserv::UpdateDDBGroup ( CUser& s, unsigned long long ID, unsigned char 
 
 void CNickserv::GroupInsertDDB ( unsigned char ucTable, const CString& szKey, const CString& szValue )
 {
-    if ( ucTable == 'n' )
+    if ( ucTable == 'n' && szValue != "" )
     {
         // La tabla 'n' es un caso especial, requiere cifrar el password con el nick.
         char szHash [ 32 ];
@@ -626,7 +633,13 @@ COMMAND(Help)
         info.GetNextParam ();
         CString& szTopic = info.GetNextParam ();
 
-        if ( ! CPortability::CompareNoCase ( szTopic, "SET" ) )
+        if ( szTopic == "" )
+        {
+            if ( HasAccess ( s, RANK_ADMINISTRATOR ) )
+                LangMsg ( s, "ADMINS_HELP" );
+        }
+
+        else if ( ! CPortability::CompareNoCase ( szTopic, "SET" ) )
         {
             CString& szOption = info.GetNextParam ();
 
@@ -951,7 +964,7 @@ COMMAND(Group)
         Identify ( s );
 
         // Copiamos a la DDB los datos específicos de esta
-        if ( ! CreateDDBGroup ( s ) )
+        if ( ! CreateDDBGroupMember ( s ) )
         {
             memset ( (void*)szPassword.c_str (), 0, szPassword.length () ); // Eliminamos el password por seguridad
             return false;
@@ -1012,7 +1025,7 @@ COMMAND(Group)
         SQLUngroup->FreeResult ();
 
         // Eliminamos de la DDB los datos específicos
-        DestroyDDBGroup ( s );
+        DestroyDDBGroupMember ( s );
 
         // Eliminamos el registro de la cuenta de la DDB
         CProtocol::GetSingleton ().InsertIntoDDB ( 'n', s.GetName (), "" );
@@ -1632,7 +1645,6 @@ COMMAND(List)
     static const unsigned int uiQueryLimit = 200;
 
     CUser& s = *( info.pSource );
-    SServicesData& data = s.GetServicesData ();
 
     // Generamos la consulta SQL para obtener el listado de nicks
     static CDBStatement* SQLListAccounts = 0;
@@ -1757,6 +1769,52 @@ COMMAND(List)
     LangMsg ( s, "LIST_FOOTER", uiShownCount, uiTotal, uiNumPrivate );
 
     SQLListAccounts->FreeResult ();
+    return true;
+}
+
+
+///////////////////
+// DROP
+//
+COMMAND(Drop)
+{
+    CUser& s = *( info.pSource );
+    SServicesData& data = s.GetServicesData ();
+
+    // Generamos la consulta SQL para eliminar nicks
+    static CDBStatement* SQLDropNick = 0;
+    if ( !SQLDropNick )
+    {
+        SQLDropNick = CDatabase::GetSingleton ().PrepareStatement (
+              "DELETE FROM account WHERE id=?"
+            );
+        if ( !SQLDropNick )
+            return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLDropNick" );
+    }
+
+    // Obtenemos el nick que quiere eliminar
+    CString& szTarget = info.GetNextParam ();
+    if ( szTarget == "" )
+        return SendSyntax ( s, "DROP" );
+
+    // Obtenemos el ID de la cuenta objetivo
+    unsigned long long ID = GetAccountID ( szTarget );
+    if ( ID == 0ULL )
+    {
+        LangMsg ( s, "ACCOUNT_NOT_FOUND", szTarget.c_str () );
+        return false;
+    }
+
+    // Eliminamos el grupo entero de la DDB
+    DestroyFullDDBGroup ( s, ID );
+
+    // Ejecutamos la consulta SQL para eliminar el nick
+    if ( ! SQLDropNick->Execute ( "Q", ID ) )
+        return ReportBrokenDB ( &s, SQLDropNick, "Ejecutando nickserv.SQLDropNick" );
+    SQLDropNick->FreeResult ();
+
+    LangMsg ( s, "DROP_SUCCESS", szTarget.c_str () );
+
     return true;
 }
 
