@@ -114,3 +114,20 @@ CDBStatement* CDatabase::PrepareStatement ( const CString& szStatement )
 
     return pStatement;
 }
+
+
+// Transacciones
+void CDatabase::StartTransaction ()
+{
+    mysql_real_query ( &m_handler, "START TRANSACTION", 17);
+}
+
+void CDatabase::Commit ()
+{
+    mysql_commit ( &m_handler );
+}
+
+void CDatabase::Rollback ()
+{
+    mysql_rollback ( &m_handler );
+}

@@ -89,6 +89,12 @@ private:
     bool            evtNick         ( const IMessage& msg );
     bool            evtMode         ( const IMessage& msg );
 
+    // Cronómetros
+private:
+    bool            timerUpdateLastSeen     ( void* );
+    bool            foreachUpdateLastSeen   ( SForeachInfo < CUser* >& info );
+    CTimer*         m_pTimerLastSeen;
+
 private:
     struct
     {

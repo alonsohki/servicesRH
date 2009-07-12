@@ -46,6 +46,11 @@ public:
 
     CDBStatement*           PrepareStatement    ( const CString& szStatement );
 
+    // Transacciones
+    void                    StartTransaction    ( );
+    void                    Commit              ( );
+    void                    Rollback            ( );
+
 private:
     bool        m_bIsOk;
     MYSQL       m_handler;

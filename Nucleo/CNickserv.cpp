@@ -95,6 +95,8 @@ CNickserv::CNickserv ( const CConfig& config )
     m_options.uiTimeSetVhost = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
 
 #undef SAFE_LOAD
+
+    m_pTimerLastSeen = 0;
 }
 
 CNickserv::~CNickserv ()
@@ -113,6 +115,10 @@ void CNickserv::Load ()
         protocol.AddHandler ( CMessageMODE (), PROTOCOL_CALLBACK ( &CNickserv::evtMode, this ) );
 
         CService::Load ();
+
+        // Registramos el cronómetro que actualiza cada 5 minutos
+        // la fecha de última vez visto.
+        m_pTimerLastSeen = CTimerManager::GetSingleton ().CreateTimer ( TIMER_CALLBACK ( &CNickserv::timerUpdateLastSeen, this ), 0, 300000, 0 );
     }
 }
 
@@ -127,6 +133,10 @@ void CNickserv::Unload ()
         protocol.RemoveHandler ( CMessageMODE (), PROTOCOL_CALLBACK ( &CNickserv::evtMode, this ) );
 
         CService::Unload ();
+
+        // Desregistramos el cronómetro de actualización del "last seen".
+        CTimerManager::GetSingleton ().Stop ( m_pTimerLastSeen );
+        m_pTimerLastSeen = 0;
     }
 }
 
@@ -334,7 +344,7 @@ bool CNickserv::Identify ( CUser& user )
     if ( !SQLSaveAccountDetails )
     {
         SQLSaveAccountDetails = CDatabase::GetSingleton ().PrepareStatement (
-              "UPDATE account SET username=?,hostname=?,fullname=? WHERE id=?"
+              "UPDATE account SET username=?,hostname=?,fullname=?,lastSeen=? WHERE id=?"
             );
         if ( !SQLSaveAccountDetails )
             return ReportBrokenDB ( 0, 0, "Generando nickserv.SQLSaveAccountDetails" );
@@ -370,10 +380,12 @@ bool CNickserv::Identify ( CUser& user )
     CProtocol::GetSingleton ().GetMe ().Send ( CMessageIDENTIFY ( &user ) );
 
     // Actualizamos los datos de la cuenta
-    if ( ! SQLSaveAccountDetails->Execute ( "sssQ", user.GetIdent ().c_str (),
-                                                    user.GetHost ().c_str (),
-                                                    user.GetDesc ().c_str (),
-                                                    data.ID ) )
+    CDate now;
+    if ( ! SQLSaveAccountDetails->Execute ( "sssTQ", user.GetIdent ().c_str (),
+                                                     user.GetHost ().c_str (),
+                                                     user.GetDesc ().c_str (),
+                                                     &now,
+                                                     data.ID ) )
     {
         return ReportBrokenDB ( 0, SQLSaveAccountDetails, "Ejecutando nickserv.SQLSaveAccountDetails" );
     }
@@ -2269,6 +2281,58 @@ bool CNickserv::evtMode ( const IMessage& msg_ )
         }
     }
     catch ( std::bad_cast ) { return false; }
+
+    return true;
+}
+
+
+// Cronómetros
+bool CNickserv::timerUpdateLastSeen ( void* )
+{
+    CDatabase& database = CDatabase::GetSingleton ();
+    CDate now;
+
+    // Iniciamos una transacción en la base de datos
+    database.StartTransaction ();
+
+    // Recorremos la lista global de usuarios actualizandolos
+    bool bStatus = CProtocol::GetSingleton ().GetMe ().ForEachUser (
+                     FOREACH_USER_CALLBACK ( &CNickserv::foreachUpdateLastSeen, this ), &now, true
+                   );
+
+    // Finalizamos la transacción
+    if ( bStatus )
+        database.Commit ();
+    else
+        database.Rollback ();
+
+    return bStatus;
+}
+
+bool CNickserv::foreachUpdateLastSeen ( SForeachInfo < CUser* >& info )
+{
+    CUser& s = *(info.cur);
+    SServicesData& data = s.GetServicesData ();
+    CDate* pNow = reinterpret_cast < CDate* > ( info.userdata );
+    CDatabase& database = CDatabase::GetSingleton ();
+
+    // Generamos la consulta para actualizar la última vez que se vió
+    // a un usuario.
+    static CDBStatement* SQLUpdateLastSeen = 0;
+    if ( !SQLUpdateLastSeen )
+    {
+        SQLUpdateLastSeen = database.PrepareStatement ( "UPDATE account SET lastSeen=? WHERE id=?" );
+        if ( !SQLUpdateLastSeen )
+            return ReportBrokenDB ( 0, 0, "Generando nickserv.SQLUpdateLastSeen en el timer" );
+    }
+
+    // Comprobamos que está registrado e identificado
+    if ( data.ID != 0ULL && data.bIdentified == true )
+    {
+        if ( ! SQLUpdateLastSeen->Execute ( "TQ", pNow, data.ID ) )
+            return ReportBrokenDB ( 0, SQLUpdateLastSeen, "Ejecutando nickserv.SQLUpdateLastSeen en el timer" );
+        SQLUpdateLastSeen->FreeResult ();
+    }
 
     return true;
 }
