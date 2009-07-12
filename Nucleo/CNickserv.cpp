@@ -1957,7 +1957,6 @@ COMMAND(List)
 COMMAND(Drop)
 {
     CUser& s = *( info.pSource );
-    SServicesData& data = s.GetServicesData ();
 
     // Generamos la consulta SQL para eliminar nicks
     static CDBStatement* SQLDropNick = 0;
@@ -2001,7 +2000,6 @@ COMMAND(Drop)
 COMMAND(Suspend)
 {
     CUser& s = *( info.pSource );
-    SServicesData& data = s.GetServicesData ();
 
     // Generamos la consulta SQL para suspender nicks
     static CDBStatement* SQLSuspend = 0;
@@ -2097,7 +2095,6 @@ COMMAND(Suspend)
 COMMAND(Unsuspend)
 {
     CUser& s = *( info.pSource );
-    SServicesData& data = s.GetServicesData ();
 
     // Obtenemos el nick a levantar la suspensión
     CString& szTarget = info.GetNextParam ();
