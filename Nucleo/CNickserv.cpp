@@ -606,6 +606,20 @@ void CNickserv::GroupInsertDDB ( unsigned char ucTable, const CString& szKey, co
     }
 }
 
+static inline void ClearPassword ( CString& szPassword )
+{
+#ifdef WIN32
+    char* szCopy = (char*)_alloca ( szPassword.length () + 1 );
+#else
+    char szCopy [ szPassword.length () + 1 ];
+#endif
+
+    memset ( szCopy, 'A', szPassword.length () );
+    szCopy [ szPassword.length () ] = '\0';
+
+    szPassword.assign ( szCopy );
+}
+
 
 
 
@@ -773,7 +787,7 @@ COMMAND(Register)
 
     if ( !bResult || ! SQLRegister->InsertID () )
     {
-        memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
+        ClearPassword ( szPassword ); // Por seguridad, limpiamos el password
         return ReportBrokenDB ( &s, SQLRegister, CString ( "Ejecutando nickserv.SQLRegister: bResult=%s, InsertID=%lu", bResult?"true":"false", SQLRegister->InsertID () ) );
     }
 
@@ -786,7 +800,7 @@ COMMAND(Register)
     CProtocol::GetSingleton ().InsertIntoDDB ( 'n', s.GetName (), szHash );
 
     LangMsg ( s, "REGISTER_COMPLETE", szPassword.c_str () );
-    memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
+    ClearPassword ( szPassword ); // Por seguridad, limpiamos el password
 
     // Le identificamos
     data.ID = SQLRegister->InsertID ();
@@ -824,7 +838,7 @@ COMMAND(Identify)
     // Nos aseguramos de que no esté ya identificado
     if ( data.bIdentified == true )
     {
-        memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
+        ClearPassword ( szPassword ); // Por seguridad, limpiamos el password
         LangMsg ( s, "IDENTIFY_IDENTIFIED" );
         return false;
     }
@@ -832,7 +846,7 @@ COMMAND(Identify)
     // Comprobamos si tiene una cuenta
     if ( !CheckRegistered ( s ) )
     {
-        memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
+        ClearPassword ( szPassword ); // Por seguridad, limpiamos el password
         return false;
     }
     else
@@ -845,7 +859,7 @@ COMMAND(Identify)
             Identify ( s );
         }
 
-        memset ( (char*)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, limpiamos el password
+        ClearPassword ( szPassword ); // Por seguridad, limpiamos el password
     }
 
     return true;
@@ -902,7 +916,7 @@ COMMAND(Group)
         // Comprobamos que el nick que quieren agrupar no esté ya registrado o agrupado
         if ( data.ID != 0ULL )
         {
-            memset ( (void*)szPassword.c_str (), 0, szPassword.length () ); // Eliminamos el password por seguridad
+            ClearPassword ( szPassword ); // Por seguridad, limpiamos el password
             LangMsg ( s, "GROUP_JOIN_ACCOUNT_EXISTS" );
             return false;
         }
@@ -911,7 +925,7 @@ COMMAND(Group)
         unsigned long long ID = GetAccountID ( szNick, false );
         if ( ID == 0ULL )
         {
-            memset ( (void*)szPassword.c_str (), 0, szPassword.length () ); // Eliminamos el password por seguridad
+            ClearPassword ( szPassword ); // Por seguridad, limpiamos el password
             LangMsg ( s, "GROUP_JOIN_PRIMARY_DOESNT_EXIST", szNick.c_str () );
             return false;
         }
@@ -919,7 +933,7 @@ COMMAND(Group)
         // Comprobamos la contraseña
         if ( !CheckPassword ( ID, szPassword ) )
         {
-            memset ( (void*)szPassword.c_str (), 0, szPassword.length () ); // Eliminamos el password por seguridad
+            ClearPassword ( szPassword ); // Por seguridad, limpiamos el password
             LangMsg ( s, "GROUP_JOIN_WRONG_PASSWORD" );
             return false;
         }
@@ -927,7 +941,7 @@ COMMAND(Group)
         // Verificamos que no haya excedido el límite de nicks agrupados
         if ( ! SQLGetGroupCount->Execute ( "Q", ID ) )
         {
-            memset ( (void*)szPassword.c_str (), 0, szPassword.length () ); // Eliminamos el password por seguridad
+            ClearPassword ( szPassword ); // Por seguridad, limpiamos el password
             return ReportBrokenDB ( &s, SQLGetGroupCount, "Ejecutando nickserv.SQLGetGroupCount" );
         }
         unsigned int uiCount;
@@ -949,7 +963,7 @@ COMMAND(Group)
         // Agrupamos el nick
         if ( ! SQLAddGroup->Execute ( "sQ", s.GetName ().c_str (), ID ) )
         {
-            memset ( (void*)szPassword.c_str (), 0, szPassword.length () ); // Eliminamos el password por seguridad
+            ClearPassword ( szPassword ); // Por seguridad, limpiamos el password
             return ReportBrokenDB ( &s, SQLAddGroup, "Ejecutando nickserv.SQLAddGroup" );
         }
         SQLAddGroup->FreeResult ();
@@ -966,12 +980,12 @@ COMMAND(Group)
         // Copiamos a la DDB los datos específicos de esta
         if ( ! CreateDDBGroupMember ( s ) )
         {
-            memset ( (void*)szPassword.c_str (), 0, szPassword.length () ); // Eliminamos el password por seguridad
+            ClearPassword ( szPassword ); // Por seguridad, limpiamos el password
             return false;
         }
 
         // Informamos al usuario del agrupamiento correcto
-        memset ( (void*)szPassword.c_str (), 0, szPassword.length () ); // Eliminamos el password por seguridad
+        ClearPassword ( szPassword ); // Por seguridad, limpiamos el password
         LangMsg ( s, "GROUP_JOIN_SUCCESS", szNick.c_str () );
     }
 
@@ -1164,7 +1178,7 @@ SET_COMMAND(Set_Password)
     }
 
     // Obtenemos el password
-    const CString& szPassword = info.GetNextParam ();
+    CString& szPassword = info.GetNextParam ();
     if ( szPassword == "" )
         return SendSyntax ( s, "SET PASSWORD" );
 
@@ -1172,7 +1186,7 @@ SET_COMMAND(Set_Password)
     if ( szPassword.length () < m_options.uiPasswordMinLength ||
          szPassword.length () > m_options.uiPasswordMaxLength )
     {
-        memset ( (void *)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, eliminamos el password de memoria
+        ClearPassword ( szPassword ); // Por seguridad, limpiamos el password
         LangMsg ( s, "SET_PASSWORD_BAD_LENGTH", m_options.uiPasswordMinLength, m_options.uiPasswordMaxLength );
         return false;
     }
@@ -1181,14 +1195,14 @@ SET_COMMAND(Set_Password)
     if ( ! HasAccess ( s, RANK_PREOPERATOR ) &&
          ! CheckOrAddTimeRestriction ( s, "SET PASSWORD", m_options.uiTimeSetPassword ) )
     {
-        memset ( (void *)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, eliminamos el password de memoria
+        ClearPassword ( szPassword ); // Por seguridad, limpiamos el password
         return false;
     }
 
     // Cambiamos el password en la base de datos
     if ( ! SQLSetPassword->Execute ( "sQ", szPassword.c_str (), IDTarget ) )
     {
-        memset ( (void *)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, eliminamos el password de memoria
+        ClearPassword ( szPassword ); // Por seguridad, limpiamos el password
         return ReportBrokenDB ( &s, SQLSetPassword, "Ejecutando nickserv.SQLSetPassword" );
     }
     SQLSetPassword->FreeResult ();
@@ -1196,12 +1210,12 @@ SET_COMMAND(Set_Password)
     // Cambiamos el password en la DDB
     if ( ! UpdateDDBGroup ( s, IDTarget, 'n', szPassword ) )
     {
-        memset ( (void *)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, eliminamos el password de memoria
+        ClearPassword ( szPassword ); // Por seguridad, limpiamos el password
         return false;
     }
 
     LangMsg ( s, "SET_PASSWORD_SUCCESS", szPassword.c_str () );
-    memset ( (void *)szPassword.c_str (), 0, szPassword.length () ); // Por seguridad, eliminamos el password de memoria
+    ClearPassword ( szPassword ); // Por seguridad, limpiamos el password
 
     return true;
 }
