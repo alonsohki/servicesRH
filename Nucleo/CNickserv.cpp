@@ -1645,6 +1645,7 @@ COMMAND(List)
     static const unsigned int uiQueryLimit = 200;
 
     CUser& s = *( info.pSource );
+    SServicesData& data = s.GetServicesData ();
 
     // Generamos la consulta SQL para obtener el listado de nicks
     static CDBStatement* SQLListAccounts = 0;
@@ -1652,8 +1653,8 @@ COMMAND(List)
     {
         SQLListAccounts = CDatabase::GetSingleton ().PrepareStatement (
               "SELECT * FROM ("
-              "SELECT name,private,'N' AS grouped FROM account WHERE name LIKE ? LIMIT ? UNION "
-              "SELECT groups.name AS name, account.private AS private, 'Y' AS grouped "
+              "SELECT id,name,private,'N' AS grouped FROM account WHERE name LIKE ? LIMIT ? UNION "
+              "SELECT account.id AS id, groups.name AS name, account.private AS private, 'Y' AS grouped "
               "FROM groups LEFT JOIN account ON groups.id=account.id "
               "WHERE groups.name LIKE ? LIMIT ?"
               ") AS registered ORDER BY name ASC LIMIT ?"
@@ -1714,10 +1715,12 @@ COMMAND(List)
     char szName [ 128 ];
     char szPrivate [ 8 ];
     char szGrouped [ 8 ];
+    unsigned long long ID;
 
-    if ( ! SQLListAccounts->Store ( 0, 0, "sss", szName, sizeof ( szName ),
-                                                 szPrivate, sizeof ( szPrivate ),
-                                                 szGrouped, sizeof ( szGrouped ) ) )
+    if ( ! SQLListAccounts->Store ( 0, 0, "Qsss", &ID,
+                                                  szName, sizeof ( szName ),
+                                                  szPrivate, sizeof ( szPrivate ),
+                                                  szGrouped, sizeof ( szGrouped ) ) )
     {
         ReportBrokenDB ( &s, SQLListAccounts, "Almacenando nickserv.SQLListAccounts" );
         SQLListAccounts->FreeResult ();
@@ -1743,11 +1746,11 @@ COMMAND(List)
 
     while ( SQLListAccounts->FetchStored () == CDBStatement::FETCH_OK )
     {
-        // Si es privado, sólo lo mostramos a operadores
+        // Si es privado, sólo lo mostramos a operadores y a sí mismo
         if ( *szPrivate == 'Y' )
         {
             ++uiNumPrivate;
-            if ( bIsOper && uiShownCount < uiMax )
+            if ( ( bIsOper || ID == data.ID ) && uiShownCount < uiMax )
             {
                 ++uiShownCount;
                 if ( *szGrouped == 'N' )
