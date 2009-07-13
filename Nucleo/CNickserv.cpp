@@ -725,7 +725,20 @@ bool CNickserv::DestroyFullDDBGroup ( CUser& s, unsigned long long ID )
     {
         CString& szMember = (*i);
         protocol.InsertIntoDDB ( 'w', szMember, "" );
-        protocol.InsertIntoDDB ( 'n', szMember, "" );
+
+        // Comprobamos si los nicks a dropar están prohibidos
+        const char* szHash = protocol.GetDDBValue ( 'n', szMember );
+        if ( !szHash )
+            protocol.InsertIntoDDB ( 'n', szMember, "" );
+        else
+        {
+            CString szForbiddenHash = szHash;
+            size_t pos = szForbiddenHash.rfind ( '*' );
+            if ( pos != CString::npos )
+                protocol.InsertIntoDDB ( 'n', szMember, "*" );
+            else
+                protocol.InsertIntoDDB ( 'n', szMember, "" );
+        }
     }
 
     return true;
