@@ -48,52 +48,52 @@ CNickserv::CNickserv ( const CConfig& config )
     CString szTemp;
 
     // Límites de password
-    SAFE_LOAD ( szTemp, "options", "nickserv.password.minLength" );
+    SAFE_LOAD ( szTemp, "options.nickserv", "password.minLength" );
     m_options.uiPasswordMinLength = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
-    SAFE_LOAD ( szTemp, "options", "nickserv.password.maxLength" );
+    SAFE_LOAD ( szTemp, "options.nickserv", "password.maxLength" );
     m_options.uiPasswordMaxLength = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
 
     // Límites de vhost
-    SAFE_LOAD ( szTemp, "options", "nickserv.vhost.minLength" );
+    SAFE_LOAD ( szTemp, "options.nickserv", "vhost.minLength" );
     m_options.uiVhostMinLength = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
-    SAFE_LOAD ( szTemp, "options", "nickserv.vhost.maxLength" );
+    SAFE_LOAD ( szTemp, "options.nickserv", "vhost.maxLength" );
     m_options.uiVhostMaxLength = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
     for ( unsigned int i = 1; true; ++i )
     {
-        CString szKey ( "nickserv.vhost.badwords[%u]", i );
-        if ( ! config.GetValue ( szTemp, "options", szKey ) )
+        CString szKey ( "vhost.badwords[%u]", i );
+        if ( ! config.GetValue ( szTemp, "options.nickserv", szKey ) )
             break;
         m_options.vecVhostBadwords.push_back ( szTemp );
     }
 
     // Límites de web
-    SAFE_LOAD ( szTemp, "options", "nickserv.web.minLength" );
+    SAFE_LOAD ( szTemp, "options.nickserv", "web.minLength" );
     m_options.uiWebMinLength = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
-    SAFE_LOAD ( szTemp, "options", "nickserv.web.maxLength" );
+    SAFE_LOAD ( szTemp, "options.nickserv", "web.maxLength" );
     m_options.uiWebMaxLength = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
 
     // Límites de mensaje de bienvenida
-    SAFE_LOAD ( szTemp, "options", "nickserv.greetmsg.minLength" );
+    SAFE_LOAD ( szTemp, "options.nickserv", "greetmsg.minLength" );
     m_options.uiGreetmsgMinLength = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
-    SAFE_LOAD ( szTemp, "options", "nickserv.greetmsg.maxLength" );
+    SAFE_LOAD ( szTemp, "options.nickserv", "greetmsg.maxLength" );
     m_options.uiGreetmsgMaxLength = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
 
     // Límites de grupos
-    SAFE_LOAD ( szTemp, "options", "nickserv.group.maxMembers" );
+    SAFE_LOAD ( szTemp, "options.nickserv", "group.maxMembers" );
     m_options.uiMaxGroup = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
 
     // Límites de listado
-    SAFE_LOAD ( szTemp, "options", "nickserv.list.maxOutput" );
+    SAFE_LOAD ( szTemp, "options.nickserv", "list.maxOutput" );
     m_options.uiMaxList = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
 
     // Límites de tiempo
-    SAFE_LOAD ( szTemp, "options", "nickserv.time.register" );
+    SAFE_LOAD ( szTemp, "options.nickserv", "time.register" );
     m_options.uiTimeRegister = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
-    SAFE_LOAD ( szTemp, "options", "nickserv.time.group" );
+    SAFE_LOAD ( szTemp, "options.nickserv", "time.group" );
     m_options.uiTimeGroup = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
-    SAFE_LOAD ( szTemp, "options", "nickserv.time.set_password" );
+    SAFE_LOAD ( szTemp, "options.nickserv", "time.set_password" );
     m_options.uiTimeSetPassword = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
-    SAFE_LOAD ( szTemp, "options", "nickserv.time.set_vhost" );
+    SAFE_LOAD ( szTemp, "options.nickserv", "time.set_vhost" );
     m_options.uiTimeSetVhost = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
 
 #undef SAFE_LOAD
