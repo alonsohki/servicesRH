@@ -36,6 +36,7 @@ Para obtener ayuda detallada sobre cualquier comando, escribe 12/msg %N HELP <c
 03-= Pre-operadores =-
     12SUSPEND              Suspende un nick
     12UNSUSPEND            Anula la suspensión de un nick
+    12RENAME               Cambia el nick a un usuario conectado
 %%
 
 %COADMINS_HELP%
@@ -654,6 +655,29 @@ Lista de nicks prohibidos:
 
 %FORBID_LIST_ENTRY%
 - 12%s %s
+%%
+
+#
+############################
+
+
+############################
+# RENAME
+
+%SYNTAX_RENAME%
+Sintaxis: 12RENAME <nick>
+%%
+
+%HELP_RENAME%
+Cambia el 12nick a un usuario conectado.
+%%
+
+%RENAME_NOT_FOUND%
+04Error: No hay ningun usuario conectado con el nick 12%s.
+%%
+
+%RENAME_SUCCESS%
+El nick de 12%s ha sido cambiado correctamente.
 %%
 
 #

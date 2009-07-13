@@ -32,6 +32,7 @@ CNickserv::CNickserv ( const CConfig& config )
     REGISTER ( Suspend,     Preoperator );
     REGISTER ( Unsuspend,   Preoperator );
     REGISTER ( Forbid,      Coadministrator );
+    REGISTER ( Rename,      Preoperator );
 #undef REGISTER
 
     // Cargamos la configuración para nickserv
@@ -2343,6 +2344,34 @@ COMMAND(Forbid)
     return true;
 }
 
+
+///////////////////
+// RENAME
+//
+COMMAND(Rename)
+{
+    CUser& s = *( info.pSource );
+
+    // Obtenemos el nick a renombrar
+    CString& szTarget = info.GetNextParam ();
+    if ( szTarget == "" )
+        return SendSyntax ( s, "RENAME" );
+
+    // Buscamos al usuario a renombrar
+    CUser* pTarget = CProtocol::GetSingleton ().GetMe ().GetUserAnywhere ( szTarget );
+    if ( !pTarget )
+    {
+        LangMsg ( s, "RENAME_NOT_FOUND", szTarget.c_str () );
+        return false;
+    }
+
+    // Le renombramos
+    CProtocol::GetSingleton ().GetMe ().Send ( CMessageRENAME ( pTarget ) );
+
+    LangMsg ( s, "RENAME_SUCCESS", pTarget->GetName ().c_str () );
+
+    return true;
+}
 
 
 #undef COMMAND

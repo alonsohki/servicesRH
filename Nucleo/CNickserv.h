@@ -74,6 +74,7 @@ private:
     COMMAND ( Suspend );
     COMMAND ( Unsuspend );
     COMMAND ( Forbid );
+    COMMAND ( Rename );
 #undef SET_COMMAND
 #undef COMMAND
 
