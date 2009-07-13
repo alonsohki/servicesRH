@@ -47,6 +47,10 @@ CNickserv::CNickserv ( const CConfig& config )
 
     CString szTemp;
 
+    // Expiración
+    SAFE_LOAD ( szTemp, "options.nickserv", "expiration.days" );
+    m_options.uiDaysExpiration = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
+
     // Límites de password
     SAFE_LOAD ( szTemp, "options.nickserv", "password.minLength" );
     m_options.uiPasswordMinLength = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
@@ -121,6 +125,10 @@ void CNickserv::Load ()
         // Registramos el cronómetro que actualiza cada 5 minutos
         // la fecha de última vez visto.
         m_pTimerLastSeen = CTimerManager::GetSingleton ().CreateTimer ( TIMER_CALLBACK ( &CNickserv::timerUpdateLastSeen, this ), 0, 300000, 0 );
+
+        // Registramos el cronómetro que verifica nicks expirados
+        // cada hora.
+        m_pTimerExpired = CTimerManager::GetSingleton ().CreateTimer ( TIMER_CALLBACK ( &CNickserv::timerCheckExpired, this ), 0, 3600000, 0 );
     }
 }
 
@@ -139,6 +147,11 @@ void CNickserv::Unload ()
         // Desregistramos el cronómetro de actualización del "last seen".
         CTimerManager::GetSingleton ().Stop ( m_pTimerLastSeen );
         m_pTimerLastSeen = 0;
+
+        // Desregistramos el cronómetro que verifica nicks expirados
+        // cada hora.
+        CTimerManager::GetSingleton ().Stop ( m_pTimerExpired );
+        m_pTimerExpired = 0;
     }
 }
 
@@ -681,7 +694,12 @@ bool CNickserv::CreateDDBGroupMember ( CUser& s, const CString& szPassword )
     // Registramos el nick
     char szHash [ 64 ];
     EncodeNick ( szHash, s.GetName (), szPassword );
-    protocol.InsertIntoDDB ( 'n', s.GetName (), szHash );
+    // Antes comprobamos si está prohibido
+    CString szForbiddenHash = szHash;
+    const char* szDDBHash = protocol.GetDDBValue ( 'n', s.GetName () );
+    if ( szDDBHash && strrchr ( szDDBHash, '*' ) )
+        szForbiddenHash.append ( "*" );
+    protocol.InsertIntoDDB ( 'n', s.GetName (), szForbiddenHash );
 
     // Ejecutamos la consulta para obtener los datos específicos
     if ( ! SQLGetAccountDetails->Execute ( "Q", data.ID ) )
@@ -707,14 +725,27 @@ void CNickserv::DestroyDDBGroupMember ( CUser& s )
 {
     CProtocol& protocol = CProtocol::GetSingleton ();
     protocol.InsertIntoDDB ( 'w', s.GetName (), "" );
-    protocol.InsertIntoDDB ( 'n', s.GetName (), "" );
+
+    // Comprobamos si el nick está prohibido en la DDB
+    const char* szHash = protocol.GetDDBValue ( 'n', s.GetName () );
+    if ( !szHash )
+        protocol.InsertIntoDDB ( 'n', s.GetName (), "" );
+    else
+    {
+        CString szForbiddenHash = szHash;
+        size_t pos = szForbiddenHash.rfind ( '*' );
+        if ( pos != CString::npos )
+            protocol.InsertIntoDDB ( 'n', s.GetName (), "*" );
+        else
+            protocol.InsertIntoDDB ( 'n', s.GetName (), "" );
+    }
 }
 
-bool CNickserv::DestroyFullDDBGroup ( CUser& s, unsigned long long ID )
+bool CNickserv::DestroyFullDDBGroup ( CUser* pUser, unsigned long long ID )
 {
     // Obtenemos los miembros del grupo
     std::vector < CString > vecMembers;
-    if ( !GetGroupMembers ( &s, ID, vecMembers ) )
+    if ( !GetGroupMembers ( pUser, ID, vecMembers ) )
         return false;
 
     // Iteramos por ellos y eliminamos sus registros
@@ -816,6 +847,8 @@ COMMAND(Help)
 
         if ( szTopic == "" )
         {
+            LangMsg ( s, "NICK_EXPIRATION", m_options.uiDaysExpiration );
+
             if ( HasAccess ( s, RANK_PREOPERATOR ) )
             {
                 LangMsg ( s, "PREOPERS_HELP" );
@@ -2043,7 +2076,7 @@ COMMAND(Drop)
     }
 
     // Eliminamos el grupo entero de la DDB
-    if ( ! DestroyFullDDBGroup ( s, ID ) )
+    if ( ! DestroyFullDDBGroup ( &s, ID ) )
         return false;
 
     // Ejecutamos la consulta SQL para eliminar el nick
@@ -2601,6 +2634,62 @@ bool CNickserv::foreachUpdateLastSeen ( SForeachInfo < CUser* >& info )
             return ReportBrokenDB ( 0, SQLUpdateLastSeen, "Ejecutando nickserv.SQLUpdateLastSeen en el timer" );
         SQLUpdateLastSeen->FreeResult ();
     }
+
+    return true;
+}
+
+bool CNickserv::timerCheckExpired ( void* )
+{
+    // Generamos la consulta SQL para obtener los nicks que hayan expirado
+    static CDBStatement* SQLGetExpiredNicks = 0;
+    if ( !SQLGetExpiredNicks )
+    {
+        SQLGetExpiredNicks = CDatabase::GetSingleton ().PrepareStatement (
+              "SELECT id FROM account WHERE lastSeen <= ?"
+            );
+        if ( !SQLGetExpiredNicks )
+            return ReportBrokenDB ( 0, 0, "Generando nickserv.SQLGetExpiredNicks" );
+    }
+
+    // Generamos la consulta SQL para eliminar los nicks que hayan expirado
+    static CDBStatement* SQLExpireNicks = 0;
+    if ( !SQLExpireNicks )
+    {
+        SQLExpireNicks = CDatabase::GetSingleton ().PrepareStatement (
+              "DELETE FROM account WHERE lastSeen <= ?"
+            );
+        if ( !SQLExpireNicks )
+            return ReportBrokenDB ( 0, 0, "Generando nickserv.SQLExpireNicks" );
+    }
+
+    // Generamos la fecha de expiración
+    CDate expirationTreshold;
+    CDate timeExpiration ( (time_t)( m_options.uiDaysExpiration * 86400 ) );
+    unsigned long long ID;
+    expirationTreshold -= timeExpiration;
+
+    // Ejecutamos y almacenamos el resultado
+    if ( ! SQLGetExpiredNicks->Execute ( "T", &expirationTreshold ) )
+        return ReportBrokenDB ( 0, SQLGetExpiredNicks, "Ejecutando nickserv.SQLGetExpiredNicks" );
+    if ( ! SQLGetExpiredNicks->Store ( 0, 0, "Q", &ID ) )
+    {
+        SQLGetExpiredNicks->FreeResult ();
+        return ReportBrokenDB ( 0, SQLGetExpiredNicks, "Almacenando nickserv.SQLGetExpiredNicks" );
+    }
+
+    // Iteramos por los nicks expirados
+    while ( SQLGetExpiredNicks->FetchStored () == CDBStatement::FETCH_OK )
+    {
+        // Eliminamos el grupo entero de la DDB
+        if ( ! DestroyFullDDBGroup ( 0, ID ) )
+            return false;
+    }
+    SQLGetExpiredNicks->FreeResult ();
+
+    // Eliminamos los nicks expirados de la base de datos
+    if ( ! SQLExpireNicks->Execute ( "T", &expirationTreshold ) )
+        return ReportBrokenDB ( 0, SQLExpireNicks, "Ejecutando nickserv.SQLExpireNicks" );
+    SQLExpireNicks->FreeResult ();
 
     return true;
 }

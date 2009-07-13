@@ -31,6 +31,10 @@ Lista de comandos disponibles:
 Para obtener ayuda detallada sobre cualquier comando, escribe 12/msg %N HELP <comando>.
 %%
 
+%NICK_EXPIRATION%
+Nota: Los nicks registrados expirarán tras 12%d días sin ser utilizados.
+%%
+
 %PREOPERS_HELP%
 
 03-= Pre-operadores =-

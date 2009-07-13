@@ -48,7 +48,7 @@ private:
 
     bool            CreateDDBGroupMember    ( CUser& s, const CString& szPassword );
     void            DestroyDDBGroupMember   ( CUser& s );
-    bool            DestroyFullDDBGroup     ( CUser& s, unsigned long long ID );
+    bool            DestroyFullDDBGroup     ( CUser* pUser, unsigned long long ID );
 
     // Comandos
 protected:
@@ -98,9 +98,13 @@ private:
     bool            foreachUpdateLastSeen   ( SForeachInfo < CUser* >& info );
     CTimer*         m_pTimerLastSeen;
 
+    bool            timerCheckExpired       ( void* );
+    CTimer*         m_pTimerExpired;
+
 private:
     struct
     {
+        unsigned int    uiDaysExpiration;
         unsigned int    uiPasswordMinLength;
         unsigned int    uiPasswordMaxLength;
         unsigned int    uiVhostMinLength;
