@@ -1092,3 +1092,28 @@ bool CMessageDB::ProcessMessage ( const CString& szLine, const std::vector < CSt
 
     return true;
 }
+
+
+////////////////////////////
+//         RENAME         //
+////////////////////////////
+CMessageRENAME::CMessageRENAME ( CUser* pTarget )
+: m_pTarget ( pTarget )
+{
+}
+CMessageRENAME::~CMessageRENAME () { }
+
+bool CMessageRENAME::BuildMessage ( SProtocolMessage& message ) const
+{
+    if ( ! m_pTarget )
+        return false;
+
+    message.szText = m_pTarget->GetName ();
+    return true;
+}
+
+bool CMessageRENAME::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
+{
+    // Nunca lo vamos a necesitar
+    return false;
+}

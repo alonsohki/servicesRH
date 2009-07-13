@@ -98,6 +98,11 @@ Si deseas saber cómo registrarlo, escribe 12/msg %N HELP REGISTER.
 La suspensión para tu nick ha sido eliminada o ha expirado Ahora puedes identificarte.
 %%
 
+%THIS_NICK_IS_FORBIDDEN%
+El nick 12%s está prohibido de ser usado.
+Motivo: %s
+Se te va a cambiar el nick a un nick temporal.
+%%
 
 ############################
 # REGISTER

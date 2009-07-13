@@ -417,5 +417,16 @@ private:
 END_MESSAGE_DECLARATION()
 
 
+////////////////////////////
+//         RENAME         //
+////////////////////////////
+BEGIN_MESSAGE_DECLARATION(RENAME, CUser* pTarget)
+public:
+    inline CUser*           GetTarget       ( ) const { return m_pTarget; }
+private:
+    CUser*          m_pTarget;
+END_MESSAGE_DECLARATION()
+
+
 #undef BEGIN_MESSAGE_DECLARATION
 #undef END_MESSAGE_DECLARATION

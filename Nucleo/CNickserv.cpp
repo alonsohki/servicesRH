@@ -2411,16 +2411,26 @@ bool CNickserv::evtNick ( const IMessage& msg_ )
                 data.bIdentified = false;
                 data.ID = 0ULL;
 
-                // Verificamos si su nuevo nick está registrado
-                unsigned long long ID = GetAccountID ( msg.GetNick () );
-                if ( ID != 0ULL )
+                // Verificamos si está prohibido
+                CString szReason;
+                if ( CheckForbidden ( s.GetName (), szReason ) )
                 {
-                    data.ID = ID;
+                    LangMsg ( s, "THIS_NICK_IS_FORBIDDEN", s.GetName ().c_str (), szReason.c_str () );
+                    CProtocol::GetSingleton ().GetMe ().Send ( CMessageRENAME ( &s ) );
+                }
+                else
+                {
+                    // Verificamos si su nuevo nick está registrado
+                    unsigned long long ID = GetAccountID ( msg.GetNick () );
+                    if ( ID != 0ULL )
+                    {
+                        data.ID = ID;
 
-                    if ( ! ( s.GetModes () & ( CUser::UMODE_IDENTIFIED | CUser::UMODE_REGNICK ) ) )
-                        LangMsg ( s, "NICKNAME_REGISTERED" );
-                    else
-                        data.bIdentified = true;
+                        if ( ! ( s.GetModes () & ( CUser::UMODE_IDENTIFIED | CUser::UMODE_REGNICK ) ) )
+                            LangMsg ( s, "NICKNAME_REGISTERED" );
+                        else
+                            data.bIdentified = true;
+                    }
                 }
 
                 break;
@@ -2435,21 +2445,31 @@ bool CNickserv::evtNick ( const IMessage& msg_ )
                     SServicesData& data = s.GetServicesData ();
                     data.szLang = CLanguageManager::GetSingleton ().GetDefaultLanguage ()->GetName ();
 
-                    // Verificamos nuevos usuarios
-                    unsigned long long ID = GetAccountID ( msg.GetNick () );
-
-                    if ( ID != 0ULL )
+                    // Verificamos si está prohibido
+                    CString szReason;
+                    if ( CheckForbidden ( s.GetName (), szReason ) )
                     {
-                        data.ID = ID;
+                        LangMsg ( s, "THIS_NICK_IS_FORBIDDEN", s.GetName ().c_str (), szReason.c_str () );
+                        CProtocol::GetSingleton ().GetMe ().Send ( CMessageRENAME ( &s ) );
+                    }
+                    else
+                    {
+                        // Verificamos nuevos usuarios
+                        unsigned long long ID = GetAccountID ( msg.GetNick () );
 
-                        if ( !strchr ( msg.GetModes (), 'n' ) && !strchr ( msg.GetModes (), 'r' ) )
+                        if ( ID != 0ULL )
                         {
-                            LangMsg ( s, "NICKNAME_REGISTERED" );
-                            data.bIdentified = false;
-                        }
-                        else
-                        {
-                            Identify ( s );
+                            data.ID = ID;
+
+                            if ( !strchr ( msg.GetModes (), 'n' ) && !strchr ( msg.GetModes (), 'r' ) )
+                            {
+                                LangMsg ( s, "NICKNAME_REGISTERED" );
+                                data.bIdentified = false;
+                            }
+                            else
+                            {
+                                Identify ( s );
+                            }
                         }
                     }
                 }
