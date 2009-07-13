@@ -38,6 +38,12 @@ Para obtener ayuda detallada sobre cualquier comando, escribe 12/msg %N HELP <c
     12UNSUSPEND            Anula la suspensión de un nick
 %%
 
+%COADMINS_HELP%
+
+03-= Co-administradores =-
+    12FORBID               Maneja la lista de nicks prohibidos
+%%
+
 %ADMINS_HELP%
 
 03-= Administradores =-
@@ -578,6 +584,7 @@ El nick 12%s ha sido suspendido satisfactoriamente.
 
 ############################
 # UNSUSPEND
+
 %SYNTAX_UNSUSPEND%
 Sintaxis: 12UNSUSPEND <nick>
 %%
@@ -594,6 +601,54 @@ escribe 12/msg %N HELP SUSPEND.
 
 %UNSUSPEND_SUCCESS%
 Eliminada la suspensión del nick 12%s correctamente.
+%%
+
+#
+############################
+
+
+
+############################
+# FORBID
+
+%SYNTAX_FORBID%
+Sintaxis: 12FORBID {ADD|DEL|LIST} [nick] [motivo]
+%%
+
+%HELP_FORBID%
+Maneja la lista de nicks prohibidos. Las opciones son:
+
+- 12ADD:  Añade un nick a la lista de nicks prohibidos. Los
+parámetros 12nick y 12motivo son requeridos.
+
+- 12DEL:  Elimina un nick de la lista de nicks prohibidos. El
+parámetro 12nick es requerido.
+
+- 12LIST: Lista los nicks prohibidos. No requiere parámetros.
+%%
+
+%FORBID_ADD_ALREADY_FORBIDDEN%
+04Error: El nick 12%s ya está prohibido.
+%%
+
+%FORBID_ADD_SUCCESS%
+El nick 12%s ha sido prohibido con éxito.
+%%
+
+%FORBID_DEL_NOT_FORBIDDEN%
+04Error: El nick 12%s no está prohibido.
+%%
+
+%FORBID_DEL_SUCCESS%
+La prohibición de uso del nick 12%s ha sido eliminada con éxito.
+%%
+
+%FORBID_LIST_HEADER%
+Lista de nicks prohibidos:
+%%
+
+%FORBID_LIST_ENTRY%
+- 12%s %s
 %%
 
 #

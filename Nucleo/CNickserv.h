@@ -30,9 +30,10 @@ public:
     void            GetAccountName  ( unsigned long long ID, CString& szDest );
     bool            CheckSuspension ( unsigned long long ID, CString& szReason, CDate& dateExpiration );
     bool            RemoveSuspension( unsigned long long ID );
+    bool            CheckForbidden  ( const CString& szName, CString& szReason );
 
     bool            Identify        ( CUser& user );
-    char*           CifraNick       ( char* dest, const char* szNick, const char* szPassword );
+    char*           EncodeNick      ( char* dest, const char* szNick, const char* szPassword );
     bool            CheckPassword   ( unsigned long long ID, const CString& szPassword );
     bool            VerifyEmail     ( const CString& szEmail );
     bool            VerifyVhost     ( const CString& szVhost, CString& szBadword );
@@ -72,6 +73,7 @@ private:
     COMMAND ( Drop );
     COMMAND ( Suspend );
     COMMAND ( Unsuspend );
+    COMMAND ( Forbid );
 #undef SET_COMMAND
 #undef COMMAND
 

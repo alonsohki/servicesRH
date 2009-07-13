@@ -31,6 +31,7 @@ CNickserv::CNickserv ( const CConfig& config )
     REGISTER ( Drop,        Administrator );
     REGISTER ( Suspend,     Preoperator );
     REGISTER ( Unsuspend,   Preoperator );
+    REGISTER ( Forbid,      Coadministrator );
 #undef REGISTER
 
     // Cargamos la configuración para nickserv
@@ -142,63 +143,66 @@ void CNickserv::Unload ()
 
 unsigned long long CNickserv::GetAccountID ( const CString& szName, bool bCheckGroups )
 {
-    // Generamos la consulta SQL para obtener el ID dado un nick
-    static CDBStatement* SQLAccountID = 0;
-    if ( !SQLAccountID )
+    // Generamos la consulta SQL para obtener el ID dado un nick (comprobando grupos)
+    static CDBStatement* SQLAccountIDGroups = 0;
+    if ( !SQLAccountIDGroups )
     {
-        SQLAccountID = CDatabase::GetSingleton ().PrepareStatement (
-              "SELECT id FROM account WHERE name=?"
+        SQLAccountIDGroups = CDatabase::GetSingleton ().PrepareStatement (
+              "SELECT * FROM ( "
+              "SELECT id FROM account WHERE LOWERNAME(name)=LOWERNAME(?) UNION "
+              "SELECT id FROM groups WHERE LOWERNAME(name)=LOWERNAME(?) "
+              ") AS result"
             );
-        if ( !SQLAccountID )
+        if ( !SQLAccountIDGroups )
         {
-            ReportBrokenDB ( 0, 0, "Generando nickserv.SQLAccountID" );
+            ReportBrokenDB ( 0, 0, "Generando nickserv.SQLAccountIDGroups" );
             return 0ULL;
         }
     }
 
-    // Generamos la consulta SQL para obtener el ID desde un nick agrupado
-    static CDBStatement* SQLGroupID = 0;
-    if ( !SQLGroupID )
+    // Generamos la consulta SQL para obtener el ID dado un nick (sin comprobar grupos)
+    static CDBStatement* SQLAccountIDNogroups = 0;
+    if ( !SQLAccountIDNogroups )
     {
-        SQLGroupID = CDatabase::GetSingleton ().PrepareStatement (
-              "SELECT id FROM groups WHERE name=?"
+        SQLAccountIDNogroups = CDatabase::GetSingleton ().PrepareStatement (
+              "SELECT id FROM account WHERE LOWERNAME(name)=LOWERNAME(?)"
             );
-        if ( !SQLGroupID )
+        if ( !SQLAccountIDNogroups )
         {
-            ReportBrokenDB ( 0, 0, "Generando nickserv.SQLGroupID" );
+            ReportBrokenDB ( 0, 0, "Generando nickserv.SQLAccountIDNogroups" );
             return 0ULL;
         }
     }
 
-    // Ejecutamos la consulta
-    if ( ! SQLAccountID->Execute ( "s", szName.c_str () ) )
-    {
-        ReportBrokenDB ( 0, SQLAccountID, "Ejecutando nickserv.SQLAccountID" );
-        return 0ULL;
-    }
-
-    // Obtenemos y retornamos el ID conseguido de la base de datos
+    // Ejecutamos la consulta más adecuada
     unsigned long long ID = 0ULL;
-    if ( SQLAccountID->Fetch ( 0, 0, "Q", &ID ) != CDBStatement::FETCH_OK )
+    if ( bCheckGroups )
     {
-        // Lo intentamos con el grupo
-        if ( bCheckGroups )
+        // Ejecutamos la consulta
+        if ( ! SQLAccountIDGroups->Execute ( "ss", szName.c_str (), szName.c_str () ) )
         {
-            if ( ! SQLGroupID->Execute ( "s", szName.c_str () ) )
-            {
-                SQLAccountID->FreeResult ();
-                ReportBrokenDB ( 0, SQLGroupID, "Ejecutando nickserv.SQLGroupID" );
-                return 0ULL;
-            }
-
-            if ( SQLGroupID->Fetch ( 0, 0, "Q", &ID ) != CDBStatement::FETCH_OK )
-                ID = 0ULL;
-
-            SQLGroupID->FreeResult ();
+            ReportBrokenDB ( 0, SQLAccountIDGroups, "Ejecutando nickserv.SQLAccountIDGroups" );
+            return 0ULL;
         }
+
+        if ( SQLAccountIDGroups->Fetch ( 0, 0, "Q", &ID ) != CDBStatement::FETCH_OK )
+            ID = 0ULL;
+        SQLAccountIDGroups->FreeResult ();
+    }
+    else
+    {
+        // Ejecutamos la consulta
+        if ( ! SQLAccountIDNogroups->Execute ( "s", szName.c_str () ) )
+        {
+            ReportBrokenDB ( 0, SQLAccountIDNogroups, "Ejecutando nickserv.SQLAccountIDNogroups" );
+            return 0ULL;
+        }
+
+        if ( SQLAccountIDNogroups->Fetch ( 0, 0, "Q", &ID ) != CDBStatement::FETCH_OK )
+            ID = 0ULL;
+        SQLAccountIDNogroups->FreeResult ();
     }
 
-    SQLAccountID->FreeResult ();
     return ID;
 }
 
@@ -328,6 +332,37 @@ bool CNickserv::RemoveSuspension ( unsigned long long ID )
     return true;
 }
 
+
+bool CNickserv::CheckForbidden ( const CString& szName, CString& szReason )
+{
+    // Generamos la consulta para comprobar si un nick está prohibido
+    static CDBStatement* SQLCheckForbidden = 0;
+    if ( !SQLCheckForbidden )
+    {
+        SQLCheckForbidden = CDatabase::GetSingleton ().PrepareStatement (
+                "SELECT reason FROM forbids WHERE LOWERNAME(name)=LOWERNAME(?)"
+            );
+        if ( !SQLCheckForbidden )
+            return ReportBrokenDB ( 0, 0, "Generando nickserv.SQLCheckForbidden" );
+    }
+
+    // Ejecutamos la consulta
+    if ( ! SQLCheckForbidden->Execute ( "s", szName.c_str () ) )
+        return ReportBrokenDB ( 0, SQLCheckForbidden, "Ejecutando nickserv.SQLCheckForbidden" );
+
+    // Comprobamos si hay resultados
+    char szReason_ [ 512 ];
+    if ( SQLCheckForbidden->Fetch ( 0, 0, "s", szReason_, sizeof ( szReason_ ) ) == CDBStatement::FETCH_OK )
+    {
+        szReason.assign ( szReason_ );
+        SQLCheckForbidden->FreeResult ();
+        return true;
+    }
+    SQLCheckForbidden->FreeResult ();
+
+    return false;
+}
+
 bool CNickserv::Identify ( CUser& user )
 {
     // Construímos la consulta para obtener el idioma del usuario
@@ -394,7 +429,7 @@ bool CNickserv::Identify ( CUser& user )
     return true;
 }
 
-char* CNickserv::CifraNick ( char* dest, const char* szNick, const char* szPassword )
+char* CNickserv::EncodeNick ( char* dest, const char* szNick, const char* szPassword )
 {
     const static unsigned int NICKLEN = 15;
     const static unsigned int s_uiCount = (NICKLEN + 8)/8;
@@ -404,6 +439,11 @@ char* CNickserv::CifraNick ( char* dest, const char* szNick, const char* szPassw
     char szTempNick [ 8 * ((NICKLEN + 8)/8) + 1 ];
     char szTempPass [ 24 + 1 ];
     unsigned int* p = reinterpret_cast < unsigned int* > ( szTempNick );
+
+    // Convertimos el nick a minúsculas
+    CString szNickLower = szNick;
+    CProtocol::GetSingleton ().ConvertToLowercase ( szNickLower );
+    szNick = szNickLower.c_str ();
 
     unsigned int uiLength = strlen ( szPassword );
     if ( uiLength > sizeof ( szTempPass ) - 1 )
@@ -639,7 +679,7 @@ bool CNickserv::CreateDDBGroupMember ( CUser& s, const CString& szPassword )
 
     // Registramos el nick
     char szHash [ 64 ];
-    CifraNick ( szHash, s.GetName (), szPassword );
+    EncodeNick ( szHash, s.GetName (), szPassword );
     protocol.InsertIntoDDB ( 'n', s.GetName (), szHash );
 
     // Ejecutamos la consulta para obtener los datos específicos
@@ -765,8 +805,12 @@ COMMAND(Help)
             if ( HasAccess ( s, RANK_PREOPERATOR ) )
             {
                 LangMsg ( s, "PREOPERS_HELP" );
-                if ( HasAccess ( s, RANK_ADMINISTRATOR ) )
-                    LangMsg ( s, "ADMINS_HELP" );
+                if ( HasAccess ( s, RANK_COADMINISTRATOR ) )
+                {
+                    LangMsg ( s, "COADMINS_HELP" );
+                    if ( HasAccess ( s, RANK_ADMINISTRATOR ) )
+                        LangMsg ( s, "ADMINS_HELP" );
+                }
             }
         }
 
@@ -913,7 +957,7 @@ COMMAND(Register)
     // Insertamos el registro del nick en la base de datos.
     // Primero, generamos el hash de su clave.
     char szHash [ 32 ];
-    CifraNick ( szHash, s.GetName (), szPassword );
+    EncodeNick ( szHash, s.GetName (), szPassword );
     CProtocol::GetSingleton ().InsertIntoDDB ( 'n', s.GetName (), szHash );
 
     LangMsg ( s, "REGISTER_COMPLETE", szPassword.c_str () );
@@ -1109,7 +1153,7 @@ COMMAND(Group)
         if ( !SQLUngroup )
         {
             SQLUngroup = CDatabase::GetSingleton ().PrepareStatement (
-                  "DELETE FROM groups WHERE name=?"
+                    "DELETE FROM groups WHERE LOWERNAME(name)=LOWERNAME(?)"
                 );
             if ( !SQLUngroup )
                 return ReportBrokenDB ( info.pSource, 0, "Generando nickserv.SQLUngroup" );
@@ -1163,17 +1207,6 @@ COMMAND(Group)
 
     else if ( ! CPortability::CompareNoCase ( szOption, "LIST" ) )
     {
-        // Preparamos la consulta SQL para obtener los nicks en un grupo
-        static CDBStatement* SQLGetNicksInGroup = 0;
-        if ( !SQLGetNicksInGroup )
-        {
-            SQLGetNicksInGroup = CDatabase::GetSingleton ().PrepareStatement (
-                  "SELECT name FROM groups WHERE id=?"
-                );
-            if ( !SQLGetNicksInGroup )
-                return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLGetNicksInGroup" );
-        }
-
         // Verificamos que el usuario está registrado e identificado
         if ( !CheckRegistered ( s ) || !CheckIdentified ( s ) )
             return false;
@@ -1195,22 +1228,23 @@ COMMAND(Group)
             }
         }
 
-        // Obtenemos el nick principal del grupo
-        CString szPrimaryName;
-        GetAccountName ( ID, szPrimaryName );
-        if ( szPrimaryName == "" )
-            return ReportBrokenDB ( &s );
-
-        // Obtenemos los nicks del grupo
-        if ( ! SQLGetNicksInGroup->Execute ( "Q", ID ) )
-            return ReportBrokenDB ( &s, SQLGetNicksInGroup, "Ejecutando nickserv.SQLGetNicksInGroup" );
+        // Obtenemos los miembros del grupo
+        std::vector < CString > vecMembers;
+        if ( ! GetGroupMembers ( &s, ID, vecMembers ) )
+            return false;
 
         // Le mostramos la lista en el grupo
-        char szNick [ 128 ];
-        LangMsg ( s, "GROUP_LIST_HEADER", szPrimaryName.c_str () );
-        while ( SQLGetNicksInGroup->Fetch ( 0, 0, "s", szNick, sizeof ( szNick ) ) == CDBStatement::FETCH_OK )
-            LangMsg ( s, "GROUP_LIST_ENTRY", szNick );
-        SQLGetNicksInGroup->FreeResult ();
+        if ( vecMembers.size () > 0 )
+        {
+            LangMsg ( s, "GROUP_LIST_HEADER", vecMembers [ 0 ].c_str () );
+            for ( std::vector < CString >::iterator i = vecMembers.begin ();
+                  i != vecMembers.end ();
+                  ++i )
+            {
+                CString& szMember = (*i);
+                LangMsg ( s, "GROUP_LIST_ENTRY", szMember.c_str () );
+            }
+        }
     }
 
     else
@@ -1345,7 +1379,7 @@ SET_COMMAND(Set_Password)
           ++i )
     {
         CString& szMember = (*i);
-        CifraNick ( szHash, szMember, szPassword );
+        EncodeNick ( szHash, szMember, szPassword );
         protocol.InsertIntoDDB ( 'n', szMember, szHash );
     }
 
@@ -1840,10 +1874,10 @@ COMMAND(List)
     {
         SQLListAccounts = CDatabase::GetSingleton ().PrepareStatement (
               "SELECT * FROM ("
-              "SELECT id,name,private,'N' AS grouped FROM account WHERE name LIKE ? LIMIT ? UNION "
+              "SELECT id,name,private,'N' AS grouped FROM account WHERE LOWERNAME(name) LIKE LOWERNAME(?) LIMIT ? UNION "
               "SELECT account.id AS id, groups.name AS name, account.private AS private, 'Y' AS grouped "
               "FROM groups LEFT JOIN account ON groups.id=account.id "
-              "WHERE groups.name LIKE ? LIMIT ?"
+              "WHERE LOWERNAME(groups.name) LIKE LOWERNAME(?) LIMIT ?"
               ") AS registered ORDER BY name ASC LIMIT ?"
             );
         if ( !SQLListAccounts )
@@ -2009,6 +2043,9 @@ COMMAND(Drop)
 }
 
 
+///////////////////
+// SUSPEND
+//
 COMMAND(Suspend)
 {
     CUser& s = *( info.pSource );
@@ -2104,6 +2141,9 @@ COMMAND(Suspend)
 }
 
 
+///////////////////
+// UNSUSPEND
+//
 COMMAND(Unsuspend)
 {
     CUser& s = *( info.pSource );
@@ -2141,6 +2181,168 @@ COMMAND(Unsuspend)
 
     return true;
 }
+
+
+///////////////////
+// FORBID
+//
+COMMAND(Forbid)
+{
+    CUser& s = *( info.pSource );
+
+    // Obtenemos la acción del forbid
+    CString& szAction = info.GetNextParam ();
+
+    if ( szAction == "" )
+        return SendSyntax ( s, "FORBID" );
+
+    else if ( ! CPortability::CompareNoCase ( szAction, "ADD" ) )
+    {
+        // Generamos la consulta para añadir forbids
+        static CDBStatement* SQLAddForbid = 0;
+        if ( !SQLAddForbid )
+        {
+            SQLAddForbid = CDatabase::GetSingleton ().PrepareStatement (
+                  "INSERT INTO forbids ( name, reason ) VALUES ( ?, ? )"
+                );
+            if ( !SQLAddForbid )
+                return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLAddForbid" );
+        }
+
+        // Obtenemos el nick a prohibir
+        CString& szTarget = info.GetNextParam ();
+        if ( szTarget == "" )
+            return SendSyntax ( s, "FORBID" );
+
+        // Obtenemos el motivo
+        CString szReason;
+        info.GetRemainingText ( szReason );
+        if ( szReason == "" )
+            return SendSyntax ( s, "FORBID" );
+
+        // Comprobamos si está ya prohibido
+        CString szForbidReason;
+        if ( CheckForbidden ( szTarget, szForbidReason ) )
+        {
+            LangMsg ( s, "FORBID_ADD_ALREADY_FORBIDDEN", szTarget.c_str () );
+            return false;
+        }
+
+        // Añadimos la prohibición en la DDB
+        CProtocol& protocol = CProtocol::GetSingleton ();
+        const char* szHash = protocol.GetDDBValue ( 'n', szTarget );
+        if ( szHash )
+        {
+            // Reemplazamos un hash de password
+            CString szForbiddenHash = szHash;
+            szForbiddenHash.append ( "*" );
+            protocol.InsertIntoDDB ( 'n', szTarget, szForbiddenHash );
+        }
+        else
+        {
+            // Insertamos un nuevo registro
+            protocol.InsertIntoDDB ( 'n', szTarget, "*" );
+        }
+
+        // Añadimos la prohibición en la base de datos
+        if ( ! SQLAddForbid->Execute ( "ss", szTarget.c_str (), szReason.c_str () ) )
+            return ReportBrokenDB ( &s, SQLAddForbid, "Ejecutando nickserv.SQLAddForbid" );
+        SQLAddForbid->FreeResult ();
+
+        LangMsg ( s, "FORBID_ADD_SUCCESS", szTarget.c_str () );
+    }
+
+    else if ( ! CPortability::CompareNoCase ( szAction, "DEL" ) )
+    {
+        // Generamos la consulta para eliminar forbids
+        static CDBStatement* SQLRemoveForbid = 0;
+        if ( !SQLRemoveForbid )
+        {
+            SQLRemoveForbid = CDatabase::GetSingleton ().PrepareStatement (
+                  "DELETE FROM forbids WHERE LOWERNAME(name)=LOWERNAME(?)"
+                );
+            if ( !SQLRemoveForbid )
+                return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLRemoveForbid" );
+        }
+
+        // Obtenemos el nick a eliminar de la lista de prohibidos
+        CString& szTarget = info.GetNextParam ();
+        if ( szTarget == "" )
+            return SendSyntax ( s, "FORBID" );
+
+        // Comprobamos que esté prohibido
+        CString szForbidReason;
+        if ( ! CheckForbidden ( szTarget, szForbidReason ) )
+        {
+            LangMsg ( s, "FORBID_DEL_NOT_FORBIDDEN", szTarget.c_str () );
+            return false;
+        }
+
+        // Eliminamos la prohibición de la DDB
+        CProtocol& protocol = CProtocol::GetSingleton ();
+        const char* szHash = protocol.GetDDBValue ( 'n', szTarget );
+        if ( szHash )
+        {
+            // Eliminamos del hash el símbolo de prohibición
+            CString szForbiddenHash = szHash;
+            size_t pos;
+            while ( ( pos = szForbiddenHash.rfind ( '*' ) ) != CString::npos )
+                szForbiddenHash.replace ( pos, 1, "" );
+
+            protocol.InsertIntoDDB ( 'n', szTarget, szForbiddenHash );
+        }
+        else
+            protocol.InsertIntoDDB ( 'n', szTarget, "" );
+
+        // Eliminamos la prohibición de la base de datos
+        if ( ! SQLRemoveForbid->Execute ( "s", szTarget.c_str () ) )
+            return ReportBrokenDB ( &s, SQLRemoveForbid, "Ejecutando nickserv.SQLRemoveForbid" );
+        SQLRemoveForbid->FreeResult ();
+
+        LangMsg ( s, "FORBID_DEL_SUCCESS", szTarget.c_str () );
+    }
+
+    else if ( ! CPortability::CompareNoCase ( szAction, "LIST" ) )
+    {
+        // Generamos la consulta para obtener la lista de forbids
+        static CDBStatement* SQLListForbids = 0;
+        if ( !SQLListForbids )
+        {
+            SQLListForbids = CDatabase::GetSingleton ().PrepareStatement (
+                  "SELECT name,reason FROM forbids"
+                );
+            if ( !SQLListForbids )
+                return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLListForbids" );
+        }
+
+        // Ejecutamos la consulta
+        if ( ! SQLListForbids->Execute ( "" ) )
+            return ReportBrokenDB ( &s, SQLListForbids, "Ejecutando nickserv.SQLListForbids" );
+
+        // Almacenamos el resultado
+        char szNick [ 128 ];
+        char szReason [ 512 ];
+        if ( ! SQLListForbids->Store ( 0, 0, "ss", szNick, sizeof ( szNick ), szReason, sizeof ( szReason ) ) )
+        {
+            SQLListForbids->FreeResult ();
+            return ReportBrokenDB ( &s, SQLListForbids, "Almacenando nickserv.SQLListForbids" );
+        }
+
+        // Generamos el listado
+        LangMsg ( s, "FORBID_LIST_HEADER" );
+        while ( SQLListForbids->FetchStored () == CDBStatement::FETCH_OK )
+        {
+            LangMsg ( s, "FORBID_LIST_ENTRY", szNick, szReason );
+        }
+        SQLListForbids->FreeResult ();
+    }
+
+    else
+        return SendSyntax ( s, "FORBID" );
+
+    return true;
+}
+
 
 
 #undef COMMAND
@@ -2214,7 +2416,11 @@ bool CNickserv::evtNick ( const IMessage& msg_ )
                 if ( ID != 0ULL )
                 {
                     data.ID = ID;
-                    LangMsg ( s, "NICKNAME_REGISTERED" );
+
+                    if ( ! ( s.GetModes () & ( CUser::UMODE_IDENTIFIED | CUser::UMODE_REGNICK ) ) )
+                        LangMsg ( s, "NICKNAME_REGISTERED" );
+                    else
+                        data.bIdentified = true;
                 }
 
                 break;
@@ -2272,7 +2478,7 @@ bool CNickserv::evtMode ( const IMessage& msg_ )
             SServicesData& data = s.GetServicesData ();
             if ( data.bIdentified == false && data.ID != 0ULL )
             {
-                if ( pUser->GetModes () & ( CUser::UMODE_ACCOUNT | CUser::UMODE_REGNICK ) )
+                if ( pUser->GetModes () & ( CUser::UMODE_IDENTIFIED | CUser::UMODE_REGNICK ) )
                 {
                     LangMsg ( s, "IDENTIFY_SUCCESS" );
                     Identify ( s );

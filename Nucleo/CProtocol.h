@@ -69,6 +69,9 @@ public:
                                                   const CString& szTarget = "*" );
     const char*             GetDDBValue         ( unsigned char ucTable, const CString& szKey ) const;
 
+
+    void                    ConvertToLowercase  ( CString& szString );
+
 private:
     void                    InternalAddHandler      ( unsigned long ulStage,
                                                       const IMessage& message,

@@ -506,8 +506,10 @@ void CProtocol::InsertIntoDDB ( unsigned char ucTable,
                                 const CString& szValue,
                                 const CString& szTarget )
 {
+    CString szLowerKey = szKey;
+    ConvertToLowercase ( szLowerKey );
     m_uiDDBSerials [ ucTable ]++;
-    Send ( CMessageDB ( szTarget, 0, m_uiDDBSerials [ ucTable ], ucTable, szKey, szValue, 0 ), &m_me );
+    Send ( CMessageDB ( szTarget, 0, m_uiDDBSerials [ ucTable ], ucTable, szLowerKey, szValue, 0 ), &m_me );
 }
 
 const char* CProtocol::GetDDBValue ( unsigned char ucTable, const CString& szKey ) const
@@ -518,6 +520,14 @@ const char* CProtocol::GetDDBValue ( unsigned char ucTable, const CString& szKey
     return NULL;
 }
 
+void CProtocol::ConvertToLowercase ( CString& szString )
+{
+    for ( unsigned int i = 0; i < szString.length (); ++i )
+    {
+        char c = szString [ i ];
+        szString [ i ] = ToLower ( c );
+    }
+}
 
 // Parte estática
 CProtocol* CProtocol::ms_pInstance = 0;
