@@ -197,7 +197,6 @@ COMMAND(Help)
 COMMAND(Send)
 {
     CUser& s = *( info.pSource );
-    SServicesData& data = s.GetServicesData ();
 
     // Generamos la consulta SQL para generar nuevos mensajes
     static CDBStatement* SQLCreateMessage = 0;
