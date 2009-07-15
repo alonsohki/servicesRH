@@ -103,7 +103,7 @@ bool CMessagePASS::ProcessMessage ( const CString& szLine, const std::vector < C
 ////////////////////////////
 CMessageSERVER::CMessageSERVER ( const CString& szHost,
                                  unsigned int uiDepth,
-                                 time_t timestamp,
+                                 const CDate& timestamp,
                                  const CString& szProtocol,
                                  unsigned long ulNumeric,
                                  unsigned long ulMaxusers,
@@ -146,7 +146,7 @@ bool CMessageSERVER::BuildMessage ( SProtocolMessage& message ) const
         inttobase64 ( szMaxusers, m_ulMaxusers, 2 );
     }
 
-    unsigned long ulTime = static_cast < unsigned long > ( m_timestamp );
+    unsigned long ulTime = static_cast < unsigned long > ( m_timestamp.GetTimestamp () );
 
     message.szExtraInfo.Format ( "%s %u %lu %lu %s %s%s +%s",
                                  m_szHost.c_str (), m_uiDepth,
@@ -173,7 +173,7 @@ bool CMessageSERVER::ProcessMessage ( const CString& szLine, const std::vector <
 
     m_szHost = vec [ uiBase + 1 ];
     m_uiDepth = atoi ( vec [ uiBase + 2 ] );
-    m_timestamp = atol ( vec [ uiBase + 4 ] );
+    m_timestamp.SetTimestamp ( strtoul ( vec [ uiBase + 4 ], NULL, 10 ) );
     m_szProtocol = vec [ uiBase + 5 ];
 
     if ( vec [ uiBase + 6 ].length () > 3 )
@@ -231,7 +231,7 @@ bool CMessageEOB_ACK::ProcessMessage ( const CString& szLine, const std::vector 
 ////////////////////////////
 //          PING          //
 ////////////////////////////
-CMessagePING::CMessagePING ( time_t time, CServer* pDest )
+CMessagePING::CMessagePING ( const CDate& time, CServer* pDest )
 : m_time ( time ), m_pDest ( pDest )
 {
 }
@@ -254,8 +254,8 @@ bool CMessagePING::ProcessMessage ( const CString& szLine, const std::vector < C
         return false;
     }
 
-    unsigned long ulTime = atol ( vec [ 4 ] );
-    m_time = static_cast < time_t > ( ulTime );
+    unsigned long ulTime = strtoul ( vec [ 4 ], NULL, 10 );
+    m_time.SetTimestamp ( ulTime );
 
     return true;
 }
@@ -265,7 +265,7 @@ bool CMessagePING::ProcessMessage ( const CString& szLine, const std::vector < C
 ////////////////////////////
 //          PONG          //
 ////////////////////////////
-CMessagePONG::CMessagePONG ( time_t time, CServer* pDest )
+CMessagePONG::CMessagePONG ( const CDate& time, CServer* pDest )
 : m_time ( time ), m_pDest ( pDest )
 {
 }
@@ -276,7 +276,7 @@ bool CMessagePONG::BuildMessage ( SProtocolMessage& message ) const
     if ( m_pDest )
     {
         char szNumeric [ 4 ];
-        unsigned long ulTime = static_cast < unsigned long > ( m_time );
+        unsigned long ulTime = static_cast < unsigned long > ( m_time.GetTimestamp () );
 
         m_pDest->FormatNumeric ( szNumeric );
         message.szExtraInfo.Format ( "%s !%lu %lu 0 %lu", szNumeric, ulTime, ulTime, ulTime );
@@ -295,7 +295,7 @@ bool CMessagePONG::ProcessMessage ( const CString& szLine, const std::vector < C
 //          NICK          //
 ////////////////////////////
 CMessageNICK::CMessageNICK ( const CString& szNick,
-                             time_t timestamp,
+                             const CDate& timestamp,
                              CServer* pServer,
                              unsigned int uiDepth,
                              const CString& szIdent,
@@ -344,7 +344,7 @@ bool CMessageNICK::BuildMessage ( SProtocolMessage& message ) const
         message.szExtraInfo.Format ( "%s %u %lu %s %s %s%s %s %s%s",
                                      m_szNick.c_str (),
                                      m_uiDepth,
-                                     static_cast < unsigned long > ( m_timestamp ),
+                                     static_cast < unsigned long > ( m_timestamp.GetTimestamp () ),
                                      m_szIdent.c_str (),
                                      m_szHost.c_str (),
                                      szModesPrefix, m_szModes.c_str (),
@@ -355,7 +355,7 @@ bool CMessageNICK::BuildMessage ( SProtocolMessage& message ) const
     else
     {
         // Cambio de nick
-        message.szExtraInfo.Format ( "%s %lu", m_szNick.c_str (), static_cast < unsigned long > ( m_timestamp ) );
+        message.szExtraInfo.Format ( "%s %lu", m_szNick.c_str (), static_cast < unsigned long > ( m_timestamp.GetTimestamp () ) );
     }
 
     return true;
@@ -371,7 +371,7 @@ bool CMessageNICK::ProcessMessage ( const CString& szLine, const std::vector < C
         // Cambio de nick
         m_pServer = 0;
         m_szNick = vec [ 2 ];
-        m_timestamp = static_cast < time_t > ( atoi ( vec [ 3 ] ) );
+        m_timestamp.SetTimestamp ( strtoul ( vec [ 3 ], NULL, 10 ) );
 
         m_pServer = 0;
         m_uiDepth = 0;
@@ -392,7 +392,7 @@ bool CMessageNICK::ProcessMessage ( const CString& szLine, const std::vector < C
         m_pServer = static_cast < CServer* > ( pSource );
         m_szNick = vec [ 2 ];
         m_uiDepth = atoi ( vec [ 3 ] );
-        m_timestamp = static_cast < time_t > ( atol ( vec [ 4 ] ) );
+        m_timestamp.SetTimestamp ( strtoul ( vec [ 4 ], NULL, 10 ) );
         m_szIdent = vec [ 5 ];
         m_szHost = vec [ 6 ];
         m_szModes = vec [ 7 ];
@@ -509,7 +509,7 @@ bool CMessageMODE::ProcessMessage ( const CString& szLine, const std::vector < C
 ////////////////////////////
 //          SQUIT         //
 ////////////////////////////
-CMessageSQUIT::CMessageSQUIT ( CServer* pServer, time_t timestamp, const CString& szMessage )
+CMessageSQUIT::CMessageSQUIT ( CServer* pServer, const CDate& timestamp, const CString& szMessage )
 : m_pServer ( pServer ), m_timestamp ( timestamp ), m_szMessage ( szMessage )
 {
 }
@@ -519,7 +519,7 @@ bool CMessageSQUIT::BuildMessage ( SProtocolMessage& message ) const
 {
     if ( !m_pServer )
         return false;
-    message.szExtraInfo.Format ( "%s %lu", m_pServer->GetName ().c_str (), static_cast < unsigned long > ( m_timestamp ) );
+    message.szExtraInfo.Format ( "%s %lu", m_pServer->GetName ().c_str (), static_cast < unsigned long > ( m_timestamp.GetTimestamp () ) );
     message.szText = m_szMessage;
 
     return true;
@@ -534,7 +534,7 @@ bool CMessageSQUIT::ProcessMessage ( const CString& szLine, const std::vector < 
     if ( !m_pServer )
         return false;
 
-    m_timestamp = static_cast < time_t > ( atol ( vec [ 3 ] ) );
+    m_timestamp.SetTimestamp ( strtoul ( vec [ 3 ], NULL, 10 ) );
     m_szMessage = vec [ 4 ];
 
     return true;
@@ -545,7 +545,7 @@ bool CMessageSQUIT::ProcessMessage ( const CString& szLine, const std::vector < 
 //          BURST         //
 ////////////////////////////
 CMessageBURST::CMessageBURST ( const CString& szName,
-                               time_t creation,
+                               const CDate& creation,
                                unsigned long ulModes,
                                const std::vector < CString >& vecModeParams,
                                const std::vector < CString >& vecUsers,
@@ -577,7 +577,7 @@ bool CMessageBURST::ProcessMessage ( const CString& szLine, const std::vector < 
     // <origen> BURST <#canal> <fechaCreacion> [+modos [parámetros de los modos]] [usuarios] [:%bans]
 
     m_szName = vec [ 2 ];
-    m_creation = static_cast < time_t > ( atol ( vec [ 3 ] ) );
+    m_creation.SetTimestamp ( strtoul ( vec [ 3 ], NULL, 10 ) );
     m_ulModes = 0;
     m_vecModeParams.clear ();
     m_vecUsers.clear ();
@@ -641,7 +641,7 @@ bool CMessageBURST::ProcessMessage ( const CString& szLine, const std::vector < 
 //         TBURST         //
 ////////////////////////////
 CMessageTBURST::CMessageTBURST ( CChannel* pChannel,
-                                 time_t timeset,
+                                 const CDate& timeset,
                                  const CString& szSetter,
                                  const CString& szTopic )
 : m_pChannel ( pChannel ),
@@ -666,7 +666,7 @@ bool CMessageTBURST::ProcessMessage ( const CString& szLine, const std::vector <
     m_pChannel = CChannelManager::GetSingleton ().GetChannel ( vec [ 2 ] );
     if ( !m_pChannel )
         return false;
-    m_timeset = static_cast < time_t > ( atol ( vec [ 3 ] ) );
+    m_timeset.SetTimestamp ( strtoul ( vec [ 3 ], NULL, 10 ) );
     m_szSetter = vec [ 4 ];
     m_szTopic = vec [ 5 ];
 
@@ -711,7 +711,7 @@ bool CMessageTOPIC::ProcessMessage ( const CString& szLine, const std::vector < 
 ////////////////////////////
 //         CREATE         //
 ////////////////////////////
-CMessageCREATE::CMessageCREATE ( const CString& szName, time_t timeCreation )
+CMessageCREATE::CMessageCREATE ( const CString& szName, const CDate& timeCreation )
 : m_szName ( szName ), m_timeCreation ( timeCreation )
 {
 }
@@ -720,7 +720,7 @@ CMessageCREATE::~CMessageCREATE ( ) { }
 
 bool CMessageCREATE::BuildMessage ( SProtocolMessage& message ) const
 {
-    message.szExtraInfo.Format ( "%s %lu", m_szName.c_str (), static_cast < unsigned long > ( m_timeCreation ) );
+    message.szExtraInfo.Format ( "%s %lu", m_szName.c_str (), static_cast < unsigned long > ( m_timeCreation.GetTimestamp () ) );
     return true;
 }
 
@@ -730,7 +730,7 @@ bool CMessageCREATE::ProcessMessage ( const CString& szLine, const std::vector <
         return false;
 
     m_szName = vec [ 2 ];
-    m_timeCreation = static_cast < time_t > ( atol ( vec [ 3 ] ) );
+    m_timeCreation.SetTimestamp ( strtoul ( vec [ 3 ], NULL, 10 ) );
     size_t multiChannel = m_szName.find ( ',' );
 
     if ( multiChannel != CString::npos )
@@ -756,7 +756,7 @@ bool CMessageCREATE::ProcessMessage ( const CString& szLine, const std::vector <
 ////////////////////////////
 //          JOIN          //
 ////////////////////////////
-CMessageJOIN::CMessageJOIN ( CChannel* pChannel, time_t joinTime )
+CMessageJOIN::CMessageJOIN ( CChannel* pChannel, const CDate& joinTime )
 : m_pChannel ( pChannel ), m_joinTime ( joinTime )
 {
 }
@@ -766,7 +766,7 @@ bool CMessageJOIN::BuildMessage ( SProtocolMessage& message ) const
 {
     if ( !m_pChannel )
         return false;
-    message.szExtraInfo.Format ( "%s %lu", m_pChannel->GetName ().c_str (), static_cast < unsigned long > ( m_joinTime ) );
+    message.szExtraInfo.Format ( "%s %lu", m_pChannel->GetName ().c_str (), static_cast < unsigned long > ( m_joinTime.GetTimestamp () ) );
     return true;
 }
 
@@ -775,7 +775,7 @@ bool CMessageJOIN::ProcessMessage ( const CString& szLine, const std::vector < C
     if ( vec.size () < 4 )
         return false;
 
-    m_joinTime = static_cast < time_t > ( atol ( vec [ 3 ] ) );
+    m_joinTime.SetTimestamp ( strtoul ( vec [ 3 ], NULL, 10 ) );
 
     CChannelManager& manager = CChannelManager::GetSingleton ();
     const CString& szChannel = vec [ 2 ];

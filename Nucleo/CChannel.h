@@ -99,14 +99,14 @@ public:
     inline const CString&           GetName         ( ) const { return m_szName; }
     inline const CString&           GetTopic        ( ) const { return m_szTopic; }
     inline const CString&           GetTopicSetter  ( ) const { return m_szTopicSetter; }
-    inline time_t                   GetTopicTime    ( ) const { return m_topicTime; }
+    inline const CDate&             GetTopicTime    ( ) const { return m_topicTime; }
     inline const CString&           GetKey          ( ) const { return m_szKey; }
     inline unsigned int             GetLimit        ( ) const { return m_uiLimit; }
     inline unsigned long            GetModes        ( ) const { return m_ulModes; }
 
     inline void                     SetTopic        ( const CString& szTopic ) { m_szTopic = szTopic; }
     inline void                     SetTopicSetter  ( const CString& szTopicSetter ) { m_szTopicSetter = szTopicSetter; }
-    inline void                     SetTopicTime    ( time_t topicTime ) { m_topicTime = topicTime; }
+    inline void                     SetTopicTime    ( const CDate& topicTime ) { m_topicTime = topicTime; }
     inline void                     SetKey          ( const CString& szKey ) { m_szKey = szKey; }
     inline void                     SetLimit        ( unsigned int uiLimit ) { m_uiLimit = uiLimit; }
 
@@ -116,7 +116,7 @@ public:
 private:
     CString                     m_szName;
     CString                     m_szTopic;
-    time_t                      m_topicTime;
+    CDate                       m_topicTime;
     CString                     m_szTopicSetter;
     CString                     m_szKey;
     unsigned int                m_uiLimit;

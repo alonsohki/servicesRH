@@ -43,7 +43,6 @@ CChannel::CChannel ( ) { }
 
 CChannel::CChannel ( const CString& szName )
 : m_szName ( szName ),
-  m_topicTime ( 0 ),
   m_uiLimit ( 0 ),
   m_ulModes ( 0 )
 {

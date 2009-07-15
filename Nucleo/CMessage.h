@@ -133,11 +133,11 @@ END_MESSAGE_DECLARATION()
 ////////////////////////////
 //         SERVER         //
 ////////////////////////////
-BEGIN_MESSAGE_DECLARATION(SERVER, const CString& szHost, unsigned int uiDepth, time_t timestamp, const CString& szProtocol, unsigned long ulNumeric, unsigned long ulMaxusers, const CString& szFlags, const CString& szDesc)
+BEGIN_MESSAGE_DECLARATION(SERVER, const CString& szHost, unsigned int uiDepth, const CDate& timestamp, const CString& szProtocol, unsigned long ulNumeric, unsigned long ulMaxusers, const CString& szFlags, const CString& szDesc)
 public:
     inline const CString&   GetHost     ( ) const { return m_szHost; }
     inline unsigned int     GetDepth    ( ) const { return m_uiDepth; }
-    inline time_t           GetTime     ( ) const { return m_timestamp; }
+    inline const CDate&     GetTime     ( ) const { return m_timestamp; }
     inline const CString&   GetProtocol ( ) const { return m_szProtocol; }
     inline unsigned long    GetNumeric  ( ) const { return m_ulNumeric; }
     inline unsigned long    GetMaxusers ( ) const { return m_ulMaxusers; }
@@ -146,7 +146,7 @@ public:
 private:
     CString         m_szHost;
     unsigned int    m_uiDepth;
-    time_t          m_timestamp;
+    CDate           m_timestamp;
     CString         m_szProtocol;
     unsigned long   m_ulNumeric;
     unsigned long   m_ulMaxusers;
@@ -172,12 +172,12 @@ END_MESSAGE_DECLARATION()
 ////////////////////////////
 //          PING          //
 ////////////////////////////
-BEGIN_MESSAGE_DECLARATION(PING, time_t time, CServer* pDest)
+BEGIN_MESSAGE_DECLARATION(PING, const CDate& time, CServer* pDest)
 public:
-    inline time_t       GetTime ( ) const { return m_time; }
-    inline CServer*     GetDest ( ) const { return m_pDest; }
+    inline const CDate&     GetTime     ( ) const { return m_time; }
+    inline CServer*         GetDest     ( ) const { return m_pDest; }
 private:
-    time_t              m_time;
+    CDate               m_time;
     CServer*            m_pDest;
 END_MESSAGE_DECLARATION()
 
@@ -185,12 +185,12 @@ END_MESSAGE_DECLARATION()
 ////////////////////////////
 //          PONG          //
 ////////////////////////////
-BEGIN_MESSAGE_DECLARATION(PONG, time_t time, CServer* pDest)
+BEGIN_MESSAGE_DECLARATION(PONG, const CDate& time, CServer* pDest)
 public:
-    inline time_t       GetTime ( ) const { return m_time; }
-    inline CServer*     GetDest ( ) const { return m_pDest; }
+    inline const CDate&     GetTime     ( ) const { return m_time; }
+    inline CServer*         GetDest     ( ) const { return m_pDest; }
 private:
-    time_t              m_time;
+    CDate               m_time;
     CServer*            m_pDest;
 END_MESSAGE_DECLARATION()
 
@@ -198,10 +198,10 @@ END_MESSAGE_DECLARATION()
 ////////////////////////////
 //          NICK          //
 ////////////////////////////
-BEGIN_MESSAGE_DECLARATION(NICK, const CString& szNick, time_t timestamp, CServer* pServer = NULL, unsigned int uiDepth = 1, const CString& szIdent = "", const CString& szHost = "", const CString& szModes = "+", unsigned int uiAddress = 2130706433, unsigned long ulNumeric = 0, const CString& szDesc = "")
+BEGIN_MESSAGE_DECLARATION(NICK, const CString& szNick, const CDate& timestamp, CServer* pServer = NULL, unsigned int uiDepth = 1, const CString& szIdent = "", const CString& szHost = "", const CString& szModes = "+", unsigned int uiAddress = 2130706433, unsigned long ulNumeric = 0, const CString& szDesc = "")
 public:
     inline const CString&       GetNick         ( ) const { return m_szNick; }
-    inline time_t               GetTimestamp    ( ) const { return m_timestamp; }
+    inline const CDate&         GetTimestamp    ( ) const { return m_timestamp; }
     inline CServer*             GetServer       ( ) const { return m_pServer; }
     inline unsigned int         GetDepth        ( ) const { return m_uiDepth; }
     inline const CString&       GetIdent        ( ) const { return m_szIdent; }
@@ -212,7 +212,7 @@ public:
     inline const CString&       GetDesc         ( ) const { return m_szDesc; }
 private:
     CString         m_szNick;
-    time_t          m_timestamp;
+    CDate           m_timestamp;
     CServer*        m_pServer;
     unsigned int    m_uiDepth;
     CString         m_szIdent;
@@ -255,14 +255,14 @@ END_MESSAGE_DECLARATION()
 ////////////////////////////
 //          SQUIT         //
 ////////////////////////////
-BEGIN_MESSAGE_DECLARATION(SQUIT, CServer* pServer, time_t timestamp, const CString& szMessage)
+BEGIN_MESSAGE_DECLARATION(SQUIT, CServer* pServer, const CDate& timestamp, const CString& szMessage)
 public:
     inline CServer*         GetServer       ( ) const { return m_pServer; }
-    inline time_t           GetTimestamp    ( ) const { return m_timestamp; }
+    inline const CDate&     GetTimestamp    ( ) const { return m_timestamp; }
     inline const CString&   GetMessage      ( ) const { return m_szMessage; }
 private:
     CServer*        m_pServer;
-    time_t          m_timestamp;
+    CDate           m_timestamp;
     CString         m_szMessage;
 END_MESSAGE_DECLARATION()
 
@@ -270,17 +270,17 @@ END_MESSAGE_DECLARATION()
 ////////////////////////////
 //          BURST         //
 ////////////////////////////
-BEGIN_MESSAGE_DECLARATION(BURST, const CString& szName, time_t creation, unsigned long ulModes, const std::vector < CString >& vecModeParams, const std::vector < CString >& vecUsers, const std::vector < CString >& vecBans)
+BEGIN_MESSAGE_DECLARATION(BURST, const CString& szName, const CDate& creation, unsigned long ulModes, const std::vector < CString >& vecModeParams, const std::vector < CString >& vecUsers, const std::vector < CString >& vecBans)
 public:
     inline const CString&                   GetName             ( ) const { return m_szName; }
-    inline time_t                           GetCreationTime     ( ) const { return m_creation; }
+    inline const CDate&                     GetCreationTime     ( ) const { return m_creation; }
     inline unsigned long                    GetModes            ( ) const { return m_ulModes; }
     inline const std::vector < CString >&   GetModeParams       ( ) const { return m_vecModeParams; }
     inline const std::vector < CString >&   GetUsers            ( ) const { return m_vecUsers; }
     inline const std::vector < CString >&   GetBans             ( ) const { return m_vecBans; }
 private:
     CString                     m_szName;
-    time_t                      m_creation;
+    CDate                       m_creation;
     unsigned long               m_ulModes;
     std::vector < CString >     m_vecModeParams;
     std::vector < CString >     m_vecUsers;
@@ -291,15 +291,15 @@ END_MESSAGE_DECLARATION()
 ////////////////////////////
 //         TBURST         //
 ////////////////////////////
-BEGIN_MESSAGE_DECLARATION(TBURST, CChannel* pChannel, time_t timeset, const CString& szSetter, const CString& szTopic)
+BEGIN_MESSAGE_DECLARATION(TBURST, CChannel* pChannel, const CDate& timeset, const CString& szSetter, const CString& szTopic)
 public:
     inline CChannel*        GetChannel      ( ) const { return m_pChannel; }
-    inline time_t           GetTime         ( ) const { return m_timeset; }
+    inline const CDate&     GetTime         ( ) const { return m_timeset; }
     inline const CString&   GetSetter       ( ) const { return m_szSetter; }
     inline const CString&   GetTopic        ( ) const { return m_szTopic; }
 private:
     CChannel*       m_pChannel;
-    time_t          m_timeset;
+    CDate           m_timeset;
     CString         m_szSetter;
     CString         m_szTopic;
 END_MESSAGE_DECLARATION()
@@ -321,26 +321,26 @@ END_MESSAGE_DECLARATION()
 ////////////////////////////
 //         CREATE         //
 ////////////////////////////
-BEGIN_MESSAGE_DECLARATION(CREATE, const CString& szName, time_t timeCreation = time(0))
+BEGIN_MESSAGE_DECLARATION(CREATE, const CString& szName, const CDate& timeCreation = CDate ())
 public:
     inline const CString&   GetName     ( ) const { return m_szName; }
-    inline time_t           GetTime     ( ) const { return m_timeCreation; }
+    inline const CDate&     GetTime     ( ) const { return m_timeCreation; }
 private:
     CString     m_szName;
-    time_t      m_timeCreation;
+    CDate       m_timeCreation;
 END_MESSAGE_DECLARATION()
 
 
 ////////////////////////////
 //          JOIN          //
 ////////////////////////////
-BEGIN_MESSAGE_DECLARATION(JOIN, CChannel* pChannel, time_t joinTime = time(0))
+BEGIN_MESSAGE_DECLARATION(JOIN, CChannel* pChannel, const CDate& joinTime = CDate ())
 public:
-    inline CChannel*    GetChannel  ( ) const { return m_pChannel; }
-    inline time_t       GetTime     ( ) const { return m_joinTime; }
+    inline CChannel*        GetChannel  ( ) const { return m_pChannel; }
+    inline const CDate&     GetTime     ( ) const { return m_joinTime; }
 private:
     CChannel*       m_pChannel;
-    time_t          m_joinTime;
+    CDate           m_joinTime;
 END_MESSAGE_DECLARATION()
 
 
