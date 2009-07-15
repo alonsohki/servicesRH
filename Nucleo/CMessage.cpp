@@ -778,7 +778,7 @@ bool CMessageJOIN::ProcessMessage ( const CString& szLine, const std::vector < C
     m_joinTime = static_cast < time_t > ( atol ( vec [ 3 ] ) );
 
     CChannelManager& manager = CChannelManager::GetSingleton ();
-    const CString& szChannel = vec [ 3 ];
+    const CString& szChannel = vec [ 2 ];
     size_t multiChannel = szChannel.find ( ',' );
 
     if ( multiChannel == CString::npos )
