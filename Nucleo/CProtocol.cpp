@@ -444,7 +444,6 @@ int CProtocol::Send ( const IMessage& ircmessage, CClient* pSource )
         szMessage.append ( message.szText );
     }
 
-    printf ( "Enviando: %s\n", szMessage.c_str () );
     int iRet = m_socket.WriteString ( szMessage );
     if ( iRet > 0 )
     {
