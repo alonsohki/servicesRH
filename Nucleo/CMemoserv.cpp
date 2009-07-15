@@ -52,6 +52,7 @@ CMemoserv::CMemoserv ( const CConfig& config )
     SAFE_LOAD ( szTemp, "options.memoserv", "time.send" );
     m_options.uiTimeSend = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
 
+#undef SAFE_LOAD
 
     // Obtenemos el servicio nickserv
     m_pNickserv = dynamic_cast < CNickserv* > ( CService::GetService ( "nickserv" ) );
@@ -597,12 +598,15 @@ COMMAND(Global)
             SGlobalIDs& cur = (*i);
 
             // Iteramos por los miembros del grupo conectados
-            for ( std::vector < CUser* >::iterator i = cur.vecConnectedUsers.begin ();
-                  i != cur.vecConnectedUsers.end ();
-                  ++i )
+            if ( cur.vecConnectedUsers.size () > 0 )
             {
-                CUser* pTarget = (*i);
-                LangMsg ( *pTarget, "YOU_HAVE_ONE_MESSAGE", szSource.c_str (), cur.MessageID );
+                for ( std::vector < CUser* >::iterator i = cur.vecConnectedUsers.begin ();
+                      i != cur.vecConnectedUsers.end ();
+                      ++i )
+                {
+                    CUser* pTarget = (*i);
+                    LangMsg ( *pTarget, "YOU_HAVE_ONE_MESSAGE", szSource.c_str (), cur.MessageID );
+                }
             }
         }
 
