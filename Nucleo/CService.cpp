@@ -172,7 +172,9 @@ void CService::Load ()
         m_protocol.AddHandler ( CMessagePRIVMSG (), PROTOCOL_CALLBACK ( &CService::evtPrivmsg, this ) );
 
         // Logueamos la carga
-        Log ( "LOG_SERVICE_LOADED", GetName ().c_str () );
+        CService* pOperserv = CService::GetService ( "operserv" );
+        if ( pOperserv )
+            pOperserv->Log ( "LOG_SERVICE_LOADED", GetName ().c_str () );
 
         m_bIsLoaded = true;
     }
@@ -188,12 +190,21 @@ void CService::Unload ()
         m_bIsLoaded = false;
 
         // Logueamos la descarga
-        Log ( "LOG_SERVICE_UNLOADED", GetName ().c_str () );
+        CService* pOperserv = CService::GetService ( "operserv" );
+        if ( pOperserv )
+            pOperserv->Log ( "LOG_SERVICE_UNLOADED", GetName ().c_str () );
 
         Quit ( "Service unloaded" );
     }
 }
 
+
+
+
+
+//////////////////////////////////////////////////////////////////////////////////
+//                                  MENSAJERÍA                                  //
+//////////////////////////////////////////////////////////////////////////////////
 void CService::Msg ( CUser& dest, const CString& szMessage )
 {
     if ( !m_bIsOk || !m_bIsLoaded )
@@ -210,53 +221,61 @@ void CService::Msg ( CChannel& dest, const CString& szMessage )
     Send ( CMessagePRIVMSG ( 0, &dest, szMessage ) );
 }
 
-bool CService::LangMsg ( CUser& dest, const char* szTopic, ... )
+void CService::MultiMsg ( CUser& dest, const CString& szMessage )
+{
+    // Enviamos línea a línea
+    size_t iPrevPos = 0;
+    size_t iPos = 0;
+    while ( ( iPos = szMessage.find ( '\n', iPrevPos ) ) != CString::npos )
+    {
+        if ( iPrevPos == iPos )
+            Msg ( dest, "\xA0" );
+        else
+            Msg ( dest, szMessage.substr ( iPrevPos, iPos - iPrevPos ) );
+        iPrevPos = iPos + 1;
+    }
+}
+
+void CService::MultiMsg ( CChannel& dest, const CString& szMessage )
+{
+    // Enviamos línea a línea
+    size_t iPrevPos = 0;
+    size_t iPos = 0;
+    while ( ( iPos = szMessage.find ( '\n', iPrevPos ) ) != CString::npos )
+    {
+        if ( iPrevPos == iPos )
+            Msg ( dest, "\xA0" );
+        else
+            Msg ( dest, szMessage.substr ( iPrevPos, iPos - iPrevPos ) );
+        iPrevPos = iPos + 1;
+    }
+}
+
+bool CService::vLangMsg ( CUser& dest, const char* szTopic, va_list vl )
 {
     if ( !m_bIsOk || !m_bIsLoaded )
         return false;
 
-    va_list vl;
-
-    CLanguage* pLanguage = 0;
     SServicesData& data = dest.GetServicesData ();
 
-    if ( data.szLang.size () > 0 )
-        pLanguage = m_langManager.GetLanguage ( data.szLang );
-    if ( !pLanguage )
-        pLanguage = m_langManager.GetDefaultLanguage ();
-
-    if ( pLanguage == NULL )
-        return false;
-
-    CString szMessage = pLanguage->GetTopic ( m_szServiceName, szTopic );
-    if ( szMessage.length () > 0 )
+    CString szMessage;
+    if ( vGetLangTopic ( szMessage, data.szLang, szTopic, vl ) )
     {
-        // Ponemos el nombre del bot en el mensaje
-        size_t iPos = 0;
-        while ( ( iPos = szMessage.find ( "%N", iPos ) ) != CString::npos )
-            szMessage.replace ( iPos, 2, GetName () );
-
-        CString szMessage2;
-        va_start ( vl, szTopic );
-        szMessage2.vFormat ( szMessage.c_str (), vl );
-        va_end ( vl );
-
-        // Enviamos línea a línea
-        size_t iPrevPos = -1;
-        iPos = 0;
-        while ( ( iPos = szMessage2.find ( '\n', iPrevPos + 1 ) ) != CString::npos )
-        {
-            if ( iPrevPos + 1 == iPos )
-                Msg ( dest, "\xA0" );
-            else
-                Msg ( dest, szMessage2.substr ( iPrevPos + 1, iPos - iPrevPos - 1 ) );
-            iPrevPos = iPos;
-        }
-
+        MultiMsg ( dest, szMessage );
         return true;
     }
 
     return false;
+}
+
+bool CService::LangMsg ( CUser& dest, const char* szTopic, ... )
+{
+    va_list vl;
+    va_start ( vl, szTopic );
+    bool bRet = vLangMsg ( dest, szTopic, vl );
+    va_end ( vl );
+
+    return bRet;
 }
 
 bool CService::vLangMsg ( CChannel& dest, const char* szTopic, va_list vl )
@@ -264,37 +283,60 @@ bool CService::vLangMsg ( CChannel& dest, const char* szTopic, va_list vl )
     if ( !m_bIsOk || !m_bIsLoaded )
         return false;
 
-    CLanguage* pLanguage = m_langManager.GetDefaultLanguage ();
-    if ( pLanguage == NULL )
-        return false;
-
-    CString szMessage = pLanguage->GetTopic ( m_szServiceName, szTopic );
-    if ( szMessage.length () > 0 )
+    CString szMessage;
+    if ( vGetLangTopic ( szMessage, "", szTopic, vl ) )
     {
-        // Ponemos el nombre del bot en el mensaje
-        size_t iPos = 0;
-        while ( ( iPos = szMessage.find ( "%N", iPos ) ) != CString::npos )
-            szMessage.replace ( iPos, 2, GetName () );
-
-        CString szMessage2;
-        szMessage2.vFormat ( szMessage.c_str (), vl );
-
-        // Enviamos línea a línea
-        size_t iPrevPos = -1;
-        iPos = 0;
-        while ( ( iPos = szMessage2.find ( '\n', iPrevPos + 1 ) ) != CString::npos )
-        {
-            if ( iPrevPos + 1 == iPos )
-                Msg ( dest, "\xA0" );
-            else
-                Msg ( dest, szMessage2.substr ( iPrevPos + 1, iPos - iPrevPos - 1 ) );
-            iPrevPos = iPos;
-        }
-
+        MultiMsg ( dest, szMessage );
         return true;
     }
 
     return false;
+}
+
+bool CService::LangMsg ( CChannel& dest, const char* szTopic, ... )
+{
+    va_list vl;
+    va_start ( vl, szTopic );
+    bool bRet = vLangMsg ( dest, szTopic, vl );
+    va_end ( vl );
+
+    return bRet;
+}
+
+bool CService::vGetLangTopic ( CString& szDest, const CString& szLanguage, const char* szTopic, va_list vl )
+{
+    CLanguage* pLanguage = 0;
+    if ( szLanguage.size () > 0 )
+        pLanguage = m_langManager.GetLanguage ( szLanguage );
+    if ( !pLanguage )
+        pLanguage = m_langManager.GetDefaultLanguage ();
+
+    if ( pLanguage == NULL )
+        return false;
+    CString szTemp = pLanguage->GetTopic ( m_szServiceName, szTopic );
+
+    // Ponemos el nombre del bot en el mensaje
+    if ( szTemp.length () > 0 )
+    {
+        size_t iPos = 0;
+        while ( ( iPos = szTemp.find ( "%N", iPos ) ) != CString::npos )
+            szTemp.replace ( iPos, 2, GetName () );
+    }
+
+    // Formateamos el mensaje
+    szDest.vFormat ( szTemp.c_str (), vl );
+
+    return true;
+}
+
+bool CService::GetLangTopic ( CString& szDest, const CString& szLanguage, const char* szTopic, ... )
+{
+    va_list vl;
+    va_start ( vl, szTopic );
+    bool bRet = vGetLangTopic ( szDest, szLanguage, szTopic, vl );
+    va_end ( vl );
+
+    return bRet;
 }
 
 bool CService::SendSyntax ( CUser& dest, const char* szCommand )
@@ -341,6 +383,10 @@ bool CService::ReportBrokenDB ( CUser* pDest, CDBStatement* pStatement, const CS
 
     return false;
 }
+
+
+
+
 
 
 bool CService::ProcessHelp ( SCommandInfo& info )
@@ -632,5 +678,8 @@ void CService::vLog ( const char* szTopic, va_list vl )
     if ( !pChannel )
         return;
 
-    pOperserv->vLangMsg ( *pChannel, szTopic, vl );
+    // Obtenemos y enviamos el mensaje
+    CString szMessage;
+    if ( vGetLangTopic ( szMessage, "", szTopic, vl ) )
+        pOperserv->MultiMsg ( *pChannel, szMessage );
 }

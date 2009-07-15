@@ -606,8 +606,11 @@ COMMAND(Global)
             }
         }
 
-        LangMsg ( s, "GLOBAL_SUCCESS" );
         database.Commit ();
+        LangMsg ( s, "GLOBAL_SUCCESS" );
+
+        // Log
+        Log ( "LOG_GLOBAL", s.GetName ().c_str (), szSource.c_str (), szMessage.c_str () );
     }
     else
         database.Rollback ();

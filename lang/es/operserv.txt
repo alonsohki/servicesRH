@@ -1,7 +1,7 @@
 ####################################################################################
 ## Fichero de idioma de operserv.
 ##   Autores:						Alberto Alonso < rydencillo@gmail.com >
-##   Última fecha de modificación:	14 Julio 2009 - 10:19 ( Alberto Alonso )
+##   Última fecha de modificación:	14 Julio 2009 - 14:00 ( Alberto Alonso )
 ##   Idioma:						Castellano
 ##
 ##
@@ -24,8 +24,4 @@ Se ha cargado el servicio 12%s.
 
 %LOG_SERVICE_UNLOADED%
 Se ha descargado el servicio 12%s.
-%%
-
-%LOG_NICK_REGISTERED%
-Nuevo nick registrado: 12%s (%s@%s)
 %%

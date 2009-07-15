@@ -53,10 +53,17 @@ public:
     bool            IsOk                ( ) const { return m_bIsOk; }
     const CString&  GetError            ( ) const { return m_szError; }
 
+    // Mensajería
     void            Msg                 ( CUser& dest, const CString& szMessage );
     void            Msg                 ( CChannel& dest, const CString& szMessage );
+    void            MultiMsg            ( CUser& dest, const CString& szMessage );
+    void            MultiMsg            ( CChannel& dest, const CString& szMessage );
+    bool            vLangMsg            ( CUser& dest, const char* szTopic, va_list vl );
     bool            LangMsg             ( CUser& dest, const char* szTopic, ... );
     bool            vLangMsg            ( CChannel& dest, const char* szTopic, va_list vl );
+    bool            LangMsg             ( CChannel& dest, const char* szTopic, ... );
+    bool            vGetLangTopic       ( CString& szDest, const CString& szLanguage, const char* szTopic, va_list vl );
+    bool            GetLangTopic        ( CString& szDest, const CString& szLanguage, const char* szTopic, ... );
     bool            SendSyntax          ( CUser& dest, const char* szCommand );
     bool            AccessDenied        ( CUser& dest );
     bool            ReportBrokenDB      ( CUser* pDest, CDBStatement* pStatement = 0, const CString& szExtraInfo = CString() );

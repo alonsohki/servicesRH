@@ -1,7 +1,7 @@
 ####################################################################################
 ## Fichero de idioma de nickserv.
 ##   Autores:						Alberto Alonso < rydencillo@gmail.com >
-##   Última fecha de modificación:	15 Julio 2009 - 12:46 ( Alberto Alonso )
+##   Última fecha de modificación:	15 Julio 2009 - 14:00 ( Alberto Alonso )
 ##   Idioma:						Castellano
 ##
 ##
@@ -686,3 +686,67 @@ El nick de 12%s ha sido cambiado correctamente.
 
 #
 ############################
+
+
+
+
+
+
+##############################
+##          LOGS            ##
+##############################
+%LOG_REGISTER%
+Nuevo nick 07registrado: 12%s (%s@%s)
+%%
+
+%LOG_GROUP_JOIN%
+Grupos: 12%s se ha unido al 07grupo de 12%s.
+%%
+
+%LOG_GROUP_LEAVE%
+Groups: 12%s ha abandonado el 07grupo de 12%s.
+%%
+
+%LOG_SET_PASSWORD%
+El usuario 12%s (%s@%s) ha cambiado su 07contraseña.
+%%
+
+%LOG_SET_VHOST%
+El usuario 12%s (%s@%s) ha cambiado su 07IP Virtual a: 12%s
+%%
+
+%LOG_SET_VHOST_OFF%
+El usuario 12%s (%s@%s) ha desactivado su 07IP Virtual.
+%%
+
+%LOG_LIST%
+El usuario 12%s está haciendo un 07LISTADO de 12%s.
+%%
+
+%LOG_DROP%
+12%s ha 07ELIMINADO el nick 12%s.
+%%
+
+%LOG_SUSPEND%
+12%s ha 07SUSPENDIDO el nick 12%s durante el tiempo: 12%s. Motivo: 12%s.
+%%
+
+%LOG_UNSUSPEND%
+12%s ha 07DESUSPENDIDO el nick 12%s.
+%%
+
+%LOG_FORBID%
+12%s ha 07PROHIBIDO el nick 12%s. Motivo: 12%s.
+%%
+
+%LOG_FORBID_DEL%
+12%s ha 07ELIMNADO LA PROHIBICIÓN del nick 12%s.
+%%
+
+%LOG_RENAME%
+12%s ha 07CAMBIADO EL NICK al usuario 12%s.
+%%
+
+%LOG_NICK_EXPIRED%
+El nick 12%s ha 07EXPIRADO.
+%%

@@ -1,7 +1,7 @@
 ####################################################################################
 ## Fichero de idioma de memoserv.
 ##   Autores:						Alberto Alonso < rydencillo@gmail.com >
-##   Última fecha de modificación:	15 Julio 2009 - 12:47 ( Alberto Alonso )
+##   Última fecha de modificación:	15 Julio 2009 - 14:00 ( Alberto Alonso )
 ##   Idioma:						Castellano
 ##
 ##
@@ -197,3 +197,14 @@ Mensaje global enviado correctamente.
 %%
 #
 ############################
+
+
+
+
+
+##############################
+##          LOGS            ##
+##############################
+%LOG_GLOBAL%
+12%s ha enviado un mensaje 07GLOBAL desde el nick 12%s con el mensaje: 12%s.
+%%

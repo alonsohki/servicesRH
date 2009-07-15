@@ -1034,7 +1034,7 @@ COMMAND(Register)
     ClearPassword ( szPassword ); // Por seguridad, limpiamos el password
 
     // Log
-    Log ( "LOG_NICK_REGISTERED", s.GetName ().c_str (), s.GetIdent ().c_str (), s.GetHost ().c_str () );
+    Log ( "LOG_REGISTER", s.GetName ().c_str (), s.GetIdent ().c_str (), s.GetHost ().c_str () );
 
     // Le identificamos
     data.ID = SQLRegister->InsertID ();
@@ -1216,6 +1216,9 @@ COMMAND(Group)
         // Informamos al usuario del agrupamiento correcto
         ClearPassword ( szPassword ); // Por seguridad, limpiamos el password
         LangMsg ( s, "GROUP_JOIN_SUCCESS", szNick.c_str () );
+
+        // Log
+        Log ( "LOG_GROUP_JOIN", s.GetName ().c_str (), szNick.c_str () );
     }
 
 
@@ -1276,6 +1279,9 @@ COMMAND(Group)
 
         // Informamos del desagrupamiento
         LangMsg ( s, "GROUP_LEAVE_SUCCESS", szPrimaryName.c_str () );
+
+        // Log
+        Log ( "LOG_GROUP_LEAVE", s.GetName ().c_str (), szPrimaryName.c_str () );
     }
 
     else if ( ! CPortability::CompareNoCase ( szOption, "LIST" ) )
@@ -1459,6 +1465,9 @@ SET_COMMAND(Set_Password)
     LangMsg ( s, "SET_PASSWORD_SUCCESS", szPassword.c_str () );
     ClearPassword ( szPassword ); // Por seguridad, limpiamos el password
 
+    // Log
+    Log ( "LOG_SET_PASSWORD", s.GetName ().c_str (), s.GetIdent ().c_str (), s.GetHost ().c_str () );
+
     return true;
 }
 
@@ -1596,6 +1605,9 @@ SET_COMMAND(Set_Vhost)
         SQLSetVhost->FreeResult ();
 
         LangMsg ( s, "SET_VHOST_REMOVED" );
+
+        // Log
+        Log ( "LOG_SET_VHOST_OFF", s.GetName ().c_str (), s.GetIdent ().c_str (), s.GetHost ().c_str () );
     }
     else
     {
@@ -1642,6 +1654,9 @@ SET_COMMAND(Set_Vhost)
         SQLSetVhost->FreeResult ();
 
         LangMsg ( s, "SET_VHOST_SUCCESS", szVhost.c_str () );
+
+        // Log
+        Log ( "LOG_SET_VHOST", s.GetName ().c_str (), s.GetIdent ().c_str (), s.GetHost ().c_str (), szVhost.c_str () );
     }
 
     return true;
@@ -2036,6 +2051,9 @@ COMMAND(List)
     if ( bIsAdmin )
         uiMax = (unsigned int)-1;
 
+    // Log
+    Log ( "LOG_LIST", s.GetName ().c_str (), szParam.c_str () );
+
     LangMsg ( s, "LIST_HEADER", szParam.c_str () );
 
     while ( SQLListAccounts->FetchStored () == CDBStatement::FETCH_OK )
@@ -2111,6 +2129,9 @@ COMMAND(Drop)
     SQLDropNick->FreeResult ();
 
     LangMsg ( s, "DROP_SUCCESS", szTarget.c_str () );
+
+    // Log
+    Log ( "LOG_DROP", s.GetName ().c_str (), szTarget.c_str () );
 
     return true;
 }
@@ -2210,6 +2231,10 @@ COMMAND(Suspend)
     SQLSuspend->FreeResult ();
 
     LangMsg ( s, "SUSPEND_SUCCESS", szTarget.c_str () );
+
+    // Log
+    Log ( "LOG_SUSPEND", s.GetName ().c_str (), szTarget.c_str (), szTime.c_str (), szReason.c_str () );
+
     return true;
 }
 
@@ -2251,6 +2276,9 @@ COMMAND(Unsuspend)
     }
 
     LangMsg ( s, "UNSUSPEND_SUCCESS", szTarget.c_str () );
+
+    // Log
+    Log ( "LOG_UNSUSPEND", s.GetName ().c_str (), szTarget.c_str () );
 
     return true;
 }
@@ -2323,6 +2351,9 @@ COMMAND(Forbid)
         SQLAddForbid->FreeResult ();
 
         LangMsg ( s, "FORBID_ADD_SUCCESS", szTarget.c_str () );
+
+        // Log
+        Log ( "LOG_FORBID", s.GetName ().c_str (), szTarget.c_str (), szReason.c_str () );
     }
 
     else if ( ! CPortability::CompareNoCase ( szAction, "DEL" ) )
@@ -2373,6 +2404,9 @@ COMMAND(Forbid)
         SQLRemoveForbid->FreeResult ();
 
         LangMsg ( s, "FORBID_DEL_SUCCESS", szTarget.c_str () );
+
+        // Log
+        Log ( "LOG_FORBID_DEL", s.GetName ().c_str (), szTarget.c_str () );
     }
 
     else if ( ! CPortability::CompareNoCase ( szAction, "LIST" ) )
@@ -2441,6 +2475,9 @@ COMMAND(Rename)
     CProtocol::GetSingleton ().GetMe ().Send ( CMessageRENAME ( pTarget ) );
 
     LangMsg ( s, "RENAME_SUCCESS", pTarget->GetName ().c_str () );
+
+    // Log
+    Log ( "LOG_RENAME", s.GetName ().c_str (), pTarget->GetName ().c_str () );
 
     return true;
 }
@@ -2514,7 +2551,8 @@ bool CNickserv::evtNick ( const IMessage& msg_ )
 
                 // Verificamos si está prohibido
                 CString szReason;
-                if ( CheckForbidden ( s.GetName (), szReason ) )
+                if ( s.GetParent () != &(CProtocol::GetSingleton ().GetMe ()) &&
+                     CheckForbidden ( s.GetName (), szReason ) )
                 {
                     LangMsg ( s, "THIS_NICK_IS_FORBIDDEN", s.GetName ().c_str (), szReason.c_str () );
                     CProtocol::GetSingleton ().GetMe ().Send ( CMessageRENAME ( &s ) );
@@ -2548,7 +2586,8 @@ bool CNickserv::evtNick ( const IMessage& msg_ )
 
                     // Verificamos si está prohibido
                     CString szReason;
-                    if ( CheckForbidden ( s.GetName (), szReason ) )
+                    if ( pUser->GetParent () != &(CProtocol::GetSingleton ().GetMe ()) &&
+                         CheckForbidden ( s.GetName (), szReason ) )
                     {
                         LangMsg ( s, "THIS_NICK_IS_FORBIDDEN", s.GetName ().c_str (), szReason.c_str () );
                         CProtocol::GetSingleton ().GetMe ().Send ( CMessageRENAME ( &s ) );
@@ -2671,7 +2710,7 @@ bool CNickserv::timerCheckExpired ( void* )
     if ( !SQLGetExpiredNicks )
     {
         SQLGetExpiredNicks = CDatabase::GetSingleton ().PrepareStatement (
-              "SELECT id FROM account WHERE lastSeen <= ?"
+              "SELECT id, name FROM account WHERE lastSeen <= ?"
             );
         if ( !SQLGetExpiredNicks )
             return ReportBrokenDB ( 0, 0, "Generando nickserv.SQLGetExpiredNicks" );
@@ -2692,12 +2731,13 @@ bool CNickserv::timerCheckExpired ( void* )
     CDate expirationTreshold;
     CDate timeExpiration ( (time_t)( m_options.uiDaysExpiration * 86400 ) );
     unsigned long long ID;
+    char szName [ 128 ];
     expirationTreshold -= timeExpiration;
 
     // Ejecutamos y almacenamos el resultado
     if ( ! SQLGetExpiredNicks->Execute ( "T", &expirationTreshold ) )
         return ReportBrokenDB ( 0, SQLGetExpiredNicks, "Ejecutando nickserv.SQLGetExpiredNicks" );
-    if ( ! SQLGetExpiredNicks->Store ( 0, 0, "Q", &ID ) )
+    if ( ! SQLGetExpiredNicks->Store ( 0, 0, "Qs", &ID, szName, sizeof ( szName ) ) )
     {
         SQLGetExpiredNicks->FreeResult ();
         return ReportBrokenDB ( 0, SQLGetExpiredNicks, "Almacenando nickserv.SQLGetExpiredNicks" );
@@ -2709,6 +2749,9 @@ bool CNickserv::timerCheckExpired ( void* )
         // Eliminamos el grupo entero de la DDB
         if ( ! DestroyFullDDBGroup ( 0, ID ) )
             return false;
+
+        // Log
+        Log ( "LOG_NICK_EXPIRED", szName );
     }
     SQLGetExpiredNicks->FreeResult ();
 
