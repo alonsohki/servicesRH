@@ -660,17 +660,8 @@ void CService::Log ( const char* szTopic, ... )
 
 void CService::vLog ( const char* szTopic, va_list vl )
 {
-    // Obtenemos el servicio operserv
-    static CService* pOperserv = 0;
-    if ( !pOperserv )
-    {
-        pOperserv = CService::GetService ( "operserv" );
-        if ( !pOperserv )
-            return;
-    }
-
     // Nos aseguramos de que el servicio esté cargado
-    if ( pOperserv->IsLoaded () == false )
+    if ( ! IsLoaded () )
         return;
 
     // Obtenemos el canal de destino
@@ -681,5 +672,5 @@ void CService::vLog ( const char* szTopic, va_list vl )
     // Obtenemos y enviamos el mensaje
     CString szMessage;
     if ( vGetLangTopic ( szMessage, "", szTopic, vl ) )
-        pOperserv->MultiMsg ( *pChannel, szMessage );
+        MultiMsg ( *pChannel, szMessage );
 }
