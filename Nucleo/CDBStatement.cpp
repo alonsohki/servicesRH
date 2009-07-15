@@ -534,3 +534,8 @@ unsigned long long CDBStatement::NumRows ( )
 {
     return mysql_stmt_num_rows ( m_pStatement );
 }
+
+unsigned long long CDBStatement::AffectedRows ( )
+{
+    return mysql_stmt_affected_rows ( m_pStatement );
+}

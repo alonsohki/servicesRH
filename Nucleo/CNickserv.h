@@ -42,10 +42,12 @@ private:
     bool            CheckIdentified ( CUser& user );
     bool            CheckRegistered ( CUser& user );
 
-private:
     // Grupos
+public:
     bool            GetGroupMembers         ( CUser* pUser, unsigned long long ID, std::vector < CString >& vecDest );
+    bool            GetConnectedGroupMembers( CUser* pUser, unsigned long long ID, std::vector < CUser* >& vecDest );
 
+private:
     bool            CreateDDBGroupMember    ( CUser& s, const CString& szPassword );
     void            DestroyDDBGroupMember   ( CUser& s );
     bool            DestroyFullDDBGroup     ( CUser* pUser, unsigned long long ID );

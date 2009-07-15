@@ -19,7 +19,46 @@
 class CMemoserv : public CService
 {
 public:
-                CMemoserv   ( const CConfig& config );
-    virtual     ~CMemoserv  ( );
+                    CMemoserv               ( const CConfig& config );
+    virtual         ~CMemoserv              ( );
+
+    void            Load                    ( );
+    void            Unload                  ( );
+
 private:
+    bool            CheckIdentifiedAndReg   ( CUser& s );
+    unsigned long long
+                    GetBestIDForMessage     ( unsigned long long ID, bool bIgnoreBoxSize = false );
+
+    // Comandos
+protected:
+    void            UnknownCommand          ( SCommandInfo& info );
+private:
+#define COMMAND(x) bool cmd ## x ( SCommandInfo& info )
+    COMMAND(Help);
+    COMMAND(Send);
+    COMMAND(List);
+    COMMAND(Read);
+    COMMAND(Del);
+    COMMAND(Global);
+#undef COMMAND
+
+    // Verificación de acceso a comandos
+private:
+    bool            verifyAll               ( SCommandInfo& info );
+    bool            verifyCoadministrator   ( SCommandInfo& info );
+
+    // Eventos
+private:
+    bool            evtIdentify             ( const IMessage& msg );
+
+private:
+    struct
+    {
+        CString         szHashingKey;
+        unsigned int    uiMaxInboxSize;
+        unsigned int    uiTimeSend;
+    } m_options;
+
+    CNickserv* m_pNickserv;
 };

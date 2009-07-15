@@ -54,6 +54,7 @@ public:
 
     unsigned long long      InsertID        ( );
     unsigned long long      NumRows         ( );
+    unsigned long long      AffectedRows    ( );
 
     inline bool             IsOk            ( ) const { return m_pStatement != NULL && Errno () == 0; }
     inline int              Errno           ( ) const { return m_iErrno; }

@@ -436,7 +436,7 @@ int CProtocol::Send ( const IMessage& ircmessage, CClient* pSource )
     int iRet = m_socket.WriteString ( szMessage );
     if ( iRet > 0 )
     {
-        TriggerMessageHandlers ( HANDLER_BEFORE_CALLBACKS | HANDLER_AFTER_CALLBACKS, ircmessage );
+        TriggerMessageHandlers ( HANDLER_ALL_CALLBACKS, ircmessage );
     }
     return iRet;
 }

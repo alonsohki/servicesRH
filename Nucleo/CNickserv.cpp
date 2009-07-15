@@ -103,6 +103,7 @@ CNickserv::CNickserv ( const CConfig& config )
 #undef SAFE_LOAD
 
     m_pTimerLastSeen = 0;
+    m_pTimerExpired = 0;
 }
 
 CNickserv::~CNickserv ()
@@ -801,6 +802,28 @@ bool CNickserv::GetGroupMembers ( CUser* pUser, unsigned long long ID, std::vect
         vecDest.push_back ( szNick );
 
     SQLGetGroupMembers->FreeResult ();
+    return true;
+}
+
+bool CNickserv::GetConnectedGroupMembers ( CUser* pUser, unsigned long long ID, std::vector < CUser* >& vecDest )
+{
+    // Obtenemos los nicks del grupo
+    std::vector < CString > vecMembers;
+    if ( ! GetGroupMembers ( pUser, ID, vecMembers ) )
+        return false;
+
+    // Buscamos a cada uno de ellos
+    CServer& me = CProtocol::GetSingleton ().GetMe ();
+    for ( std::vector < CString >::iterator i = vecMembers.begin ();
+          i != vecMembers.end ();
+          ++i )
+    {
+        CString& szMember = (*i);
+        CUser* pMember = me.GetUserAnywhere ( szMember );
+        if ( pMember )
+            vecDest.push_back ( pMember );
+    }
+
     return true;
 }
 

@@ -1,7 +1,7 @@
 ####################################################################################
 ## Fichero de ayuda de nickserv.
 ##   Autores:						Alberto Alonso < rydencillo@gmail.com >
-##   Última fecha de modificación:	04 Julio 2009 - 07:31 ( Alberto Alonso )
+##   Última fecha de modificación:	14 Julio 2009 - 10:19 ( Alberto Alonso )
 ##   Idioma:						Castellano
 ##
 ##

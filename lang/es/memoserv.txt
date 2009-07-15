@@ -1,0 +1,199 @@
+####################################################################################
+## Fichero de ayuda de memoserv.
+##   Autores:						Alberto Alonso < rydencillo@gmail.com >
+##   Última fecha de modificación:	14 Julio 2009 - 10:19 ( Alberto Alonso )
+##   Idioma:						Castellano
+##
+##
+## Sintaxis:
+## - Para crear un tema de idioma, pon entre %% el nombre del tema. Por ejemplo: %TEMA%.
+## - Para finalizarlo, usa %% sin escribir nada dentro.
+## - Para añadir comentarios, comienza la línea con #. También se puede insertar comentarios
+##   dentro de la definición de un tema.
+## - Puedes dejar tantas líneas en blanco como quieras entre tema y tema.
+## - Las líneas en blanco dentro de los temas aparecerán en el resultado que se envíe a los clientes.
+##
+
+%HELP%
+Ayuda de 12%N
+
+12%N es el servicio encargado de la mensajería entre usuarios registrados.
+Este servicio te permitirá enviar mensajes a otros usuarios aunque no estén
+conectados, y estos podrán leerlos más tarde.
+
+Lista de comandos disponibles:
+
+    12SEND                 Envía un mensaje a un usuario
+    12LIST                 Lista los mensajes en tu buzón
+    12READ                 Lee un mensaje
+    12DEL                  Borra un mensaje
+
+Para obtener ayuda detallada sobre cualquier comando, escribe 12/msg %N HELP <comando>.
+%%
+
+%COADMINS_HELP%
+
+03-= Co-administradores =-
+    12GLOBAL               Envía un mensaje global a todos los usuarios registrados
+%%
+
+%UNKNOWN_COMMAND%
+Comando 12%s desconocido. Escribe 12/msg %N HELP para recibir ayuda.
+%%
+
+%ACCESS_DENIED%
+04¡Acceso denegado!
+%%
+
+%NO_HELP_TOPIC%
+04Error: No existe ningún tema de ayuda para 12%s.
+%%
+
+%HELP_FOR_MORE_INFORMATION%
+Escribe 12/msg %N HELP %s para obtener más información.
+%%
+
+%BROKEN_DB%
+04Error: La base de datos está caída en este momento. Tu petición no se ha podido procesar.
+Vuelve a intentarlo en unos minutos.
+%%
+
+%NOT_REGISTERED%
+Tu nick no está registrado. Si deseas saber cómo registrarlo, escribe 12/msg %s HELP REGISTER.
+%%
+
+%NOT_IDENTIFIED%
+04Error: No estás identificado. Escribe 12/msg %s IDENTIFY <contraseña> para hacerlo.
+%%
+
+%ACCOUNT_NOT_FOUND%
+04Error: No hay ningún nick registrado con el nombre 12%s.
+%%
+
+%YOU_HAVE_ONE_MESSAGE%
+Tienes un nuevo mensaje de 12%s. Escribe 12/msg %N READ %llu para leerlo.
+%%
+
+%YOU_HAVE_MULTIPLE_MESSAGES%
+Tienes 12%llu mensajes nuevos. Escribe 12/msg %N LIST para listar tus mensajes.
+%%
+
+
+############################
+# SEND
+%SYNTAX_SEND%
+Sintaxis: 12SEND <destinatario> <mensaje>
+%%
+
+%HELP_SEND%
+Envía un 12mensaje al 12destinatario especificado. Si está online, recibirá
+una notificación inmediata de la llegada del mensaje. En otro caso, la recibirá la próxima
+vez que se conecte.
+%%
+
+%SEND_FULL_BOX%
+04Error: El buzón de mensajes de 12%s está lleno.
+%%
+
+%SEND_SUCCESS%
+Mensaje enviado a 12%s correctamente.
+%%
+#
+############################
+
+
+
+############################
+# LIST
+%SYNTAX_LIST%
+Sintaxis: 12LIST
+%%
+
+%HELP_LIST%
+Lista los mensajes en tu bandeja de entrada.
+%%
+
+%LIST_HEADER%
+Mensajes para 12%s. Para leerlos, escribe 12/msg %N READ <número>.
+ Num  Remitente            Fecha
+%%
+
+%LIST_ENTRY%
+%s %s  %s %s
+%%
+#
+############################
+
+
+
+############################
+# READ
+%SYNTAX_READ%
+Sintaxis: 12READ <mensaje>
+%%
+
+%HELP_READ%
+Lee el 12mensaje especificado. Este es un identificador numérico único para
+cada mensaje. Este número aparece en el listado de mensajes así como cuando los lees.
+%%
+
+%READ_UNKNOWN_MESSAGE%
+04Error: No existe ningún mensaje con el número 12%llu.
+%%
+
+%READ_SUCCESS%
+Mensaje 12#%llu de 12%s (12%s):
+%s
+Para borrarlo, escriba 12/msg %N DEL %llu.
+%%
+#
+############################
+
+
+
+############################
+# DEL
+%SYNTAX_DEL%
+Sintaxis: 12DEL <mensaje>
+%%
+
+%HELP_DEL%
+Elimina definitivamente un 12mensaje. Este es un identificador numérico único para
+cada mensaje. Este número aparece en el listado de mensajes así como cuando los lees.
+
+También puedes especificar como 12mensaje la palabra 12ALL, en cuyo caso eliminará
+todos tus mensajes.
+%%
+
+%DEL_UNKNOWN_MESSAGE%
+04Error: No existe ningún mensaje con el número 12%llu.
+%%
+
+%DEL_SUCCESS%
+Mensaje número 12%llu eliminado correctamente.
+%%
+
+%DEL_ALL_SUCCESS%
+Todos tus mensajes han sido eliminados correctamente.
+%%
+#
+############################
+
+
+
+############################
+# GLOBAL
+%SYNTAX_GLOBAL%
+Sintaxis: 12GLOBAL <origen> <mensaje>
+%%
+
+%HELP_GLOBAL%
+Envía un 12mensaje global a todos los usuarios registrados. El parámetro 12orígen
+especifica qué nombre aparecerá como orígen del mensaje.
+%%
+
+%GLOBAL_SUCCESS%
+Mensaje global enviado correctamente.
+%%
+#
+############################
