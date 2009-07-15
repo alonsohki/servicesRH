@@ -18,6 +18,14 @@
 
 class CMemoserv : public CService
 {
+private:
+    struct SGlobalIDs
+    {
+        unsigned long long      ID;
+        unsigned long long      MessageID;
+        std::vector < CUser* >  vecConnectedUsers;
+    };
+
 public:
                     CMemoserv               ( const CConfig& config );
     virtual         ~CMemoserv              ( );

@@ -537,13 +537,6 @@ COMMAND(Global)
         return ReportBrokenDB ( &s, SQLGetRegisteredNicks, "Almacenando memoserv.SQLGetRegisteredNicks" );
     }
 
-    struct SGlobalIDs
-    {
-        unsigned long long      ID;
-        unsigned long long      MessageID;
-        std::vector < CUser* >  vecConnectedUsers;
-    };
-
     // Almacenamos las IDs de los usuarios registrados
     std::vector < SGlobalIDs > vecIDs;
     vecIDs.reserve ( static_cast < unsigned int > ( SQLGetRegisteredNicks->NumRows () ) );
