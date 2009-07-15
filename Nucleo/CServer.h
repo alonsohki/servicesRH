@@ -21,21 +21,33 @@ class CUser;
 class CServer : public CClient
 {
 public:
+    enum EServerFlags
+    {
+        SERVER_HIDDEN   = 0x00001,
+        SERVER_HUB      = 0x00002,
+        SERVER_SERVICE  = 0x00004
+    };
+
+public:
                             CServer         ( );
                             CServer         ( CServer* pParent,
                                               unsigned long ulNumeric,
                                               const CString& szName,
-                                              const CString& szDesc = "" );
+                                              const CString& szDesc = "",
+                                              const CString& szFlags = "+" );
     virtual                 ~CServer        ( );
     void                    Destroy         ( );
 
     void                    Create          ( CServer* pParent,
                                               unsigned long ulNumeric,
                                               const CString& szName,
-                                              const CString& szDesc = "" );
+                                              const CString& szDesc = "",
+                                              const CString& szFlags = "+" );
 
     void                    FormatNumeric   ( char* szDest ) const;
     inline EType            GetType         ( ) const { return CClient::SERVER; }
+
+    unsigned long           GetFlags        ( ) const { return m_ulFlags; }
 
     CServer*                GetServer       ( const CString& szName );
     CServer*                GetServer       ( unsigned long ulNumeric );
@@ -59,4 +71,5 @@ public:
 private:
     CClientManager          m_clientManager;
     std::list < CServer* >  m_children;
+    unsigned long           m_ulFlags;
 };

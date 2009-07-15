@@ -18,5 +18,16 @@
 
 void CClient::Send ( const IMessage& message )
 {
+    // Almacenamos la fecha del último comando
+    m_lastCommandSent.Create ();
+
     CProtocol::GetSingleton ().Send ( message, this );
+}
+
+unsigned long CClient::GetIdleTime ( ) const
+{
+    CDate now;
+    now -= m_lastCommandSent;
+
+    return static_cast < unsigned long > ( now.GetTimestamp () );
 }

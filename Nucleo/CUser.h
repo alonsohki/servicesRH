@@ -76,11 +76,14 @@ public:
     inline void             SetModes            ( unsigned long ulModes ) { m_ulModes = ulModes; }
     inline void             AddModes            ( unsigned long ulModes ) { m_ulModes |= ulModes; }
     inline void             RemoveModes         ( unsigned long ulModes ) { m_ulModes &= ~ulModes; }
+    inline void             SetAway             ( const CString& szAway = "" ) { m_szAway = szAway; }
 
     inline const CString&   GetIdent            ( ) const { return m_szIdent; }
     inline const CString&   GetHost             ( ) const { return m_szHost; }
     inline unsigned int     GetAddress          ( ) const { return m_uiAddress; }
     inline unsigned long    GetModes            ( ) const { return m_ulModes; }
+    inline const CString&   GetAway             ( ) const { return m_szAway; }
+    inline bool             IsAway              ( ) const { return ( m_szAway != "" ); }
 
     // Membresía de canales
     void                    AddMembership       ( CMembership* pMembership );
@@ -97,6 +100,7 @@ private:
     unsigned long                   m_uiAddress;
     unsigned long                   m_ulModes;
     std::list < CMembership* >      m_listMemberships;
+    CString                         m_szAway;
 
     bool                            m_bDeletingUser;
     SServicesData                   m_servicesData;

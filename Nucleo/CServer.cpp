@@ -20,9 +20,13 @@ CServer::CServer ( )
 {
 }
 
-CServer::CServer ( CServer* pParent, unsigned long ulNumeric, const CString& szName, const CString& szDesc )
+CServer::CServer ( CServer* pParent,
+                   unsigned long ulNumeric,
+                   const CString& szName,
+                   const CString& szDesc,
+                   const CString& szFlags )
 {
-    Create ( pParent, ulNumeric, szName, szDesc );
+    Create ( pParent, ulNumeric, szName, szDesc, szFlags );
 }
 
 CServer::~CServer ( )
@@ -56,7 +60,11 @@ void CServer::Destroy ( )
     m_clientManager.Destroy ();
 }
 
-void CServer::Create ( CServer* pParent, unsigned long ulNumeric, const CString& szName, const CString& szDesc )
+void CServer::Create ( CServer* pParent,
+                       unsigned long ulNumeric,
+                       const CString& szName,
+                       const CString& szDesc,
+                       const CString& szFlags )
 {
     CClient::Create ( pParent, ulNumeric, szName, szDesc );
 
@@ -64,6 +72,28 @@ void CServer::Create ( CServer* pParent, unsigned long ulNumeric, const CString&
     {
         CProtocol::GetSingleton ().GetMe ().m_clientManager.AddClient ( this );
         pParent->m_children.push_back ( this );
+    }
+
+    // Procesamos los flags
+    const char* pszFlags = szFlags.c_str ();
+    unsigned int i = 0;
+    m_ulFlags = 0;
+    if ( *pszFlags == '+' )
+        ++i;
+    for ( ; i < szFlags.length (); ++i )
+    {
+        switch ( pszFlags [ i ] )
+        {
+            case 'h':
+                m_ulFlags |= SERVER_HUB;
+                break;
+            case 's':
+                m_ulFlags |= SERVER_SERVICE;
+                break;
+            case 'x':
+                m_ulFlags |= SERVER_HIDDEN;
+                break;
+        }
     }
 }
 
@@ -94,6 +124,11 @@ CServer* CServer::GetServer ( unsigned long ulNumeric )
 CUser* CServer::GetUser ( unsigned long ulNumeric )
 {
     return m_clientManager.GetUser ( ulNumeric );
+}
+
+CUser* CServer::GetUser ( const CString& szName )
+{
+    return m_clientManager.GetUser ( szName );
 }
 
 CUser* CServer::GetUserAnywhere ( const CString& szName )

@@ -58,6 +58,8 @@ public:
     inline const CString&   GetName         ( ) const { return m_szName; }
     inline const CString&   GetDesc         ( ) const { return m_szDesc; }
     inline unsigned long    GetNumeric      ( ) const { return m_ulNumeric; }
+    inline const CDate&     GetCreationTime ( ) const { return m_creationTime; }
+    unsigned long           GetIdleTime     ( ) const;
 
     void                    Send            ( const IMessage& message );
 
@@ -69,4 +71,6 @@ private:
     unsigned long   m_ulNumeric;
     CString         m_szName;
     CString         m_szDesc;
+    CDate           m_creationTime;
+    CDate           m_lastCommandSent;
 };

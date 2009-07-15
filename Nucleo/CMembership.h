@@ -39,6 +39,8 @@ public:
     bool                    IsHalfop        ( ) const;
     bool                    IsVoice         ( ) const;
 
+    CString                 GetFlagsString  ( ) const;
+
 private:
     CChannel*       m_pChannel;
     CUser*          m_pUser;

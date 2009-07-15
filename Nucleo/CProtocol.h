@@ -70,7 +70,9 @@ public:
     const char*             GetDDBValue         ( unsigned char ucTable, const CString& szKey ) const;
 
 
-    void                    ConvertToLowercase  ( CString& szString );
+    void                    ConvertToLowercase  ( CString& szString ) const;
+    char*                   HashIP              ( char* dest, const char* szHost,
+                                                  unsigned int uiAddress, const char* szKey ) const;
 
 private:
     void                    InternalAddHandler      ( unsigned long ulStage,
@@ -102,6 +104,8 @@ private:
     bool                    evtKick             ( const IMessage& message );
     bool                    evtDB               ( const IMessage& message );
     bool                    evtRaw              ( const IMessage& message );
+    bool                    evtAway             ( const IMessage& message );
+    bool                    evtWhois            ( const IMessage& message );
 
 private:
     CSocket                 m_socket;
@@ -112,6 +116,8 @@ private:
     t_commandsMap           m_commandsMapBefore;
     t_commandsMap           m_commandsMapAfter;
     bool                    m_bGotServer;
+    CString                 m_szHiddenAddress;
+    CString                 m_szHiddenDesc;
 
     // Distributed database
     typedef google::dense_hash_map < char*, char*, SStringHasher, SStringEquals > t_mapDDB;

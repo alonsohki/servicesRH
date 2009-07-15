@@ -120,10 +120,21 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
     CString szDesc;
     if ( ! m_config.GetValue ( szDesc, "bots", "description" ) )
         return false;
+    CString szFlags;
+    if ( ! m_config.GetValue ( szFlags, "bots", "flags" ) )
+        return false;
+    if ( ! m_config.GetValue ( m_szHiddenAddress, "bots", "hiddenAddress" ) )
+        return false;
+    if ( ! m_config.GetValue ( m_szHiddenDesc, "bots", "hiddenDesc" ) )
+        return false;
     unsigned long ulNumeric = atol ( szNumeric );
 
+    // Limpiamos los flags
+    if ( *szFlags == '+' )
+        szFlags = szFlags.substr ( 1 );
+
     // Creamos nuestra estructura de servidor
-    m_me.Create ( 0, ulNumeric, szHost, szDesc );
+    m_me.Create ( 0, ulNumeric, szHost, szDesc, szFlags );
 
     // Negociamos la conexión
     unsigned long ulMaxusers;
@@ -133,7 +144,7 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
         ulMaxusers = 4095;
 
     Send ( CMessagePASS ( szPass ) );
-    Send ( CMessageSERVER ( szHost, 1, time ( 0 ), "J10", atol ( szNumeric ), ulMaxusers, "hs", szDesc ) );
+    Send ( CMessageSERVER ( szHost, 1, time ( 0 ), "J10", atol ( szNumeric ), ulMaxusers, szFlags, szDesc ) );
 
     // Registramos eventos
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageEND_OF_BURST(), PROTOCOL_CALLBACK ( &CProtocol::evtEndOfBurst, this ) );
@@ -153,6 +164,8 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
     InternalAddHandler ( HANDLER_AFTER_CALLBACKS,  CMessageKICK(),   PROTOCOL_CALLBACK ( &CProtocol::evtKick,   this ) );
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageDB(),     PROTOCOL_CALLBACK ( &CProtocol::evtDB,     this ) );
     InternalAddHandler ( HANDLER_IN_CALLBACKS,     CMessageRAW(),    PROTOCOL_CALLBACK ( &CProtocol::evtRaw,    this ) );
+    InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageAWAY(),   PROTOCOL_CALLBACK ( &CProtocol::evtAway,   this ) );
+    InternalAddHandler ( HANDLER_AFTER_CALLBACKS,  CMessageWHOIS(),  PROTOCOL_CALLBACK ( &CProtocol::evtWhois,  this ) );
 
     // Enviamos la versión de base de datos
     Send ( CMessageDB ( "*", 0, 0, 0, "", "", 2 ), &m_me );
@@ -202,16 +215,14 @@ bool CProtocol::Process ( const CString& szLine )
         // El primer mensaje esperado es el de la información del servidor al que nos conectamos
         if ( bGotText && szLine.compare ( 0, 6, "SERVER" ) == 0 )
         {
-            // Obtenemos el numérico del servidor
-            unsigned long ulNumeric;
-            if ( vec [ 6 ].length () == 3 )
-                vec [ 6 ].resize ( 1 );
-            else
-                vec [ 6 ].resize ( 2 );
-            ulNumeric = base64toint ( vec [ 6 ] );
+            // Procesamos el mensaje
+            CMessageSERVER message;
+            message.SetSource ( NULL );
+            if ( ! message.ProcessMessage ( szLine, vec ) )
+                return false;
 
             m_bGotServer = true;
-            new CServer ( &m_me, ulNumeric, vec [ 1 ], std::string ( vec [ 8 ], 1 ) );
+            new CServer ( &m_me, message.GetNumeric (), message.GetHost (), message.GetDesc (), message.GetFlags () );
             return true;
         }
 
@@ -433,6 +444,7 @@ int CProtocol::Send ( const IMessage& ircmessage, CClient* pSource )
         szMessage.append ( message.szText );
     }
 
+    printf ( "Enviando: %s\n", szMessage.c_str () );
     int iRet = m_socket.WriteString ( szMessage );
     if ( iRet > 0 )
     {
@@ -520,13 +532,87 @@ const char* CProtocol::GetDDBValue ( unsigned char ucTable, const CString& szKey
     return NULL;
 }
 
-void CProtocol::ConvertToLowercase ( CString& szString )
+void CProtocol::ConvertToLowercase ( CString& szString ) const
 {
     for ( unsigned int i = 0; i < szString.length (); ++i )
     {
         char c = szString [ i ];
         szString [ i ] = ToLower ( c );
     }
+}
+
+
+char* CProtocol::HashIP ( char* dest, const char* szHost, unsigned int uiAddress, const char* szKey_ ) const
+{
+    char szKey [ 25 ];
+    unsigned int v [ 2 ];
+    unsigned int w [ 2 ];
+    unsigned int k [ 4 ];
+    unsigned int uiTimes = 0;
+
+    // Cambiamos la dirección de endianness
+    uiAddress = ( ( uiAddress >> 24 ) & 0x000000FF ) |
+                ( ( uiAddress >>  8 ) & 0x0000FF00 ) |
+                ( ( uiAddress <<  8 ) & 0x00FF0000 ) |
+                ( ( uiAddress << 24 ) & 0xFF000000 );
+
+    // Preparamos una clave en blanco
+    memset ( szKey, 'A', 24 );
+    szKey [ 24 ] = '\0';
+
+    // Copiamos la clave
+    size_t len = strlen ( szKey_ );
+    if ( len > 24 )
+        len = 24;
+    strncpy ( szKey, szKey_, len );
+
+    // Generamos los valores numéricos de la clave
+    k [ 3 ] = base64toint ( szKey + 18 );
+    szKey [ 18 ] = '\0';
+    k [ 2 ] = base64toint ( szKey + 12 );
+    szKey [ 12 ] = '\0';
+    k [ 1 ] = base64toint ( szKey + 6 );
+    szKey [ 6 ] = '\0';
+    k [ 0 ] = base64toint ( szKey );
+
+    // Limpiamos la clave de memoria
+    memset ( szKey, 'A', 24 );
+    do
+    {
+        // Preparamos el cifrado
+        w [ 0 ] = 0;
+        w [ 1 ] = 0;
+
+        v [ 0 ] = ( k [ 0 ] & 0xFFFF0000 ) + uiTimes;
+        v [ 1 ] = ntohl ( uiAddress );
+
+        // Codificamos
+        tea ( v, k, w );
+
+        // Limpiamos el host de destino
+        memset ( dest, 0, 21 );
+
+        // Copiamos los hashes codificados al host de destino
+        inttobase64 ( dest,     w [ 0 ], 6 );
+        inttobase64 ( dest + 7, w [ 1 ], 6 );
+        dest [ 6 ]  = '.';
+        dest [ 13 ] = '.';
+        strcpy ( dest + 14, "virtual" );
+
+        // No debería ocurrir nunca, pero si después de muchas
+        // iteraciones no conseguimos una IP válida, copiamos
+        // diréctamente el host sin cifrar.
+        ++uiTimes;
+        if ( uiTimes == 65535 )
+        {
+            strcpy ( dest, szHost );
+            break;
+        }
+    }
+    while ( strchr ( dest, ']' ) ||
+            strchr ( dest, '[' ) );
+
+    return dest;
 }
 
 // Parte estática
@@ -586,7 +672,7 @@ bool CProtocol::evtServer ( const IMessage& message_ )
         {
             new CServer ( static_cast < CServer* > ( message.GetSource () ),
                           message.GetNumeric (), message.GetHost (),
-                          message.GetDesc () );
+                          message.GetDesc (), message.GetFlags () );
         }
     }
     catch ( std::bad_cast ) { return false; }
@@ -954,6 +1040,168 @@ bool CProtocol::evtRaw ( const IMessage& message_ )
 
         if ( vec [ 1 ] != "DB" )
             CLogger::Log ( "%s", message.GetLine ().c_str () );
+    }
+    catch ( std::bad_cast ) { return false; }
+    return true;
+}
+
+bool CProtocol::evtAway ( const IMessage& message_ )
+{
+    try
+    {
+        const CMessageAWAY& message = dynamic_cast < const CMessageAWAY& > ( message_ );
+        CClient* pSource = message.GetSource ();
+
+        if ( pSource && pSource->GetType () == CClient::USER )
+        {
+            CUser* pUser = reinterpret_cast < CUser* > ( pSource );
+            pUser->SetAway ( message.GetReason () );
+        }
+    }
+    catch ( std::bad_cast ) { return false; }
+    return true;
+}
+
+bool CProtocol::evtWhois ( const IMessage& message_ )
+{
+    try
+    {
+        const CMessageWHOIS& message = dynamic_cast < const CMessageWHOIS& > ( message_ );
+        if ( message.GetServer () == &m_me )
+        {
+            CClient* pSource = message.GetSource ();
+            CUser* pUser = m_me.GetUserAnywhere ( message.GetTarget () );
+            if ( !pUser )
+            {
+                m_me.Send ( CMessageNUMERIC ( 401, pSource, message.GetTarget (), "Nick no encontrado" ) );
+                return false;
+            }
+            unsigned long ulUserModes = pUser->GetModes ();
+
+            // Respondemos al whois
+            // Obtenemos el host
+            const char* szHost;
+            CString szVirtualHost;
+
+            bool bCanSeeIPs = true;
+            if ( ( ulUserModes & CUser::UMODE_HIDDENHOST ) != 0 &&
+                 ( pSource->GetType () == CClient::USER ) )
+            {
+                bCanSeeIPs = ( (reinterpret_cast < CUser* > ( pSource )->GetModes () & CUser::UMODE_VIEWIP) != 0 );
+                if ( pSource == pUser )
+                    bCanSeeIPs = true;
+            }
+
+            // Calculamos el host virtual
+            const char* szValue = GetDDBValue ( 'v', pUser->GetName () );
+            if ( szValue )
+                szVirtualHost = szValue;
+            else if ( ( szValue = GetDDBValue ( 'w', pUser->GetName () ) ) != NULL )
+                szVirtualHost.Format ( "%s.virtual", szValue );
+            else if ( ( szValue = GetDDBValue ( 'v', "." ) ) == NULL )
+                szVirtualHost = "no.hay.clave.de.cifrado";
+            else
+            {
+                char szIPHash [ 512 ];
+                HashIP ( szIPHash, pUser->GetHost (), pUser->GetAddress (), szValue );
+                szVirtualHost = szIPHash;
+            }
+
+            // Utilizamos el más apropiado
+            if ( bCanSeeIPs )
+                szHost = pUser->GetHost ().c_str ();
+            else
+                szHost = szVirtualHost.c_str ();
+
+            m_me.Send ( CMessageNUMERIC ( 311,
+                                          pSource,
+                                          CString ( "%s %s %s *", pUser->GetName ().c_str (),
+                                                                  pUser->GetIdent ().c_str (),
+                                                                  szHost ),
+                                          pUser->GetDesc () ) );
+
+            // Enviamos los canales
+            const std::list < CMembership* >& memberships = pUser->GetMemberships ();
+            if ( memberships.size () > 0 )
+            {
+                CString szChannels;
+                for ( std::list < CMembership* >::const_iterator i = memberships.begin ();
+                      i != memberships.end ();
+                      ++i )
+                {
+                    CMembership* pCur = (*i);
+                    CString szFlags = pCur->GetFlagsString ();
+                    szChannels.append ( szFlags );
+                    szChannels.append ( pCur->GetChannel ()->GetName () );
+                    szChannels.append ( " " );
+                }
+                szChannels.resize ( szChannels.length () - 1 );
+
+                m_me.Send ( CMessageNUMERIC ( 319, pSource, pUser->GetName (), szChannels ) );
+            }
+
+            // Enviamos el servidor
+            CServer* pUserServer = dynamic_cast < CServer* > ( pUser->GetParent () );
+            if ( pUserServer )
+            {
+                if ( pUserServer->GetFlags () & CServer::SERVER_HIDDEN )
+                {
+                    m_me.Send ( CMessageNUMERIC ( 312,
+                                                  pSource,
+                                                  CString ( "%s %s", pUser->GetName ().c_str (),
+                                                                     m_szHiddenAddress.c_str () ),
+                                                  m_szHiddenDesc ) );
+                }
+                else
+                {
+                    m_me.Send ( CMessageNUMERIC ( 312,
+                                                  pSource,
+                                                  CString ( "%s %s", pUser->GetName ().c_str (),
+                                                                     pUserServer->GetName ().c_str () ),
+                                                  pUserServer->GetDesc () ) );
+                }
+            }
+
+            // Enviamos si está away
+            if ( pUser->IsAway () )
+                m_me.Send ( CMessageNUMERIC ( 301, pSource, pUser->GetName (), pUser->GetAway () ) );
+
+            // Enviamos si el nick está registrado o suspendido
+            if ( ulUserModes & CUser::UMODE_REGNICK )
+                m_me.Send ( CMessageNUMERIC ( 307, pSource, pUser->GetName (), "Tiene el nick Registrado y Protegido" ) );
+            else if ( ulUserModes & CUser::UMODE_SUSPENDED )
+                m_me.Send ( CMessageNUMERIC ( 390, pSource, pUser->GetName (), "Tiene el nick SUSPENDido" ) );
+
+            // Enviamos si está identificado
+            if ( ulUserModes & CUser::UMODE_IDENTIFIED )
+                m_me.Send ( CMessageNUMERIC ( 320, pSource, pUser->GetName (), "Está identificado ante los servicios" ) );
+
+            // Enviamos si es un bot
+            if ( ulUserModes & CUser::UMODE_BOT )
+                m_me.Send ( CMessageNUMERIC ( 316, pSource, pUser->GetName (), "es un BOT de la red" ) );
+
+            // Enviamos si es IRCOP
+            if ( ulUserModes & CUser::UMODE_OPER )
+                m_me.Send ( CMessageNUMERIC ( 313, pSource, pUser->GetName (), "Es un OPERador de Nodo" ) );
+
+            // Enviamos el host virtual
+            if ( bCanSeeIPs && ulUserModes & CUser::UMODE_HIDDENHOST )
+            {
+                m_me.Send ( CMessageNUMERIC ( 378, pSource, pUser->GetName (), CString ( "IP Virtual %s", szVirtualHost.c_str () ) ) );
+            }
+
+            // Enviamos el idle
+            if ( pUserServer == &m_me )
+            {
+                m_me.Send ( CMessageNUMERIC ( 317, pSource, CString ( "%s %lu %llu", pUser->GetName ().c_str (),
+                                                                                     pUser->GetIdleTime (),
+                                                                                     pUser->GetCreationTime ().GetTimestamp () ),
+                                                            "seconds idle, signon time" ) );
+            }
+
+            // Fin del WHOIS
+            m_me.Send ( CMessageNUMERIC ( 318, pSource, pUser->GetName (), "Fin del WHOIS list." ) );
+        }
     }
     catch ( std::bad_cast ) { return false; }
     return true;

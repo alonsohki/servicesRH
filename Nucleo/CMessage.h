@@ -96,9 +96,26 @@ class CMessage ## msg : public IMessage \
 ////////////////////////////
 BEGIN_MESSAGE_DECLARATION(RAW, const CString& szLine)
 public:
-    inline const CString& GetLine ( ) const { return m_szLine; }
+    inline const CString&   GetLine     ( ) const { return m_szLine; }
 private:
-    CString m_szLine;
+    CString     m_szLine;
+END_MESSAGE_DECLARATION()
+
+
+////////////////////////////
+//         NUMERIC        //
+////////////////////////////
+BEGIN_MESSAGE_DECLARATION(NUMERIC, unsigned int uiNumeric, CClient* pTarget, const CString& szInfo, const CString& szText)
+public:
+    inline unsigned int     GetNumeric      ( ) const { return m_uiNumeric; }
+    inline CClient*         GetDest         ( ) const { return m_pDest; }
+    inline const CString&   GetInfo         ( ) const { return m_szInfo; }
+    inline const CString&   GetText         ( ) const { return m_szText; }
+private:
+    unsigned int        m_uiNumeric;
+    CClient*            m_pDest;
+    CString             m_szInfo;
+    CString             m_szText;
 END_MESSAGE_DECLARATION()
 
 
@@ -425,6 +442,30 @@ public:
     inline CUser*           GetTarget       ( ) const { return m_pTarget; }
 private:
     CUser*          m_pTarget;
+END_MESSAGE_DECLARATION()
+
+
+////////////////////////////
+//          WHOIS         //
+////////////////////////////
+BEGIN_MESSAGE_DECLARATION(WHOIS, CServer* pServer, const CString& szTarget)
+public:
+    inline CServer*         GetServer       ( ) const { return m_pServer; }
+    inline const CString&   GetTarget       ( ) const { return m_szTarget; }
+private:
+    CServer*        m_pServer;
+    CString         m_szTarget;
+END_MESSAGE_DECLARATION()
+
+
+////////////////////////////
+//          AWAY          //
+////////////////////////////
+BEGIN_MESSAGE_DECLARATION(AWAY, const CString& szReason)
+public:
+    inline const CString&   GetReason       ( ) const { return m_szReason; }
+private:
+    CString         m_szReason;
 END_MESSAGE_DECLARATION()
 
 

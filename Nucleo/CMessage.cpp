@@ -40,6 +40,43 @@ bool CMessageRAW::ProcessMessage ( const CString& szLine, const std::vector < CS
 
 
 ////////////////////////////
+//         NUMERIC        //
+////////////////////////////
+CMessageNUMERIC::CMessageNUMERIC ( unsigned int uiNumeric, CClient* pDest, const CString& szInfo, const CString& szText )
+: m_uiNumeric ( uiNumeric ),
+  m_pDest ( pDest ),
+  m_szInfo ( szInfo ),
+  m_szText ( szText )
+{
+}
+CMessageNUMERIC::~CMessageNUMERIC ( ) { }
+
+bool CMessageNUMERIC::BuildMessage ( SProtocolMessage& message ) const
+{
+    char szNumeric [ 16 ];
+
+    if ( ! m_pDest )
+        return false;
+    m_pDest->FormatNumeric ( szNumeric );
+
+    message.szCommand.Format ( "%u", m_uiNumeric );
+    if ( m_szInfo != "" )
+        message.szExtraInfo = CString ( "%s %s", szNumeric, m_szInfo.c_str () );
+    else
+        message.szExtraInfo = szNumeric;
+    message.szText = m_szText;
+
+    return true;
+}
+
+bool CMessageNUMERIC::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
+{
+    // No lo vamos a necesitar
+    return false;
+}
+
+
+////////////////////////////
 //          PASS          //
 ////////////////////////////
 CMessagePASS::CMessagePASS ( const CString& szPass )
@@ -127,29 +164,33 @@ bool CMessageSERVER::ProcessMessage ( const CString& szLine, const std::vector <
     if ( vec.size () < 9 )
         return false;
 
-    if ( GetSource ()->GetType () != CClient::SERVER )
+    if ( GetSource () && GetSource ()->GetType () != CClient::SERVER )
         return false;
 
-    m_szHost = vec [ 2 ];
-    m_uiDepth = atoi ( vec [ 3 ] );
-    m_timestamp = atol ( vec [ 5 ] );
-    m_szProtocol = vec [ 6 ];
+    unsigned int uiBase = 1;
+    if ( ! CPortability::CompareNoCase ( vec [ 0 ], "SERVER" ) )
+        uiBase = 0;
 
-    if ( vec [ 7 ].length () > 3 )
+    m_szHost = vec [ uiBase + 1 ];
+    m_uiDepth = atoi ( vec [ uiBase + 2 ] );
+    m_timestamp = atol ( vec [ uiBase + 4 ] );
+    m_szProtocol = vec [ uiBase + 5 ];
+
+    if ( vec [ uiBase + 6 ].length () > 3 )
     {
         // Numérico largo
-        m_ulNumeric = base64toint ( vec [ 7 ].substr ( 0, 2 ).c_str () );
-        m_ulMaxusers = base64toint ( vec [ 7 ].substr ( 2 ).c_str () );
+        m_ulNumeric = base64toint ( vec [ uiBase + 6 ].substr ( 0, 2 ).c_str () );
+        m_ulMaxusers = base64toint ( vec [ uiBase + 6 ].substr ( 2 ).c_str () );
     }
     else
     {
         // Numérico corto
-        m_ulNumeric = base64toint ( vec [ 7 ].substr ( 0, 1 ).c_str () );
-        m_ulMaxusers = base64toint ( vec [ 7 ].substr ( 1 ).c_str () );
+        m_ulNumeric = base64toint ( vec [ uiBase + 6 ].substr ( 0, 1 ).c_str () );
+        m_ulMaxusers = base64toint ( vec [ uiBase + 6 ].substr ( 1 ).c_str () );
     }
 
-    m_szFlags = vec [ 8 ].substr ( 1 );
-    m_szDesc = vec [ 9 ];
+    m_szFlags = vec [ uiBase + 7 ].substr ( 1 );
+    m_szDesc = vec [ uiBase + 8 ];
 
     return true;
 }
@@ -1116,4 +1157,64 @@ bool CMessageRENAME::ProcessMessage ( const CString& szLine, const std::vector <
 {
     // Nunca lo vamos a necesitar
     return false;
+}
+
+
+////////////////////////////
+//          WHOIS         //
+////////////////////////////
+CMessageWHOIS::CMessageWHOIS ( CServer* pServer, const CString& szTarget )
+: m_pServer ( pServer ),
+  m_szTarget ( szTarget )
+{
+}
+CMessageWHOIS::~CMessageWHOIS ( ) { }
+
+bool CMessageWHOIS::BuildMessage ( SProtocolMessage& message ) const
+{
+    // Nunca lo vamos a necesitar
+    return false;
+}
+
+bool CMessageWHOIS::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
+{
+    if ( vec.size () < 4 )
+        return false;
+
+    unsigned int uiNumeric = base64toint ( vec [ 2 ] );
+    m_pServer = CProtocol::GetSingleton ().GetMe ().GetServer ( uiNumeric );
+    if ( ! m_pServer )
+        return false;
+
+    m_szTarget = vec [ 3 ];
+
+    return true;
+}
+
+
+////////////////////////////
+//          AWAY          //
+////////////////////////////
+CMessageAWAY::CMessageAWAY ( const CString& szReason )
+: m_szReason ( szReason )
+{
+}
+CMessageAWAY::~CMessageAWAY ( ) { }
+
+bool CMessageAWAY::BuildMessage ( SProtocolMessage& message ) const
+{
+    message.szText = m_szReason;
+    return true;
+}
+
+bool CMessageAWAY::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
+{
+    if ( vec.size () < 2 )
+        return false;
+
+    if ( vec.size () == 2 )
+        m_szReason = "";
+    else
+        m_szReason = vec [ 2 ];
+    return true;
 }

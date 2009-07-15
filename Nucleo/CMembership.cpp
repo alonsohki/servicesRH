@@ -46,3 +46,17 @@ bool CMembership::IsVoice ( ) const
 {
     return !!(m_ulFlags & CChannel::CFLAG_VOICE);
 }
+
+CString CMembership::GetFlagsString ( ) const
+{
+    CString szFlags = "";
+    if ( IsVoice () )
+        szFlags.append ( "+" );
+    if ( IsHalfop () )
+        szFlags.append ( "%" );
+    if ( IsOp () )
+        szFlags.append ( "@" );
+    if ( IsOwner () )
+        szFlags.append ( "." );
+    return szFlags;
+}
