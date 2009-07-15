@@ -34,8 +34,9 @@ public:
     static void         RegisterServices        ( const CConfig& config );
     static CService*    GetService              ( const CString& szName );
 private:
-    static std::vector < unsigned long >      ms_ulFreeNumerics;
-    static std::list < CService* >            ms_listServices;
+    static std::vector < unsigned long >        ms_ulFreeNumerics;
+    static std::list < CService* >              ms_listServices;
+    static CString                              ms_szLogChannel;
 
 
     // Parte no estática
@@ -53,10 +54,17 @@ public:
     const CString&  GetError            ( ) const { return m_szError; }
 
     void            Msg                 ( CUser& dest, const CString& szMessage );
+    void            Msg                 ( CChannel& dest, const CString& szMessage );
     bool            LangMsg             ( CUser& dest, const char* szTopic, ... );
+    bool            vLangMsg            ( CChannel& dest, const char* szTopic, va_list vl );
     bool            SendSyntax          ( CUser& dest, const char* szCommand );
     bool            AccessDenied        ( CUser& dest );
     bool            ReportBrokenDB      ( CUser* pDest, CDBStatement* pStatement = 0, const CString& szExtraInfo = CString() );
+
+    // Log
+protected:
+    void            Log                 ( const char* szTopic, ... );
+    void            vLog                ( const char* szTopic, va_list vl );
 
 protected:
     void            SetOk               ( bool bOk ) { m_bIsOk = bOk; }

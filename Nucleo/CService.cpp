@@ -20,6 +20,7 @@
 // Parte estática
 std::vector < unsigned long > CService::ms_ulFreeNumerics ( 4096 );
 std::list < CService* > CService::ms_listServices;
+CString CService::ms_szLogChannel;
 
 void CService::RegisterServices ( const CConfig& config )
 {
@@ -29,23 +30,40 @@ void CService::RegisterServices ( const CConfig& config )
         ms_ulFreeNumerics [ ulIter ] = 4095 - ulIter;
     }
 
+    // Cargamos el canal de logs
+    if ( ! config.GetValue ( ms_szLogChannel, "bots", "logchannel" ) )
+    {
+        CLogger::Log ( "Error cargando el canal de logs de la configuración." );
+        return;
+    }
+
+    std::vector < CService* > vecServices;
     CService* pService;
 
 #define LOAD_SERVICE(cl, name) do { \
     pService = new cl ( config ); \
     if ( ! pService->IsOk () ) \
     { \
-        printf ( "Error cargando el servicio '%s': %s\n", (name), pService->GetError ().c_str () ); \
+        CLogger::Log ( "Error cargando el servicio '%s': %s", (name), pService->GetError ().c_str () ); \
     } \
-    else pService->Load (); \
+    else vecServices.push_back ( pService ); \
 } while ( 0 )
 
+    LOAD_SERVICE(COperserv, "operserv");
     LOAD_SERVICE(CNickserv, "nickserv");
     LOAD_SERVICE(CChanserv, "chanserv");
     LOAD_SERVICE(CMemoserv, "memoserv");
-    LOAD_SERVICE(COperserv, "operserv");
 
 #undef LOAD_SERVICE
+
+    // Cargamos los servicios
+    for ( std::vector < CService* >::iterator i = vecServices.begin ();
+          i != vecServices.end ();
+          ++i )
+    {
+        CService* pCur = (*i);
+        pCur->Load ();
+    }
 }
 
 CService* CService::GetService ( const CString& szName )
@@ -153,6 +171,9 @@ void CService::Load ()
         // Registramos el evento para recibir comandos
         m_protocol.AddHandler ( CMessagePRIVMSG (), PROTOCOL_CALLBACK ( &CService::evtPrivmsg, this ) );
 
+        // Logueamos la carga
+        Log ( "LOG_SERVICE_LOADED", GetName ().c_str () );
+
         m_bIsLoaded = true;
     }
 }
@@ -166,6 +187,9 @@ void CService::Unload ()
 
         m_bIsLoaded = false;
 
+        // Logueamos la descarga
+        Log ( "LOG_SERVICE_UNLOADED", GetName ().c_str () );
+
         Quit ( "Service unloaded" );
     }
 }
@@ -176,6 +200,14 @@ void CService::Msg ( CUser& dest, const CString& szMessage )
         return;
 
     Send ( CMessagePRIVMSG ( &dest, 0, szMessage ) );
+}
+
+void CService::Msg ( CChannel& dest, const CString& szMessage )
+{
+    if ( !m_bIsOk || !m_bIsLoaded )
+        return;
+
+    Send ( CMessagePRIVMSG ( 0, &dest, szMessage ) );
 }
 
 bool CService::LangMsg ( CUser& dest, const char* szTopic, ... )
@@ -208,6 +240,44 @@ bool CService::LangMsg ( CUser& dest, const char* szTopic, ... )
         va_start ( vl, szTopic );
         szMessage2.vFormat ( szMessage.c_str (), vl );
         va_end ( vl );
+
+        // Enviamos línea a línea
+        size_t iPrevPos = -1;
+        iPos = 0;
+        while ( ( iPos = szMessage2.find ( '\n', iPrevPos + 1 ) ) != CString::npos )
+        {
+            if ( iPrevPos + 1 == iPos )
+                Msg ( dest, "\xA0" );
+            else
+                Msg ( dest, szMessage2.substr ( iPrevPos + 1, iPos - iPrevPos - 1 ) );
+            iPrevPos = iPos;
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+bool CService::vLangMsg ( CChannel& dest, const char* szTopic, va_list vl )
+{
+    if ( !m_bIsOk || !m_bIsLoaded )
+        return false;
+
+    CLanguage* pLanguage = m_langManager.GetDefaultLanguage ();
+    if ( pLanguage == NULL )
+        return false;
+
+    CString szMessage = pLanguage->GetTopic ( m_szServiceName, szTopic );
+    if ( szMessage.length () > 0 )
+    {
+        // Ponemos el nombre del bot en el mensaje
+        size_t iPos = 0;
+        while ( ( iPos = szMessage.find ( "%N", iPos ) ) != CString::npos )
+            szMessage.replace ( iPos, 2, GetName () );
+
+        CString szMessage2;
+        szMessage2.vFormat ( szMessage.c_str (), vl );
 
         // Enviamos línea a línea
         size_t iPrevPos = -1;
@@ -531,4 +601,36 @@ bool CService::TimeRestrictionCbk ( void* pUserData )
     }
 
     return true;
+}
+
+// Log
+void CService::Log ( const char* szTopic, ... )
+{
+    va_list vl;
+    va_start ( vl, szTopic );
+    vLog ( szTopic, vl );
+    va_end ( vl );
+}
+
+void CService::vLog ( const char* szTopic, va_list vl )
+{
+    // Obtenemos el servicio operserv
+    static CService* pOperserv = 0;
+    if ( !pOperserv )
+    {
+        pOperserv = CService::GetService ( "operserv" );
+        if ( !pOperserv )
+            return;
+    }
+
+    // Nos aseguramos de que el servicio esté cargado
+    if ( pOperserv->IsLoaded () == false )
+        return;
+
+    // Obtenemos el canal de destino
+    CChannel* pChannel = CChannelManager::GetSingleton ().GetChannel ( ms_szLogChannel );
+    if ( !pChannel )
+        return;
+
+    pOperserv->vLangMsg ( *pChannel, szTopic, vl );
 }

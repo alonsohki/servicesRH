@@ -1033,6 +1033,9 @@ COMMAND(Register)
     LangMsg ( s, "REGISTER_COMPLETE", szPassword.c_str () );
     ClearPassword ( szPassword ); // Por seguridad, limpiamos el password
 
+    // Log
+    Log ( "LOG_NICK_REGISTERED", s.GetName ().c_str (), s.GetIdent ().c_str (), s.GetHost ().c_str () );
+
     // Le identificamos
     data.ID = SQLRegister->InsertID ();
     Identify ( s );

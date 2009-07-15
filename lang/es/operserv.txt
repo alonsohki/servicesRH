@@ -1,0 +1,31 @@
+####################################################################################
+## Fichero de idioma de operserv.
+##   Autores:						Alberto Alonso < rydencillo@gmail.com >
+##   Última fecha de modificación:	14 Julio 2009 - 10:19 ( Alberto Alonso )
+##   Idioma:						Castellano
+##
+##
+## Sintaxis:
+## - Para crear un tema de idioma, pon entre %% el nombre del tema. Por ejemplo: %TEMA%.
+## - Para finalizarlo, usa %% sin escribir nada dentro.
+## - Para añadir comentarios, comienza la línea con #. También se puede insertar comentarios
+##   dentro de la definición de un tema.
+## - Puedes dejar tantas líneas en blanco como quieras entre tema y tema.
+## - Las líneas en blanco dentro de los temas aparecerán en el resultado que se envíe a los clientes.
+##
+
+
+##############################
+##          LOGS            ##
+##############################
+%LOG_SERVICE_LOADED%
+Se ha cargado el servicio 12%s.
+%%
+
+%LOG_SERVICE_UNLOADED%
+Se ha descargado el servicio 12%s.
+%%
+
+%LOG_NICK_REGISTERED%
+Nuevo nick registrado: 12%s (%s@%s)
+%%

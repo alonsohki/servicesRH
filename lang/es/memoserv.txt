@@ -1,7 +1,7 @@
 ####################################################################################
-## Fichero de ayuda de memoserv.
+## Fichero de idioma de memoserv.
 ##   Autores:						Alberto Alonso < rydencillo@gmail.com >
-##   Última fecha de modificación:	14 Julio 2009 - 10:19 ( Alberto Alonso )
+##   Última fecha de modificación:	15 Julio 2009 - 12:47 ( Alberto Alonso )
 ##   Idioma:						Castellano
 ##
 ##
