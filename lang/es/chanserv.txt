@@ -1,0 +1,119 @@
+####################################################################################
+## Fichero de idioma de chanserv.
+##   Autores:						Alberto Alonso < rydencillo@gmail.com >
+##   Última fecha de modificación:	17 Julio 2009 - 13:37 ( Alberto Alonso )
+##   Idioma:						Castellano
+##
+##
+## Sintaxis:
+## - Para crear un tema de idioma, pon entre %% el nombre del tema. Por ejemplo: %TEMA%.
+## - Para finalizarlo, usa %% sin escribir nada dentro.
+## - Para añadir comentarios, comienza la línea con #. También se puede insertar comentarios
+##   dentro de la definición de un tema.
+## - Puedes dejar tantas líneas en blanco como quieras entre tema y tema.
+## - Las líneas en blanco dentro de los temas aparecerán en el resultado que se envíe a los clientes.
+##
+
+%HELP%
+Ayuda de 12%N
+
+12%N es el servicio encargado del registro de canales.
+
+Lista de comandos disponibles:
+
+    12REGISTER             Registro de un canal
+    12IDENTIFY             Identificación como fundador de un canal
+
+Para obtener ayuda detallada sobre cualquier comando, escribe 12/msg %N HELP <comando>.
+%%
+
+%CHANNEL_EXPIRATION%
+Nota: Los canales registrados expirarán tras 12%d días sin ser utilizados.
+%%
+
+%UNKNOWN_COMMAND%
+Comando 12%s desconocido. Escribe 12/msg %N HELP para recibir ayuda.
+%%
+
+%ACCESS_DENIED%
+04¡Acceso denegado!
+%%
+
+%NO_HELP_TOPIC%
+04Error: No existe ningún tema de ayuda para 12%s.
+%%
+
+%HELP_FOR_MORE_INFORMATION%
+Escribe 12/msg %N HELP %s para obtener más información.
+%%
+
+%BROKEN_DB%
+04Error: La base de datos está caída en este momento. Tu petición no se ha podido procesar.
+Vuelve a intentarlo en unos minutos.
+%%
+
+%NOT_IDENTIFIED%
+04Error: No estás identificado. Escribe 12/msg %s HELP IDENTIFY para obtener ayuda.
+%%
+
+%NOT_REGISTERED%
+04Error: Tu nick no está registrado.
+Si deseas saber cómo registrarlo, escribe 12/msg %s HELP REGISTER.
+%%
+
+%TIME_RESTRICTION%
+04Error: Sólo puedes ejecutar el comando 12%s cada 12%u segundos.
+%%
+
+############################
+# REGISTER
+%SYNTAX_REGISTER%
+Sintaxis: 12REGISTER <#canal> <contraseña> <descripción>
+%%
+
+%HELP_REGISTER%
+Registra el 12canal especificado con la 12contraseña dada.
+Además, debes suministrar una 12descripción de la temática del canal.
+Esto te establece automáticamente como fundador del canal, lo que te
+permitirá controlar la lista de acceso, los permisos del canal y todas
+sus opciones.
+%%
+
+%REGISTER_BAD_NAME%
+04Error: El nombre del canal 12%s es inválido (debe empezar por #).
+%%
+
+%REGISTER_ALREADY_REGISTERED%
+04Error: El canal 12%s ya está registrado.
+%%
+
+%REGISTER_CHANNEL_DOESNT_EXIST%
+04Error: El canal 12%s no existe.
+%%
+
+%REGISTER_YOU_ARE_NOT_ON_CHANNEL%
+04Error: No estás en el canal 12%s.
+%%
+
+%REGISTER_YOU_ARE_NOT_OPERATOR%
+04Error: No eres operador del canal 12%s.
+%%
+
+%REGISTER_SUCCESS%
+El canal 12%s ha sido registrado 03correctamente.
+%%
+#
+############################
+
+
+
+
+
+#########################
+##                     ##
+##         LOGS        ##
+##                     ##
+#########################
+%LOG_REGISTER%
+12%s ha 07REGISTRADO el canal 12%s.
+%%

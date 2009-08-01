@@ -155,6 +155,7 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
     InternalAddHandler ( HANDLER_AFTER_CALLBACKS,  CMessageQUIT(),   PROTOCOL_CALLBACK ( &CProtocol::evtQuit,   this ) );
     InternalAddHandler ( HANDLER_AFTER_CALLBACKS,  CMessageKILL(),   PROTOCOL_CALLBACK ( &CProtocol::evtKill,   this ) );
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageMODE(),   PROTOCOL_CALLBACK ( &CProtocol::evtMode,   this ) );
+    InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageBMODE(),  PROTOCOL_CALLBACK ( &CProtocol::evtBmode,  this ) );
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageBURST(),  PROTOCOL_CALLBACK ( &CProtocol::evtBurst,  this ) );
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageTBURST(), PROTOCOL_CALLBACK ( &CProtocol::evtTburst, this ) );
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageTOPIC(),  PROTOCOL_CALLBACK ( &CProtocol::evtTopic,  this ) );
@@ -781,6 +782,20 @@ bool CProtocol::evtMode ( const IMessage& message_ )
             // Cambio de modos de canal
             pChannel->SetModes ( message.GetModes (), message.GetModeParams () );
         }
+    }
+    catch ( std::bad_cast ) { return false; }
+    return true;
+}
+
+bool CProtocol::evtBmode ( const IMessage& message_ )
+{
+    try
+    {
+        const CMessageBMODE& message = dynamic_cast < const CMessageBMODE& > ( message_ );
+        CChannel* pChannel = message.GetChannel ( );
+        if ( !pChannel )
+            return false;
+        pChannel->SetModes ( message.GetModes (), message.GetModeParams () );
     }
     catch ( std::bad_cast ) { return false; }
     return true;

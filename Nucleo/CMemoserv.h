@@ -68,5 +68,5 @@ private:
         unsigned int    uiTimeSend;
     } m_options;
 
-    CNickserv* m_pNickserv;
+    CNickserv*      m_pNickserv;
 };

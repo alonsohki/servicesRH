@@ -253,6 +253,23 @@ END_MESSAGE_DECLARATION()
 
 
 ////////////////////////////
+//         BMODE          //
+////////////////////////////
+BEGIN_MESSAGE_DECLARATION(BMODE, const CString& szBotname, CChannel* pChannel, const CString& szModes, const std::vector < CString >& vecModeParams = std::vector < CString > ( ))
+public:
+    inline const CString&                   GetBotname      ( ) const { return m_szBotname; }
+    inline CChannel*                        GetChannel      ( ) const { return m_pChannel; }
+    inline const CString&                   GetModes        ( ) const { return m_szModes; }
+    inline const std::vector < CString >    GetModeParams   ( ) const { return m_vecModeParams; }
+private:
+    CString                     m_szBotname;
+    CChannel*                   m_pChannel;
+    CString                     m_szModes;
+    std::vector < CString >     m_vecModeParams;
+END_MESSAGE_DECLARATION()
+
+
+////////////////////////////
 //          SQUIT         //
 ////////////////////////////
 BEGIN_MESSAGE_DECLARATION(SQUIT, CServer* pServer, const CDate& timestamp, const CString& szMessage)

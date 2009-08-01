@@ -507,6 +507,61 @@ bool CMessageMODE::ProcessMessage ( const CString& szLine, const std::vector < C
 
 
 ////////////////////////////
+//         BMODE          //
+////////////////////////////
+CMessageBMODE::CMessageBMODE ( const CString& szBotname,
+                               CChannel* pChannel,
+                               const CString& szModes,
+                               const std::vector < CString >& vecModeParams )
+: m_szBotname ( szBotname ),
+  m_pChannel ( pChannel ),
+  m_szModes ( szModes ),
+  m_vecModeParams ( vecModeParams )
+{
+}
+CMessageBMODE::~CMessageBMODE ( ) { }
+
+bool CMessageBMODE::BuildMessage ( SProtocolMessage& message ) const
+{
+    if ( !m_pChannel )
+        return false;
+
+    message.szExtraInfo.Format ( "%s %s %s", m_szBotname.c_str (), m_pChannel->GetName ().c_str (), m_szModes.c_str () );
+    for ( std::vector < CString >::const_iterator i = m_vecModeParams.begin ();
+          i != m_vecModeParams.end ();
+          ++i )
+    {
+        message.szExtraInfo.append ( " " );
+        message.szExtraInfo.append ( (*i) );
+    }
+
+    return true;
+}
+
+bool CMessageBMODE::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
+{
+    if ( vec.size () < 5 )
+        return false;
+
+    m_szBotname = vec [ 2 ];
+
+    const CString& szChannel = vec [ 3 ];
+    if ( *szChannel != '#' )
+        return false;
+
+    m_pChannel = CChannelManager::GetSingleton ().GetChannel ( szChannel );
+    if ( !m_pChannel )
+        return false;
+
+    m_szModes = vec [ 4 ];
+    m_vecModeParams.clear ();
+    m_vecModeParams.assign ( vec.begin () + 5, vec.end () );
+
+    return true;
+}
+
+
+////////////////////////////
 //          SQUIT         //
 ////////////////////////////
 CMessageSQUIT::CMessageSQUIT ( CServer* pServer, const CDate& timestamp, const CString& szMessage )

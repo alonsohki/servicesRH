@@ -90,6 +90,7 @@ public:
     void                    RemoveMembership    ( CMembership* pMembership );
     inline const std::list < CMembership* >
                             GetMemberships      ( ) const { return m_listMemberships; }
+    CMembership*            GetMembership       ( const CString& szChannel );
 
     // Servicios
     inline SServicesData&   GetServicesData     ( ) { return m_servicesData; }
