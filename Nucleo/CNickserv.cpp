@@ -164,8 +164,8 @@ unsigned long long CNickserv::GetAccountID ( const CString& szName, bool bCheckG
     {
         SQLAccountIDGroups = CDatabase::GetSingleton ().PrepareStatement (
               "SELECT * FROM ( "
-              "SELECT id FROM account WHERE LOWERNAME(name)=LOWERNAME(?) UNION "
-              "SELECT id FROM groups WHERE LOWERNAME(name)=LOWERNAME(?) "
+              "SELECT id FROM account WHERE LOWER(LOWERNAME(name))=LOWER(LOWERNAME(?)) UNION "
+              "SELECT id FROM groups WHERE LOWER(LOWERNAME(name))=LOWER(LOWERNAME(?)) "
               ") AS result"
             );
         if ( !SQLAccountIDGroups )
@@ -180,7 +180,7 @@ unsigned long long CNickserv::GetAccountID ( const CString& szName, bool bCheckG
     if ( !SQLAccountIDNogroups )
     {
         SQLAccountIDNogroups = CDatabase::GetSingleton ().PrepareStatement (
-              "SELECT id FROM account WHERE LOWERNAME(name)=LOWERNAME(?)"
+              "SELECT id FROM account WHERE LOWER(LOWERNAME(name))=LOWER(LOWERNAME(?))"
             );
         if ( !SQLAccountIDNogroups )
         {
@@ -355,7 +355,7 @@ bool CNickserv::CheckForbidden ( const CString& szName, CString& szReason )
     if ( !SQLCheckForbidden )
     {
         SQLCheckForbidden = CDatabase::GetSingleton ().PrepareStatement (
-                "SELECT reason FROM forbids WHERE LOWERNAME(name)=LOWERNAME(?)"
+              "SELECT reason FROM forbids WHERE LOWER(LOWERNAME(name))=LOWER(LOWERNAME(?))"
             );
         if ( !SQLCheckForbidden )
             return ReportBrokenDB ( 0, 0, "Generando nickserv.SQLCheckForbidden" );
@@ -1229,7 +1229,7 @@ COMMAND(Group)
         if ( !SQLUngroup )
         {
             SQLUngroup = CDatabase::GetSingleton ().PrepareStatement (
-                    "DELETE FROM groups WHERE LOWERNAME(name)=LOWERNAME(?)"
+                  "DELETE FROM groups WHERE LOWER(LOWERNAME(name))=LOWER(LOWERNAME(?))"
                 );
             if ( !SQLUngroup )
                 return ReportBrokenDB ( info.pSource, 0, "Generando nickserv.SQLUngroup" );
@@ -1962,10 +1962,10 @@ COMMAND(List)
     {
         SQLListAccounts = CDatabase::GetSingleton ().PrepareStatement (
               "SELECT * FROM ("
-              "SELECT id,name,private,'N' AS grouped FROM account WHERE LOWERNAME(name) LIKE LOWERNAME(?) LIMIT ? UNION "
+              "SELECT id,name,private,'N' AS grouped FROM account WHERE LOWER(LOWERNAME(name)) LIKE LOWER(LOWERNAME(?)) LIMIT ? UNION "
               "SELECT account.id AS id, groups.name AS name, account.private AS private, 'Y' AS grouped "
               "FROM groups LEFT JOIN account ON groups.id=account.id "
-              "WHERE LOWERNAME(groups.name) LIKE LOWERNAME(?) LIMIT ?"
+              "WHERE LOWER(LOWERNAME(groups.name)) LIKE LOWER(LOWERNAME(?)) LIMIT ?"
               ") AS registered ORDER BY name ASC LIMIT ?"
             );
         if ( !SQLListAccounts )
@@ -2363,7 +2363,7 @@ COMMAND(Forbid)
         if ( !SQLRemoveForbid )
         {
             SQLRemoveForbid = CDatabase::GetSingleton ().PrepareStatement (
-                  "DELETE FROM forbids WHERE LOWERNAME(name)=LOWERNAME(?)"
+                  "DELETE FROM forbids WHERE LOWER(LOWERNAME(name))=LOWER(LOWERNAME(?))"
                 );
             if ( !SQLRemoveForbid )
                 return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLRemoveForbid" );
