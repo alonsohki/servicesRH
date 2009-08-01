@@ -14,6 +14,158 @@
 ## - Las líneas en blanco dentro de los temas aparecerán en el resultado que se envíe a los clientes.
 ##
 
+%HELP%
+Ayuda de 12%N
+
+12%N es el servicio encargado de la administración de la red.
+
+Lista de comandos disponibles:
+
+    12KILL                 Expulsa a un usuario de la red
+    12GLINE                Administra las g-lines
+
+Para obtener ayuda detallada sobre cualquier comando, escribe 12/msg %N HELP <comando>.
+%%
+
+%ADMINS_HELP%
+
+03-= Administradores =-
+    12RAW                  Envía un mensaje directo al irc
+    12LOAD                 Carga un servicio
+    12UNLOAD               Descarga un servicio
+    12TABLE                Maneja las tablas del ircu
+%%
+
+
+%UNKNOWN_COMMAND%
+Comando 12%s desconocido. Escribe 12/msg %N HELP para recibir ayuda.
+%%
+
+%ACCESS_DENIED%
+04¡Acceso denegado!
+%%
+
+%NO_HELP_TOPIC%
+04Error: No existe ningún tema de ayuda para 12%s.
+%%
+
+%HELP_FOR_MORE_INFORMATION%
+Escribe 12/msg %N HELP %s para obtener más información.
+%%
+
+%BROKEN_DB%
+04Error: La base de datos está caída en este momento. Tu petición no se ha podido procesar.
+Vuelve a intentarlo en unos minutos.
+%%
+
+%NOT_IDENTIFIED%
+04Error: No estás identificado. Escribe 12/msg %s HELP IDENTIFY para obtener ayuda.
+%%
+
+%NOT_REGISTERED%
+04Error: Tu nick no está registrado.
+Si deseas saber cómo registrarlo, escribe 12/msg %s HELP REGISTER.
+%%
+
+
+############################
+# RAW
+%SYNTAX_RAW%
+Sintaxis: 12RAW <orígen> <mensaje>
+%%
+
+%HELP_RAW%
+Envía un mensaje directo al irc. El 12orígen puede ser o bien 12"me" para que lo
+envíe el propio servidor de los servicios, o el nombre de un servicio como
+por ejemplo 12nickserv.
+%%
+
+%RAW_UNKNOWN_SOURCE%
+04Error: Orígen desconocido.
+%%
+
+%RAW_SUCCESS%
+03Mensaje enviado correctamente.
+%%
+#
+############################
+
+
+############################
+# LOAD
+%SYNTAX_LOAD%
+Sintaxis: 12LOAD <servicio>
+%%
+
+%HELP_LOAD%
+Carga el 12servicio especificado.
+%%
+
+%LOAD_UNKNOWN_SERVICE%
+04Error: No existe ningún servicio con ese nombre.
+%%
+
+%LOAD_ALREADY_LOADED%
+04Error: Este servicio ya está cargado.
+%%
+
+%LOAD_SUCCESS%
+03Servicio cargado correctamente.
+%%
+#
+############################
+
+
+############################
+# UNLOAD
+%SYNTAX_UNLOAD%
+Sintaxis: 12UNLOAD <servicio>
+%%
+
+%HELP_UNLOAD%
+Descarga el 12servicio especificado.
+%%
+
+%UNLOAD_UNKNOWN_SERVICE%
+04Error: No existe ningún servicio con ese nombre.
+%%
+
+%UNLOAD_ALREADY_UNLOADED%
+04Error: Este servicio ya está descargado.
+%%
+
+%UNLOAD_SUCCESS%
+03Servicio descargado correctamente.
+%%
+#
+############################
+
+
+############################
+# TABLE
+%SYNTAX_TABLE%
+Sintaxis: 12TABLE <tabla> <clave> <valor>
+%%
+
+%HELP_TABLE%
+Introduce el 12valor especificado en la 12clave de la 12tabla especificada.
+%%
+
+%TABLE_INVALID%
+04Error: La tabla 12%c es incorrecta.
+%%
+
+%TABLE_SUCCESS%
+03Registro introducido en la DDB correctamente.
+%%
+#
+############################
+
+
+
+
+
+
 
 ##############################
 ##          LOGS            ##
@@ -24,4 +176,12 @@ Se ha cargado el servicio 12%s.
 
 %LOG_SERVICE_UNLOADED%
 Se ha descargado el servicio 12%s.
+%%
+
+%LOG_RAW%
+12%s ha enviado un mensaje directo (07RAW) con orígen 12%s: %s
+%%
+
+%LOG_TABLE%
+12%s ha ejecutado el comando 07TABLE para la tabla 12'%c' con clave 12%s y valor 12%s.
 %%

@@ -19,7 +19,32 @@
 class COperserv : public CService
 {
 public:
-                COperserv   ( const CConfig& config );
-    virtual     ~COperserv  ( );
+                    COperserv       ( const CConfig& config );
+    virtual         ~COperserv      ( );
+
+    void            Load            ( );
+    void            Unload          ( );
+
+    // Comandos
+protected:
+    void            UnknownCommand  ( SCommandInfo& info );
+private:
+#define COMMAND(x) bool cmd ## x ( SCommandInfo& info )
+#define SET_COMMAND(x) bool cmd ## x ( SCommandInfo& info, unsigned long long IDTarget )
+    COMMAND(Help);
+    COMMAND(Raw);
+    COMMAND(Load);
+    COMMAND(Unload);
+    COMMAND(Table);
+#undef SET_COMMAND
+#undef COMMAND
+
+    // Verificación de acceso a comandos
+private:
+    bool            verifyPreoperator       ( SCommandInfo& info );
+    bool            verifyOperator          ( SCommandInfo& info );
+    bool            verifyCoadministrator   ( SCommandInfo& info );
+    bool            verifyAdministrator     ( SCommandInfo& info );
+
 private:
 };
