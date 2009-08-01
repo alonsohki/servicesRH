@@ -41,12 +41,11 @@ void CLocalUser::Create ( unsigned long ulNumeric,
                                    1,
                                    GetIdent (),
                                    GetHost (),
-                                   "",
+                                   szModes,
                                    GetAddress (),
                                    GetNumeric (),
                                    GetDesc ()
                                  ), &me );
-    protocol.Send ( CMessageMODE ( this, 0, szModes ), this );
 
     m_bCreated = true;
 }
