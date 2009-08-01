@@ -116,7 +116,7 @@ public:
     static inline int gettimeofday ( struct timeval* tv, struct timezone* tz )
     {
 #ifndef WIN32
-        return gettimeofday ( tv, tz );
+        return ::gettimeofday ( tv, tz );
 #else
         FILETIME        ft;
         LARGE_INTEGER   li;
