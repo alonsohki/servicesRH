@@ -1,7 +1,6 @@
 ####################################################################################
 ## Fichero de idioma de memoserv.
 ##   Autores:						Alberto Alonso < rydencillo@gmail.com >
-##   Última fecha de modificación:	15 Julio 2009 - 14:00 ( Alberto Alonso )
 ##   Idioma:						Castellano
 ##
 ##

@@ -1,7 +1,6 @@
 ####################################################################################
 ## Fichero de idioma de operserv.
 ##   Autores:						Alberto Alonso < rydencillo@gmail.com >
-##   Última fecha de modificación:	14 Julio 2009 - 14:00 ( Alberto Alonso )
 ##   Idioma:						Castellano
 ##
 ##

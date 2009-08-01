@@ -1,7 +1,6 @@
 ####################################################################################
 ## Fichero de idioma de chanserv.
 ##   Autores:						Alberto Alonso < rydencillo@gmail.com >
-##   Última fecha de modificación:	17 Julio 2009 - 13:37 ( Alberto Alonso )
 ##   Idioma:						Castellano
 ##
 ##
