@@ -119,7 +119,7 @@ Registra el nick que estés usando ahora para futuro uso.
 Es necesario que especifiques una 12contraseña, la cuál utilizarás
 en las futuras sesiones para verificar que eres el dueño de este nick.
 
-Opcionalmente, puedes definir una 12dirección de email para poder
+Adicionalmente, debes definir una 12dirección de email para poder
 recuperar tu contraseña si en el futuro la olvidas.
 %%
 
