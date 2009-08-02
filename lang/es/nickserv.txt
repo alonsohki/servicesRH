@@ -111,7 +111,7 @@ Se te va a cambiar el nick a un nick temporal.
 ############################
 # REGISTER
 %SYNTAX_REGISTER%
-Sintaxis: 12REGISTER <contraseña> [dirección email]
+Sintaxis: 12REGISTER <dirección email> <contraseña>
 %%
 
 %HELP_REGISTER%

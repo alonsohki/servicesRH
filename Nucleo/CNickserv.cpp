@@ -960,6 +960,11 @@ COMMAND(Register)
             return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLSetFirstAdmin" );
     }
 
+    // Obtenemos el email
+    CString& szEmail = info.GetNextParam ();
+    if ( szEmail == "" )
+        return SendSyntax ( s, "REGISTER" );
+
     // Obtenemos el password
     CString& szPassword = info.GetNextParam ();
     if ( szPassword == "" )
@@ -974,9 +979,6 @@ COMMAND(Register)
         LangMsg ( s, "REGISTER_ACCOUNT_EXISTS" );
         return false;
     }
-
-    // Obtenemos el email si hubiere
-    CString& szEmail = info.GetNextParam ();
 
     // Verificamos el email
     if ( szEmail != "" && ! VerifyEmail ( szEmail ) )
