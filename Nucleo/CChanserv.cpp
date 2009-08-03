@@ -375,7 +375,6 @@ void CChanserv::CheckOnjoinStuff ( CUser& user, CChannel& channel )
 
     SServicesData& data = user.GetServicesData ();
 
-    CProtocol& protocol = CProtocol::GetSingleton ();
     char szNumeric [ 8 ];
     user.FormatNumeric ( szNumeric );
 
@@ -1244,7 +1243,7 @@ bool CChanserv::evtMode ( const IMessage& msg_ )
 {
     try
     {
-        const CMessageMODE& msg = dynamic_cast < const CMessageMODE& > ( msg_ );
+        //const CMessageMODE& msg = dynamic_cast < const CMessageMODE& > ( msg_ );
     }
     catch ( std::bad_cast ) { return false; }
 
