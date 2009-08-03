@@ -1051,6 +1051,20 @@ COMMAND(Access)
                                                             szAccountName.c_str (),
                                                             iLevel );
             }
+
+            // Actualizamos los usuarios a los que afecte
+            std::vector < CUser* > vecConnectedUsers;
+            if ( m_pNickserv->GetConnectedGroupMembers ( 0, AccountID, vecConnectedUsers ) )
+            {
+                for ( std::vector < CUser* >::iterator i = vecConnectedUsers.begin ();
+                      i != vecConnectedUsers.end ();
+                      ++i )
+                {
+                    CUser* pCur = *i;
+                    if ( pChannel->GetMembership ( pCur ) )
+                        CheckOnjoinStuff ( *pCur, *pChannel );
+                }
+            }
         }
 
         LangMsg ( s, "ACCESS_ADD_SUCCESS", szAccountName.c_str (), pChannel->GetName ().c_str (), iLevel );
@@ -1113,6 +1127,20 @@ COMMAND(Access)
                 LangNotice ( *pChannel, "ACCESS_DEL_DEBUG", s.GetName ().c_str (),
                                                             szAccountName.c_str (),
                                                             pChannel->GetName ().c_str () );
+            }
+
+            // Actualizamos los usuarios a los que afecte
+            std::vector < CUser* > vecConnectedUsers;
+            if ( m_pNickserv->GetConnectedGroupMembers ( 0, AccountID, vecConnectedUsers ) )
+            {
+                for ( std::vector < CUser* >::iterator i = vecConnectedUsers.begin ();
+                      i != vecConnectedUsers.end ();
+                      ++i )
+                {
+                    CUser* pCur = *i;
+                    if ( pChannel->GetMembership ( pCur ) )
+                        CheckOnjoinStuff ( *pCur, *pChannel );
+                }
             }
         }
 
