@@ -36,7 +36,7 @@ public:
     char*           EncodeNick      ( char* dest, const char* szNick, const char* szPassword );
     bool            CheckPassword   ( unsigned long long ID, const CString& szPassword );
     bool            VerifyEmail     ( const CString& szEmail );
-    bool            VerifyVhost     ( const CString& szVhost, CString& szBadword );
+    bool            VerifyVhost     ( const CString& szVhost, CString& szBadword, bool* bContainsColors );
 
 private:
     bool            CheckIdentified ( CUser& user );

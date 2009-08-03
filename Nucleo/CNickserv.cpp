@@ -582,12 +582,14 @@ bool CNickserv::VerifyEmail ( const CString& szEmail )
     return bValid;
 }
 
-bool CNickserv::VerifyVhost ( const CString& szVhost, CString& szBadword )
+bool CNickserv::VerifyVhost ( const CString& szVhost, CString& szBadword, bool* bContainsColors )
 {
     szBadword = "";
 
     // Hacemos una primera pasada verificando los caracteres
     bool bValid = true;
+    *bContainsColors = false;
+
     for ( unsigned int i = 0; bValid && i < szVhost.length (); ++i )
     {
         char c = szVhost [ i ];
@@ -597,6 +599,12 @@ bool CNickserv::VerifyVhost ( const CString& szVhost, CString& szBadword )
             case '_':
             case '-':
             case 'ç': case 'Ç': case 'ñ': case 'Ñ':
+                break;
+            case '\002':
+            case '\003':
+            case '\017':
+            case '\037':
+                *bContainsColors = true;
                 break;
             default:
                 if ( c >= '0' && c <= '9' )
@@ -1576,7 +1584,7 @@ SET_COMMAND(Set_Vhost)
     }
 
     // Obtenemos el vhost
-    CString& szVhost = info.GetNextParam ();
+    CString szVhost = info.GetNextParam ();
     if ( szVhost == "" )
         return SendSyntax ( s, "SET VHOST" );
 
@@ -1627,7 +1635,8 @@ SET_COMMAND(Set_Vhost)
             return false;
 
         CString szBadword;
-        if ( ! VerifyVhost ( szVhost, szBadword ) )
+        bool bContainsColors;
+        if ( ! VerifyVhost ( szVhost, szBadword, &bContainsColors ) )
         {
             if ( szBadword == "" )
                 LangMsg ( s, "SET_VHOST_INVALID_CHARACTERS" );
@@ -1635,6 +1644,9 @@ SET_COMMAND(Set_Vhost)
                 LangMsg ( s, "SET_VHOST_BADWORD", szBadword.c_str () );
             return false;
         }
+
+        if ( bContainsColors )
+            szVhost.append ( "\017" );
 
         // Actualizamos el vhost en la DDB para todo el grupo
         CProtocol& protocol = CProtocol::GetSingleton ();
