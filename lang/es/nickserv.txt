@@ -108,6 +108,14 @@ Motivo: %s
 Se te va a cambiar el nick a un nick temporal.
 %%
 
+%FOUNDER%
+fundador
+%%
+
+%SUCCESSOR%
+sucesor
+%%
+
 ############################
 # REGISTER
 %SYNTAX_REGISTER%
@@ -486,6 +494,14 @@ Mensaje de bienvenida: 12%s
 
 %INFO_LANGUAGE%
 Idioma: 12%s
+%%
+
+%INFO_ACCESS_LIST_HEADER%
+Lista de acceso a canales:
+%%
+
+%INFO_ACCESS_LIST_ENTRY%
+    %s %s
 %%
 
 #

@@ -1853,6 +1853,47 @@ COMMAND(Info)
             return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLGetInfo" );
     }
 
+    // Generamos la consulta para obtener sus registros
+    static CDBStatement* SQLGetAccess = 0;
+    if ( !SQLGetAccess )
+    {
+        CString szFounder;
+        GetLangTopic ( szFounder, "", "FOUNDER" );
+        while ( szFounder.at ( szFounder.length () - 1 ) == '\r' ||
+                szFounder.at ( szFounder.length () - 1 ) == '\n' )
+        {
+            szFounder.resize ( szFounder.length () - 1 );
+        }               
+
+        CString szSuccessor;
+        GetLangTopic ( szSuccessor, "", "SUCCESSOR" );
+        while ( szSuccessor.at ( szSuccessor.length () - 1 ) == '\r' ||
+                szSuccessor.at ( szSuccessor.length () - 1 ) == '\n' )
+        {
+            szSuccessor.resize ( szSuccessor.length () - 1 );
+        }               
+
+        CString szQuery ( "SELECT channel.name AS channel, \"(%s)\" AS level "
+                          "FROM channel WHERE channel.founder=? "
+
+                          "UNION "
+
+                          "SELECT channel.name AS channel, \"(%s)\" AS level "
+                          "FROM channel WHERE channel.successor=? "
+
+                          "UNION "
+
+                          "SELECT channel.name AS channel, access.level AS level "
+                          "FROM access LEFT JOIN channel ON access.channel = channel.id "
+                          "WHERE access.account=? "
+                          
+                          "ORDER BY level ASC",
+                          szFounder.c_str (), szSuccessor.c_str () );
+        SQLGetAccess = CDatabase::GetSingleton ().PrepareStatement ( szQuery );
+        if ( !SQLGetAccess )
+            return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLGetAccess" );
+    }
+
     // Obtenemos el nick
     CString& szNick = info.GetNextParam ();
     if ( szNick == "" )
@@ -1955,6 +1996,30 @@ COMMAND(Info)
         }
     }
     SQLGetInfo->FreeResult ();
+
+    // Mostramos la lista de acceso a canales
+    if ( bAll )
+    {
+        LangMsg ( s, "INFO_ACCESS_LIST_HEADER" );
+
+        // Ejecutamos la consulta SQL
+        if ( ! SQLGetAccess->Execute ( "QQQ", ID, ID, ID ) )
+            return ReportBrokenDB ( &s, SQLGetAccess, "Ejecutando nickserv.SQLGetAccess" );
+
+        // Almacenamos los resultados
+        char szChannel [ 256 ];
+        char szLevel [ 64 ];
+        if ( ! SQLGetAccess->Store ( 0, 0, "ss", szChannel, sizeof ( szChannel ), szLevel, sizeof ( szLevel ) ) )
+        {
+            SQLGetAccess->FreeResult ();
+            return ReportBrokenDB ( &s, SQLGetAccess, "Almacenando nickserv.SQLGetAccess" );
+        }
+
+        // Los mostramos
+        while ( SQLGetAccess->FetchStored () == CDBStatement::FETCH_OK )
+            LangMsg ( s, "INFO_ACCESS_LIST_ENTRY", szChannel, szLevel );
+        SQLGetAccess->FreeResult ();
+    }
 
     return true;
 }
