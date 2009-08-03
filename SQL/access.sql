@@ -4,6 +4,7 @@ CREATE TABLE `access` (
 	`level`			INT			NOT NULL,
 	
 	PRIMARY KEY ( account, channel ),
+	KEY ( channel ),
 	FOREIGN KEY ( account ) REFERENCES account ( id )
 		ON DELETE CASCADE ON UPDATE CASCADE,
 	FOREIGN KEY ( channel ) REFERENCES channel ( id )

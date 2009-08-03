@@ -840,9 +840,12 @@ COMMAND(Levels)
     else if ( !CPortability::CompareNoCase ( szCommand, "SET" ) )
     {
         // Comprobamos que sea fundador del canal
-        int iAccess = GetAccess ( s, ID );
-        if ( iAccess < 500 )
-            return AccessDenied ( s );
+        if ( ! HasAccess ( s, RANK_COADMINISTRATOR ) )
+        {
+            int iAccess = GetAccess ( s, ID );
+            if ( iAccess < 500 )
+                return AccessDenied ( s );
+        }
 
         // Obtenemos el nombre del nivel
         CString& szLevelName = info.GetNextParam ();
@@ -972,11 +975,11 @@ COMMAND(Access)
         int iLevel = atoi ( szLevel );
 
         // Comprobamos que tenga acceso a este comando
-        if ( ! CheckAccess ( s, ID, LEVEL_ACC_CHANGE ) )
+        if ( ! HasAccess ( s, RANK_OPERATOR ) && ! CheckAccess ( s, ID, LEVEL_ACC_CHANGE ) )
             return AccessDenied ( s );
 
         // Comprobamos que la lista de acceso no esté llena
-        if ( !HasAccess ( s, RANK_OPERATOR ) )
+        if ( ! HasAccess ( s, RANK_OPERATOR ) )
         {
             if ( !SQLCountAccess->Execute ( "Q", ID ) )
                 return ReportBrokenDB ( &s, SQLCountAccess, "Ejecutando chanserv.SQLCountAccess" );
@@ -1072,7 +1075,7 @@ COMMAND(Access)
             return SendSyntax ( s, "ACCESS DEL" );
 
         // Comprobamos que tenga acceso a este comando
-        if ( ! CheckAccess ( s, ID, LEVEL_ACC_CHANGE ) )
+        if ( ! HasAccess ( s, RANK_OPERATOR ) && ! CheckAccess ( s, ID, LEVEL_ACC_CHANGE ) )
             return AccessDenied ( s );
 
         // Obtenemos el id de la cuenta a eliminar
@@ -1132,7 +1135,7 @@ COMMAND(Access)
         }
 
         // Comprobamos que tenga acceso a este comando
-        if ( ! CheckAccess ( s, ID, LEVEL_ACC_LIST ) )
+        if ( ! HasAccess ( s, RANK_PREOPERATOR ) && ! CheckAccess ( s, ID, LEVEL_ACC_LIST ) )
             return AccessDenied ( s );
 
         // Ejecutamos la consulta SQL

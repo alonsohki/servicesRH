@@ -23,6 +23,7 @@ Lista de comandos disponibles:
     12REGISTER             Registro de un canal
     12IDENTIFY             Identificación como fundador de un canal
     12LEVELS               Maneja la lista de niveles de un canal
+    12ACCESS               Maneja la lista de acceso de un canal
 
 Para obtener ayuda detallada sobre cualquier comando, escribe 12/msg %N HELP <comando>.
 %%
@@ -72,6 +73,10 @@ Si quieres saber cómo registrar un canal, escribe 12/msg %N HELP REGISTER.
 
 %CHANNEL_NOT_FOUND%
 04Error: El canal 12%s no existe.
+%%
+
+%NOJOIN_KICK_REASON%
+No se te permite la entrada a este canal
 %%
 
 ############################
@@ -174,6 +179,89 @@ Las distintas opciones son:
 
 %LEVELS_SET_SUCCESS%
 El valor del nivel 12%s ha sido cambiado correctamente a 12%d.
+%%
+#
+############################
+
+
+############################
+# ACCESS
+%SYNTAX_ACCESS%
+Sintaxis: 12ACCESS <#canal> {ADD|DEL|LIST}
+%%
+
+%HELP_ACCESS%
+Maneja la lista de acceso a un 12canal. Para recibir más ayuda
+acerca de cada opción (ADD, DEL y LIST) escribe 12/msg %N HELP ACCESS <opción>.
+%%
+
+%ACCESS_ACCOUNT_NOT_FOUND%
+04Error: No existe ningún usuario registrado con el nombre 12%s.
+%%
+
+%SYNTAX_ACCESS_ADD%
+Sintaxis: 12ACCESS <#canal> ADD <nick> <nivel>
+%%
+
+%HELP_ACCESS_ADD%
+Añade el 12nick especificado a la lista de acceso del 12canal con el
+12nivel dado. El 12nivel debe ser un valor entre -1 y 499 y no puede ser 0.
+%%
+
+%ACCESS_ADD_LIST_FULL%
+04Error: La lista de acceso del canal 12%s está llena.
+%%
+
+%ACCESS_ADD_INVALID_LEVEL%
+04Error: Nivel no válido. Debe estar entre 12-1 y 12499 y no puede ser 120.
+%%
+
+%ACCESS_ADD_ALREADY_AT_THAT_LEVEL%
+04Error: El usuario 12%s ya tiene el nivel 12%d en el canal 12%s.
+%%
+
+%ACCESS_ADD_DEBUG%
+%s añade en el canal %s a %s con el nivel %d.
+%%
+
+%ACCESS_ADD_SUCCESS%
+12%s añadido a la lista de acceso de 12%s con el nivel 12%d.
+%%
+
+%SYNTAX_ACCESS_DEL%
+Sintaxis: 12ACCESS <#canal> DEL <nick>
+%%
+
+%HELP_ACCESS_DEL%
+Elimina el 12nick especificado de la lista de acceso del 12canal.
+%%
+
+%ACCESS_DEL_NOT_FOUND%
+04Error: El usuario 12%s no está en la lista de acceso del canal 12%s.
+%%
+
+%ACCESS_DEL_DEBUG%
+%s elimina a %s del canal %s
+%%
+
+%ACCESS_DEL_SUCCESS%
+El usuario 12%s ha sido eliminado de la lista de acceso del canal 12%s.
+%%
+
+%SYNTAX_ACCESS_LIST%
+Sintaxis: 12ACCESS <#canal> LIST
+%%
+
+%HELP_ACCESS_LIST%
+Muestra una lista de los usuarios con cierto nivel de acceso a ese 12canal.
+%%
+
+%ACCESS_LIST_HEADER%
+Lista de acceso del canal 12%s:
+%%
+
+%ACCESS_LIST_ENTRY%
+  %s%s%d
 %%
 #
 ############################
