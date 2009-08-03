@@ -127,14 +127,22 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
         return false;
     if ( ! m_config.GetValue ( m_szHiddenDesc, "bots", "hiddenDesc" ) )
         return false;
+
+    // Generamos el numérico
+    char szYXX [ 4 ];
+    memset ( szYXX, 0, sizeof ( szYXX ) );
     unsigned long ulNumeric = atol ( szNumeric );
+    if ( ulNumeric > 4095 )
+        inttobase64 ( szYXX, ulNumeric, 2 );
+    else
+        inttobase64 ( szYXX, ulNumeric, 1 );
 
     // Limpiamos los flags
     if ( *szFlags == '+' )
         szFlags = szFlags.substr ( 1 );
 
     // Creamos nuestra estructura de servidor
-    m_me.Create ( 0, ulNumeric, szHost, szDesc, szFlags );
+    m_me.Create ( 0, szYXX, szHost, szDesc, szFlags );
 
     // Negociamos la conexión
     unsigned long ulMaxusers;
@@ -144,7 +152,7 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
         ulMaxusers = 4095;
 
     Send ( CMessagePASS ( szPass ) );
-    Send ( CMessageSERVER ( szHost, 1, time ( 0 ), "J10", atol ( szNumeric ), ulMaxusers, szFlags, szDesc ) );
+    Send ( CMessageSERVER ( szHost, 1, time ( 0 ), "J10", szYXX, ulMaxusers, szFlags, szDesc ) );
 
     // Registramos eventos
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageEND_OF_BURST(), PROTOCOL_CALLBACK ( &CProtocol::evtEndOfBurst, this ) );
@@ -222,8 +230,10 @@ bool CProtocol::Process ( const CString& szLine )
             if ( ! message.ProcessMessage ( szLine, vec ) )
                 return false;
 
+            // Generamos el numérico
+
             m_bGotServer = true;
-            new CServer ( &m_me, message.GetNumeric (), message.GetHost (), message.GetDesc (), message.GetFlags () );
+            new CServer ( &m_me, message.GetYXX (), message.GetHost (), message.GetDesc (), message.GetFlags () );
             return true;
         }
 
@@ -242,10 +252,6 @@ bool CProtocol::Process ( const CString& szLine )
         {
             // Servidor con numérico de dos dígitos
             pServer = m_me.GetServer ( ulNumeric >> 18 );
-            char szNumeric [ 4 ];
-            char szNumeric2 [ 8 ];
-            inttobase64 ( szNumeric, ulNumeric & 262143, 3 );
-            inttobase64 ( szNumeric2, ulNumeric, 5 );
             if ( pServer )
                 pSource = pServer->GetUser ( ulNumeric & 262143 );
         }
@@ -668,10 +674,10 @@ bool CProtocol::evtServer ( const IMessage& message_ )
     try
     {
         const CMessageSERVER& message = dynamic_cast < const CMessageSERVER& > ( message_ );
-        if ( message.GetNumeric () != m_me.GetNumeric () )
+        if ( strcmp ( message.GetYXX (), m_me.GetYXX () ) != 0 )
         {
             new CServer ( static_cast < CServer* > ( message.GetSource () ),
-                          message.GetNumeric (), message.GetHost (),
+                          message.GetYXX (), message.GetHost (),
                           message.GetDesc (), message.GetFlags () );
         }
     }
@@ -704,7 +710,7 @@ bool CProtocol::evtNick ( const IMessage& message_ )
         {
             // Nuevo usuario desde un servidor
             CUser* pUser = new CUser ( message.GetServer (),
-                                       message.GetNumeric (),
+                                       message.GetYXX (),
                                        message.GetNick (),
                                        message.GetIdent (),
                                        message.GetDesc (),

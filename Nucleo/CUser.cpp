@@ -47,7 +47,7 @@ CUser::CUser ( )
 }
 
 CUser::CUser ( CServer* pServer,
-               unsigned long ulNumeric,
+               const CString& szYXX,
                const CString& szName,
                const CString& szIdent,
                const CString& szDesc,
@@ -56,7 +56,7 @@ CUser::CUser ( CServer* pServer,
 : m_ulModes ( 0 )
 {
     m_bDeletingUser = false;
-    Create ( pServer, ulNumeric, szName, szIdent, szDesc, szHost, uiAddress );
+    Create ( pServer, szYXX, szName, szIdent, szDesc, szHost, uiAddress );
 }
 
 CUser::~CUser ()
@@ -73,40 +73,30 @@ CUser::~CUser ()
 }
 
 void CUser::Create ( CServer* pServer,
-               unsigned long ulNumeric,
+               const CString& szYXX,
                const CString& szName,
                const CString& szIdent,
                const CString& szDesc,
                const CString& szHost,
                unsigned int uiAddress )
 {
-    CClient::Create ( pServer, ulNumeric, szName, szDesc );
+    CClient::Create ( pServer, szYXX, szName, szDesc );
     m_szIdent = szIdent;
     m_szHost = szHost;
     m_uiAddress = uiAddress;
 }
 
+
 void CUser::FormatNumeric ( char* szDest ) const
 {
-    const CClient* pParent = CClient::GetParent ();
-
-    if ( pParent )
-    {
-        unsigned long ulServerNumeric = pParent->GetNumeric ();
-        if ( ulServerNumeric > 63 )
-        {
-            unsigned long ulNumeric = ( ulServerNumeric << 18 ) | CClient::GetNumeric ();
-            inttobase64 ( szDest, ulNumeric, 5 );
-        }
-        else
-        {
-            unsigned long ulNumeric = ( ulServerNumeric << 12 ) | CClient::GetNumeric ();
-            inttobase64 ( szDest, ulNumeric, 3 );
-        }
-
-    }
-    else
+    const CClient* pParent = GetParent ();
+    if ( !pParent || pParent->GetType () != CClient::SERVER )
         *szDest = '\0';
+    else
+    {
+        strcpy ( szDest, pParent->GetYXX () );
+        strcat ( szDest, GetYXX () );
+    }
 }
 
 void CUser::SetNick ( const CString& szNick )

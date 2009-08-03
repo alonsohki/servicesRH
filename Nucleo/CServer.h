@@ -31,7 +31,7 @@ public:
 public:
                             CServer         ( );
                             CServer         ( CServer* pParent,
-                                              unsigned long ulNumeric,
+                                              const CString& szYXX,
                                               const CString& szName,
                                               const CString& szDesc = "",
                                               const CString& szFlags = "+" );
@@ -39,7 +39,7 @@ public:
     void                    Destroy         ( );
 
     void                    Create          ( CServer* pParent,
-                                              unsigned long ulNumeric,
+                                              const CString& szYXX,
                                               const CString& szName,
                                               const CString& szDesc = "",
                                               const CString& szFlags = "+" );

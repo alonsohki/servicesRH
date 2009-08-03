@@ -105,7 +105,7 @@ CMessageSERVER::CMessageSERVER ( const CString& szHost,
                                  unsigned int uiDepth,
                                  const CDate& timestamp,
                                  const CString& szProtocol,
-                                 unsigned long ulNumeric,
+                                 const char* szYXX,
                                  unsigned long ulMaxusers,
                                  const CString& szFlags,
                                  const CString& szDesc )
@@ -113,37 +113,31 @@ CMessageSERVER::CMessageSERVER ( const CString& szHost,
   m_uiDepth ( uiDepth ),
   m_timestamp ( timestamp ),
   m_szProtocol ( szProtocol ),
-  m_ulNumeric ( ulNumeric ),
   m_ulMaxusers ( ulMaxusers ),
   m_szFlags ( szFlags ),
   m_szDesc ( szDesc )
 {
+    strcpy ( m_szYXX, szYXX );
 }
 CMessageSERVER::~CMessageSERVER ( ) { }
 
 bool CMessageSERVER::BuildMessage ( SProtocolMessage& message ) const
 {
-    char szNumeric [ 4 ];
     char szMaxusers [ 4 ];
 
-    if ( m_ulNumeric > 63 )
-    {
-        // Numérico largo
-        if ( m_ulNumeric > 4095 )
-            return false;
-
-        inttobase64 ( szNumeric, m_ulNumeric, 2 );
-        if ( m_ulMaxusers > 262143 )
-            return false;
-        inttobase64 ( szMaxusers, m_ulMaxusers, 3 );
-    }
-    else
+    if ( strlen ( m_szYXX ) == 1 )
     {
         // Numérico corto
-        inttobase64 ( szNumeric, m_ulNumeric, 1 );
         if ( m_ulMaxusers > 4095 )
             return false;
         inttobase64 ( szMaxusers, m_ulMaxusers, 2 );
+    }
+    else
+    {
+        // Numérico largo
+        if ( m_ulMaxusers > 262143 )
+            return false;
+        inttobase64 ( szMaxusers, m_ulMaxusers, 3 );
     }
 
     unsigned long ulTime = static_cast < unsigned long > ( m_timestamp.GetTimestamp () );
@@ -152,7 +146,7 @@ bool CMessageSERVER::BuildMessage ( SProtocolMessage& message ) const
                                  m_szHost.c_str (), m_uiDepth,
                                  ulTime, ulTime,
                                  m_szProtocol.c_str (),
-                                 szNumeric, szMaxusers,
+                                 m_szYXX, szMaxusers,
                                  m_szFlags.c_str () );
     message.szText = m_szDesc;
 
@@ -179,13 +173,13 @@ bool CMessageSERVER::ProcessMessage ( const CString& szLine, const std::vector <
     if ( vec [ uiBase + 6 ].length () > 3 )
     {
         // Numérico largo
-        m_ulNumeric = base64toint ( vec [ uiBase + 6 ].substr ( 0, 2 ).c_str () );
+        strcpy ( m_szYXX, vec [ uiBase + 6 ].substr ( 0, 2 ).c_str () );
         m_ulMaxusers = base64toint ( vec [ uiBase + 6 ].substr ( 2 ).c_str () );
     }
     else
     {
         // Numérico corto
-        m_ulNumeric = base64toint ( vec [ uiBase + 6 ].substr ( 0, 1 ).c_str () );
+        strcpy ( m_szYXX, vec [ uiBase + 6 ].substr ( 0, 1 ).c_str () );
         m_ulMaxusers = base64toint ( vec [ uiBase + 6 ].substr ( 1 ).c_str () );
     }
 
@@ -302,7 +296,7 @@ CMessageNICK::CMessageNICK ( const CString& szNick,
                              const CString& szHost,
                              const CString& szModes,
                              unsigned int uiAddress,
-                             unsigned long ulNumeric,
+                             const char* szYXX,
                              const CString& szDesc )
 : m_szNick ( szNick ),
   m_timestamp ( timestamp ),
@@ -312,9 +306,9 @@ CMessageNICK::CMessageNICK ( const CString& szNick,
   m_szHost ( szHost ),
   m_szModes ( szModes ),
   m_uiAddress ( uiAddress ),
-  m_ulNumeric ( ulNumeric ),
   m_szDesc ( szDesc )
 {
+    strcpy ( m_szYXX, szYXX );
 }
 CMessageNICK::~CMessageNICK ( ) { }
 
@@ -325,16 +319,6 @@ bool CMessageNICK::BuildMessage ( SProtocolMessage& message ) const
         // Nuevo usuario desde un servidor
         char szIP [ 8 ];
         inttobase64 ( szIP, m_uiAddress, 6 );
-
-        char szServerNumeric [ 4 ];
-        unsigned long ulServerNumeric = m_pServer->GetNumeric ();
-        m_pServer->FormatNumeric ( szServerNumeric );
-
-        char szNumeric [ 4 ];
-        if ( ulServerNumeric > 4095 )
-            inttobase64 ( szNumeric, m_ulNumeric, 3 );
-        else
-            inttobase64 ( szNumeric, m_ulNumeric, 2 );
 
         char szModesPrefix [ 2 ];
         memset ( szModesPrefix, 0, sizeof ( szModesPrefix ) );
@@ -349,7 +333,7 @@ bool CMessageNICK::BuildMessage ( SProtocolMessage& message ) const
                                      m_szHost.c_str (),
                                      szModesPrefix, m_szModes.c_str (),
                                      szIP,
-                                     szServerNumeric, szNumeric );
+                                     m_pServer->GetYXX (), m_szYXX );
         message.szText = m_szDesc;
     }
     else
@@ -379,7 +363,7 @@ bool CMessageNICK::ProcessMessage ( const CString& szLine, const std::vector < C
         m_szHost = "";
         m_szModes = "";
         m_uiAddress = 0;
-        m_ulNumeric = 0;
+        *m_szYXX = '\0';
         m_szDesc = "";
     }
     else
@@ -401,12 +385,12 @@ bool CMessageNICK::ProcessMessage ( const CString& szLine, const std::vector < C
         if ( vec [ 9 ].length () > 3 )
         {
             // Numérico largo
-            m_ulNumeric = base64toint ( vec [ 9 ].substr ( 2 ).c_str () );
+            strcpy ( m_szYXX, vec [ 9 ].substr ( 2 ).c_str () );
         }
         else
         {
             // Numérico corto
-            m_ulNumeric = base64toint ( vec [ 9 ].substr ( 1 ).c_str () );
+            strcpy ( m_szYXX, vec [ 9 ].substr ( 1 ).c_str () );
         }
 
         m_szDesc = vec [ 10 ];

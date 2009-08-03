@@ -133,13 +133,13 @@ END_MESSAGE_DECLARATION()
 ////////////////////////////
 //         SERVER         //
 ////////////////////////////
-BEGIN_MESSAGE_DECLARATION(SERVER, const CString& szHost, unsigned int uiDepth, const CDate& timestamp, const CString& szProtocol, unsigned long ulNumeric, unsigned long ulMaxusers, const CString& szFlags, const CString& szDesc)
+BEGIN_MESSAGE_DECLARATION(SERVER, const CString& szHost, unsigned int uiDepth, const CDate& timestamp, const CString& szProtocol, const char* szYXX, unsigned long ulMaxusers, const CString& szFlags, const CString& szDesc)
 public:
     inline const CString&   GetHost     ( ) const { return m_szHost; }
     inline unsigned int     GetDepth    ( ) const { return m_uiDepth; }
     inline const CDate&     GetTime     ( ) const { return m_timestamp; }
     inline const CString&   GetProtocol ( ) const { return m_szProtocol; }
-    inline unsigned long    GetNumeric  ( ) const { return m_ulNumeric; }
+    inline const char*      GetYXX      ( ) const { return m_szYXX; }
     inline unsigned long    GetMaxusers ( ) const { return m_ulMaxusers; }
     inline const CString&   GetFlags    ( ) const { return m_szFlags; }
     inline const CString&   GetDesc     ( ) const { return m_szDesc; }
@@ -148,7 +148,7 @@ private:
     unsigned int    m_uiDepth;
     CDate           m_timestamp;
     CString         m_szProtocol;
-    unsigned long   m_ulNumeric;
+    char            m_szYXX [ 4 ];
     unsigned long   m_ulMaxusers;
     CString         m_szFlags;
     CString         m_szDesc;
@@ -198,7 +198,7 @@ END_MESSAGE_DECLARATION()
 ////////////////////////////
 //          NICK          //
 ////////////////////////////
-BEGIN_MESSAGE_DECLARATION(NICK, const CString& szNick, const CDate& timestamp, CServer* pServer = NULL, unsigned int uiDepth = 1, const CString& szIdent = "", const CString& szHost = "", const CString& szModes = "+", unsigned int uiAddress = 2130706433, unsigned long ulNumeric = 0, const CString& szDesc = "")
+BEGIN_MESSAGE_DECLARATION(NICK, const CString& szNick, const CDate& timestamp, CServer* pServer = NULL, unsigned int uiDepth = 1, const CString& szIdent = "", const CString& szHost = "", const CString& szModes = "+", unsigned int uiAddress = 2130706433, const char* szYXX = "", const CString& szDesc = "")
 public:
     inline const CString&       GetNick         ( ) const { return m_szNick; }
     inline const CDate&         GetTimestamp    ( ) const { return m_timestamp; }
@@ -208,7 +208,7 @@ public:
     inline const CString&       GetHost         ( ) const { return m_szHost; }
     inline const CString&       GetModes        ( ) const { return m_szModes; }
     inline unsigned int         GetAddress      ( ) const { return m_uiAddress; }
-    inline unsigned long        GetNumeric      ( ) const { return m_ulNumeric; }
+    inline const char*          GetYXX          ( ) const { return m_szYXX; }
     inline const CString&       GetDesc         ( ) const { return m_szDesc; }
 private:
     CString         m_szNick;
@@ -219,7 +219,7 @@ private:
     CString         m_szHost;
     CString         m_szModes;
     unsigned int    m_uiAddress;
-    unsigned long   m_ulNumeric;
+    char            m_szYXX [ 4 ];
     CString         m_szDesc;
 END_MESSAGE_DECLARATION()
 

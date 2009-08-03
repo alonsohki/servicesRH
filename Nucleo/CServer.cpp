@@ -21,12 +21,12 @@ CServer::CServer ( )
 }
 
 CServer::CServer ( CServer* pParent,
-                   unsigned long ulNumeric,
+                   const CString& szYXX,
                    const CString& szName,
                    const CString& szDesc,
                    const CString& szFlags )
 {
-    Create ( pParent, ulNumeric, szName, szDesc, szFlags );
+    Create ( pParent, szYXX, szName, szDesc, szFlags );
 }
 
 CServer::~CServer ( )
@@ -61,12 +61,12 @@ void CServer::Destroy ( )
 }
 
 void CServer::Create ( CServer* pParent,
-                       unsigned long ulNumeric,
+                       const CString& szYXX,
                        const CString& szName,
                        const CString& szDesc,
                        const CString& szFlags )
 {
-    CClient::Create ( pParent, ulNumeric, szName, szDesc );
+    CClient::Create ( pParent, szYXX, szName, szDesc );
 
     if ( pParent )
     {
@@ -97,15 +97,11 @@ void CServer::Create ( CServer* pParent,
     }
 }
 
-
 void CServer::FormatNumeric ( char* szDest ) const
 {
-    unsigned long ulNumeric = CClient::GetNumeric ();
-    if ( ulNumeric > 63 )
-        inttobase64 ( szDest, ulNumeric, 2 );
-    else
-        inttobase64 ( szDest, ulNumeric, 1 );
+    strcpy ( szDest, CClient::GetYXX () );
 }
+
 
 CServer* CServer::GetServer ( const CString& szName )
 {

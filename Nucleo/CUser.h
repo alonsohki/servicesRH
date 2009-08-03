@@ -52,7 +52,7 @@ public:
 public:
                             CUser               ( );
                             CUser               ( CServer* pServer,
-                                                  unsigned long ulNumeric,
+                                                  const CString& szYXX,
                                                   const CString& szName,
                                                   const CString& szIdent,
                                                   const CString& szDesc,
@@ -61,15 +61,15 @@ public:
     virtual                 ~CUser              ( );
 
     void                    Create              ( CServer* pServer,
-                                                  unsigned long ulNumeric,
+                                                  const CString& szYXX,
                                                   const CString& szName,
                                                   const CString& szIdent,
                                                   const CString& szDesc,
                                                   const CString& szHost,
                                                   unsigned int uiAddress );
 
-    void                    FormatNumeric       ( char* szDest ) const;
     inline EType            GetType             ( ) const { return CClient::USER; }
+    void                    FormatNumeric       ( char* szDest ) const;
 
     void                    SetNick             ( const CString& szNick );
     void                    SetModes            ( const CString& szModes );

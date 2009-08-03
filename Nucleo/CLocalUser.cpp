@@ -32,7 +32,16 @@ void CLocalUser::Create ( unsigned long ulNumeric,
 
     CProtocol& protocol = CProtocol::GetSingleton ();
     CServer& me = protocol.GetMe ();
-    CUser::Create ( &me, ulNumeric, szName, szIdent, szDesc, szHost, ulAddress );
+
+    // Generamos el numérico
+    char szYXX [ 4 ];
+    memset ( szYXX, 0, sizeof ( szYXX ) );
+    if ( strlen ( me.GetYXX () ) == 1 )
+        inttobase64 ( szYXX, ulNumeric, 2 );
+    else
+        inttobase64 ( szYXX, ulNumeric, 3 );
+
+    CUser::Create ( &me, szYXX, szName, szIdent, szDesc, szHost, ulAddress );
     me.AddUser ( this );
 
     protocol.Send ( CMessageNICK ( GetName (),
@@ -43,7 +52,7 @@ void CLocalUser::Create ( unsigned long ulNumeric,
                                    GetHost (),
                                    szModes,
                                    GetAddress (),
-                                   GetNumeric (),
+                                   GetYXX (),
                                    GetDesc ()
                                  ), &me );
 

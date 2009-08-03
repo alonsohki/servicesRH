@@ -31,33 +31,36 @@ public:
 public:
     inline                  CClient         ( ) {}
     inline                  CClient         ( CServer* pParent,
-                                              unsigned long ulNumeric,
+                                              const CString& szYXX,
                                               const CString& szName,
                                               const CString& szDesc = "" )
     {
-        Create ( pParent, ulNumeric, szName, szDesc );
+        Create ( pParent, szYXX, szName, szDesc );
     }
     virtual                 ~CClient        ( ) { }
 
     inline void             Create          ( CServer* pParent,
-                                              unsigned long ulNumeric,
+                                              const CString& szYXX,
                                               const CString& szName,
                                               const CString& szDesc = "" )
     {
         m_pParent = pParent;
-        m_ulNumeric = ulNumeric;
+        memset ( m_szYXX, 0, sizeof ( m_szYXX ) );
+        strncpy ( m_szYXX, szYXX, 3 );
+        m_ulNumeric = base64toint ( m_szYXX );
         m_szName = szName;
         m_szDesc = szDesc;
     }
 
-    virtual inline void     FormatNumeric   ( char* szDest ) const { *szDest = '\0'; }
     virtual inline EType    GetType         ( ) const { return UNKNOWN; }
+    virtual inline void     FormatNumeric   ( char* szDest ) const { *szDest = '\0'; }
 
     inline CServer*         GetParent       ( ) { return m_pParent; }
     inline const CServer*   GetParent       ( ) const { return m_pParent; }
     inline const CString&   GetName         ( ) const { return m_szName; }
     inline const CString&   GetDesc         ( ) const { return m_szDesc; }
     inline unsigned long    GetNumeric      ( ) const { return m_ulNumeric; }
+    inline const char*      GetYXX          ( ) const { return m_szYXX; }
     inline const CDate&     GetCreationTime ( ) const { return m_creationTime; }
     unsigned long           GetIdleTime     ( ) const;
 
@@ -73,4 +76,5 @@ private:
     CString         m_szDesc;
     CDate           m_creationTime;
     CDate           m_lastCommandSent;
+    char            m_szYXX [ 4 ];
 };
