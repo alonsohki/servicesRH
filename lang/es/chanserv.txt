@@ -283,3 +283,7 @@ Lista de acceso del canal 12%s:
 %LOG_IDENTIFY%
 12%s se ha 07IDENTIFICADO como fundador del canal 12%s.
 %%
+
+%LOG_IDENTIFY_WRONG_PASSWORD%
+El usuario 12%s ha intentado identificarse como fundador del canal 12%s con una contraseña 04incorrecta.
+%%

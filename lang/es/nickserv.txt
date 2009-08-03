@@ -719,8 +719,16 @@ El nick de 12%s ha sido cambiado correctamente.
 Nuevo nick 07registrado: 12%s (%s@%s)
 %%
 
+%LOG_IDENTIFY_WRONG_PASSWORD%
+El usuario 12%s se ha identificado con una contraseña 04incorrecta.
+%%
+
 %LOG_GROUP_JOIN%
 Grupos: 12%s se ha unido al 07grupo de 12%s.
+%%
+
+%LOG_GROUP_JOIN_WRONG_PASSWORD%
+El usuario 12%s ha especificado una contraseña 04incorrecta para unirse al grupo de 12%s.
 %%
 
 %LOG_GROUP_LEAVE%

@@ -717,6 +717,9 @@ COMMAND(Identify)
 
         m_pNickserv->BadPassword ( s, this );
 
+        // Log
+        Log ( "LOG_IDENTIFY_WRONG_PASSWORD", s.GetName ().c_str (), szChannel.c_str () );
+
         return false;
     }
     SQLCheckPassword->FreeResult ();

@@ -1124,6 +1124,9 @@ COMMAND(Identify)
         {
             LangMsg ( s, "IDENTIFY_WRONG_PASSWORD" );
             BadPassword ( s );
+
+            // Log
+            Log ( "LOG_IDENTIFY_WRONG_PASSWORD", s.GetName ().c_str () );
         }
         else
         {
@@ -1208,6 +1211,10 @@ COMMAND(Group)
             ClearPassword ( szPassword ); // Por seguridad, limpiamos el password
             LangMsg ( s, "GROUP_JOIN_WRONG_PASSWORD" );
             BadPassword ( s );
+
+            // Log
+            Log ( "LOG_GROUP_JOIN_WRONG_PASSWORD", s.GetName ().c_str (), szNick.c_str () );
+
             return false;
         }
 
