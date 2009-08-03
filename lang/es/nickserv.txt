@@ -735,6 +735,10 @@ El usuario 12%s ha especificado una contraseña 04incorrecta para unirse al g
 Groups: 12%s ha abandonado el 07grupo de 12%s.
 %%
 
+%LOG_SET_ADMIN%
+El operador 12%s ha hecho 07SET %s sobre el usuario 12%s.
+%%
+
 %LOG_SET_PASSWORD%
 El usuario 12%s (%s@%s) ha cambiado su 07contraseña.
 %%

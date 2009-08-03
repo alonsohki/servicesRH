@@ -1412,6 +1412,9 @@ COMMAND(Set)
                 LangMsg ( s, "ACCESS_DENIED" );
                 return false;
             }
+
+            // Log
+            Log ( "LOG_SET_ADMIN", s.GetName ().c_str (), szOption.c_str (), szTarget.c_str () );
         }
         else
             szOption = szTarget;
@@ -1512,7 +1515,8 @@ SET_COMMAND(Set_Password)
     ClearPassword ( szPassword ); // Por seguridad, limpiamos el password
 
     // Log
-    Log ( "LOG_SET_PASSWORD", s.GetName ().c_str (), s.GetIdent ().c_str (), s.GetHost ().c_str () );
+    if ( IDTarget == data.ID )
+        Log ( "LOG_SET_PASSWORD", s.GetName ().c_str (), s.GetIdent ().c_str (), s.GetHost ().c_str () );
 
     return true;
 }
@@ -1653,7 +1657,8 @@ SET_COMMAND(Set_Vhost)
         LangMsg ( s, "SET_VHOST_REMOVED" );
 
         // Log
-        Log ( "LOG_SET_VHOST_OFF", s.GetName ().c_str (), s.GetIdent ().c_str (), s.GetHost ().c_str () );
+        if ( IDTarget == data.ID )
+            Log ( "LOG_SET_VHOST_OFF", s.GetName ().c_str (), s.GetIdent ().c_str (), s.GetHost ().c_str () );
     }
     else
     {
