@@ -825,7 +825,6 @@ COMMAND(Levels)
         szQuery.resize ( szQuery.length () - 1 );
         szQuery.append ( " FROM levels WHERE channel=?" );
 
-        puts(szQuery);
         SQLListLevels = CDatabase::GetSingleton ().PrepareStatement ( szQuery );
         if ( !SQLListLevels )
             return ReportBrokenDB ( &s, 0, "Generando chanserv.SQLListLevels" );
