@@ -28,6 +28,8 @@ public:
     bool            CheckIdentifiedAndReg   ( CUser& s );
     unsigned long long
                     GetChannelID            ( const CString& szChannelName );
+    CChannel*       GetChannel              ( CUser& s, const CString& szChannelName );
+    bool            HasChannelDebug         ( unsigned long long ID );
 
     // Comandos
 protected:
@@ -37,6 +39,7 @@ private:
 #define SET_COMMAND(x) bool cmd ## x ( SCommandInfo& info, unsigned long long IDTarget )
     COMMAND(Help);
     COMMAND(Register);
+    COMMAND(Identify);
 #undef SET_COMMAND
 #undef COMMAND
 

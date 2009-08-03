@@ -9,6 +9,9 @@ CREATE TABLE channel (
 	founder			INT					NULL,
 	successor		INT					NULL,
 	
+	-- Opciones
+	debug			ENUM ( 'Y', 'N' )	NOT NULL DEFAULT 'Y',
+	
 	PRIMARY KEY ( id ),
 	KEY ( name ),
 	UNIQUE ( name ),

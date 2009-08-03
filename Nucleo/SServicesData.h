@@ -23,9 +23,11 @@ struct SServicesData
     {
     }
 
-    CString             szLang;
-    bool                bIdentified;
-    unsigned long long  ID;
+    CString                     szLang;
+    bool                        bIdentified;
+    unsigned long long          ID;
+    std::vector < unsigned long long >
+                                founderChannels;
 
     struct
     {

@@ -64,6 +64,15 @@ Si deseas saber cómo registrarlo, escribe 12/msg %s HELP REGISTER.
 04Error: Sólo puedes ejecutar el comando 12%s cada 12%u segundos.
 %%
 
+%CHANNEL_NOT_REGISTERED%
+04Error: El canal 12%s no está registrado.
+Si quieres saber cómo registrar un canal, escribe 12/msg %N HELP REGISTER.
+%%
+
+%CHANNEL_NOT_FOUND%
+04Error: El canal 12%s no existe.
+%%
+
 ############################
 # REGISTER
 %SYNTAX_REGISTER%
@@ -105,6 +114,37 @@ El canal 12%s ha sido registrado 03correctamente.
 ############################
 
 
+############################
+# IDENTIFY
+%SYNTAX_IDENTIFY%
+Sintaxis: 12IDENTIFY <#canal> <contraseña>
+%%
+
+%HELP_IDENTIFY%
+Te identifica como fundador del 12canal especificado. Para ello,
+el 12canal debe estar registrado y tú estar dentro de él. Permanecerás
+identificado hasta que salgas del IRC o te cambies de nick.
+%%
+
+%IDENTIFY_WRONG_PASSWORD%
+04¡Contraseña incorrecta!
+%%
+
+%IDENTIFY_WRONG_PASSWORD_DEBUG%
+AVISO: %s se ha intentado identificar como fundador con una contraseña INCORRECTA.
+%%
+
+%IDENTIFY_SUCCESS_DEBUG%
+AVISO: %s se ha identificado como FUNDADOR del canal.
+%%
+
+%IDENTIFY_SUCCESS%
+03Contraseña aceptada, ahora eres reconocido como FUNDADOR del canal 12%s.
+%%
+#
+############################
+
+
 
 
 
@@ -115,4 +155,8 @@ El canal 12%s ha sido registrado 03correctamente.
 #########################
 %LOG_REGISTER%
 12%s ha 07REGISTRADO el canal 12%s.
+%%
+
+%LOG_IDENTIFY%
+12%s se ha 07IDENTIFICADO como fundador del canal 12%s.
 %%

@@ -303,6 +303,104 @@ bool CService::LangMsg ( CChannel& dest, const char* szTopic, ... )
     return bRet;
 }
 
+void CService::Notice ( CUser& dest, const CString& szMessage )
+{
+    if ( !m_bIsOk || !m_bIsLoaded )
+        return;
+
+    Send ( CMessageNOTICE ( &dest, 0, szMessage ) );
+}
+
+void CService::Notice ( CChannel& dest, const CString& szMessage )
+{
+    if ( !m_bIsOk || !m_bIsLoaded )
+        return;
+
+    Send ( CMessageNOTICE ( 0, &dest, szMessage ) );
+}
+
+void CService::MultiNotice ( CUser& dest, const CString& szMessage )
+{
+    // Enviamos línea a línea
+    size_t iPrevPos = 0;
+    size_t iPos = 0;
+    while ( ( iPos = szMessage.find ( '\n', iPrevPos ) ) != CString::npos )
+    {
+        if ( iPrevPos == iPos )
+            Notice ( dest, "\xA0" );
+        else
+            Notice ( dest, szMessage.substr ( iPrevPos, iPos - iPrevPos ) );
+        iPrevPos = iPos + 1;
+    }
+}
+
+void CService::MultiNotice ( CChannel& dest, const CString& szMessage )
+{
+    // Enviamos línea a línea
+    size_t iPrevPos = 0;
+    size_t iPos = 0;
+    while ( ( iPos = szMessage.find ( '\n', iPrevPos ) ) != CString::npos )
+    {
+        if ( iPrevPos == iPos )
+            Notice ( dest, "\xA0" );
+        else
+            Notice ( dest, szMessage.substr ( iPrevPos, iPos - iPrevPos ) );
+        iPrevPos = iPos + 1;
+    }
+}
+
+bool CService::vLangNotice ( CUser& dest, const char* szTopic, va_list vl )
+{
+    if ( !m_bIsOk || !m_bIsLoaded )
+        return false;
+
+    SServicesData& data = dest.GetServicesData ();
+
+    CString szMessage;
+    if ( vGetLangTopic ( szMessage, data.szLang, szTopic, vl ) )
+    {
+        MultiNotice ( dest, szMessage );
+        return true;
+    }
+
+    return false;
+}
+
+bool CService::LangNotice ( CUser& dest, const char* szTopic, ... )
+{
+    va_list vl;
+    va_start ( vl, szTopic );
+    bool bRet = vLangNotice ( dest, szTopic, vl );
+    va_end ( vl );
+
+    return bRet;
+}
+
+bool CService::vLangNotice ( CChannel& dest, const char* szTopic, va_list vl )
+{
+    if ( !m_bIsOk || !m_bIsLoaded )
+        return false;
+
+    CString szMessage;
+    if ( vGetLangTopic ( szMessage, "", szTopic, vl ) )
+    {
+        MultiNotice ( dest, szMessage );
+        return true;
+    }
+
+    return false;
+}
+
+bool CService::LangNotice ( CChannel& dest, const char* szTopic, ... )
+{
+    va_list vl;
+    va_start ( vl, szTopic );
+    bool bRet = vLangNotice ( dest, szTopic, vl );
+    va_end ( vl );
+
+    return bRet;
+}
+
 bool CService::vGetLangTopic ( CString& szDest, const CString& szLanguage, const char* szTopic, va_list vl )
 {
     CLanguage* pLanguage = 0;

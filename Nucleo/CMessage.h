@@ -405,6 +405,21 @@ END_MESSAGE_DECLARATION()
 
 
 ////////////////////////////
+//         NOTICE         //
+////////////////////////////
+BEGIN_MESSAGE_DECLARATION(NOTICE, CUser* pUser, CChannel* pChannel, const CString& szMessage)
+public:
+    inline CUser*           GetUser     ( ) const { return m_pUser; }
+    inline CChannel*        GetChannel  ( ) const { return m_pChannel; }
+    inline const CString&   GetMessage  ( ) const { return m_szMessage; }
+private:
+    CUser*      m_pUser;
+    CChannel*   m_pChannel;
+    CString     m_szMessage;
+END_MESSAGE_DECLARATION()
+
+
+////////////////////////////
 //          KILL          //
 ////////////////////////////
 BEGIN_MESSAGE_DECLARATION(KILL, CUser* pVictim, const CString& szReason)

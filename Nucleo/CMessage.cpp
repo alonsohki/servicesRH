@@ -1022,6 +1022,57 @@ bool CMessagePRIVMSG::ProcessMessage ( const CString& szLine, const std::vector 
 
 
 ////////////////////////////
+//         NOTICE         //
+////////////////////////////
+CMessageNOTICE::CMessageNOTICE ( CUser* pUser, CChannel* pChannel, const CString& szMessage )
+: m_pUser ( pUser ), m_pChannel ( pChannel ), m_szMessage ( szMessage )
+{
+}
+CMessageNOTICE::~CMessageNOTICE ( ) { }
+
+bool CMessageNOTICE::BuildMessage ( SProtocolMessage& message ) const
+{
+    if ( !m_pUser && !m_pChannel )
+        return false;
+
+    if ( m_pUser )
+        message.pDest = m_pUser;
+    else if ( m_pChannel )
+        message.szExtraInfo = m_pChannel->GetName ();
+
+    message.szText = m_szMessage;
+    return true;
+}
+
+bool CMessageNOTICE::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
+{
+    if ( vec.size () < 4 )
+        return false;
+
+    if ( vec [ 2 ].at ( 0 ) == '#' )
+    {
+        // Es un mensaje a un canal
+        m_pUser = 0;
+        m_pChannel = CChannelManager::GetSingleton ().GetChannel ( vec [ 2 ] );
+        if ( !m_pChannel )
+            return false;
+    }
+    else
+    {
+        // Es un mensaje a un usuario
+        m_pChannel = 0;
+        m_pUser = CProtocol::GetSingleton ().GetMe ().GetUserAnywhere ( base64toint ( vec [ 2 ] ) );
+        if ( !m_pUser )
+            return false;
+    }
+
+    m_szMessage = vec [ 3 ];
+
+    return true;
+}
+
+
+////////////////////////////
 //          KILL          //
 ////////////////////////////
 CMessageKILL::CMessageKILL ( CUser* pVictim, const CString& szReason )

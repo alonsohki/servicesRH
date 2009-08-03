@@ -23,6 +23,7 @@ CChanserv::CChanserv ( const CConfig& config )
 #define REGISTER(x,ver) RegisterCommand ( #x, COMMAND_CALLBACK ( &CChanserv::cmd ## x , this ), COMMAND_CALLBACK ( &CChanserv::verify ## ver , this ) )
     REGISTER ( Help,        All );
     REGISTER ( Register,    All );
+    REGISTER ( Identify,    All );
 #undef REGISTER
 
     // Cargamos la configuración para nickserv
@@ -119,6 +120,44 @@ unsigned long long CChanserv::GetChannelID ( const CString& szChannelName )
 }
 
 
+CChannel* CChanserv::GetChannel ( CUser& s, const CString& szChannelName )
+{
+    CChannel* pChannel = CChannelManager::GetSingleton ().GetChannel ( szChannelName );
+    if ( !pChannel )
+        LangMsg ( s, "CHANNEL_NOT_FOUND", szChannelName.c_str () );
+    return pChannel;
+}
+
+bool CChanserv::HasChannelDebug ( unsigned long long ID )
+{
+    // Preparamos la consulta para verificar si un canal tiene debug activo
+    static CDBStatement* SQLHasDebug = 0;
+    if ( !SQLHasDebug )
+    {
+        SQLHasDebug = CDatabase::GetSingleton ().PrepareStatement (
+              "SELECT debug FROM channel WHERE id=?"
+            );
+        if ( !SQLHasDebug )
+            return ReportBrokenDB ( 0, 0, "Generando chanserv.SQLHasDebug" );
+    }
+
+    // Ejecutamos la consulta
+    if ( !SQLHasDebug->Execute ( "Q", ID ) )
+        return ReportBrokenDB ( 0, SQLHasDebug, "Ejecutando chanserv.SQLHasDebug" );
+
+    // Obtenemos el resultado
+    char szDebug [ 4 ];
+    if ( SQLHasDebug->Fetch ( 0, 0, "s", szDebug, sizeof ( szDebug ) ) != CDBStatement::FETCH_OK )
+    {
+        SQLHasDebug->FreeResult ();
+        return false;
+    }
+    SQLHasDebug->FreeResult ();
+
+    return ( *szDebug == 'Y' );
+}
+
+
 static inline void ClearPassword ( CString& szPassword )
 {
 #ifdef WIN32
@@ -151,6 +190,33 @@ void CChanserv::UnknownCommand ( SCommandInfo& info )
 COMMAND(Help)
 {
     bool bRet = CService::ProcessHelp ( info );
+
+    if ( bRet )
+    {
+        CUser& s = *( info.pSource );
+        info.ResetParamCounter ();
+        info.GetNextParam ();
+        CString& szTopic = info.GetNextParam ();
+
+        if ( szTopic == "" )
+        {
+            if ( HasAccess ( s, RANK_PREOPERATOR ) )
+            {
+                LangMsg ( s, "PREOPERS_HELP" );
+                if ( HasAccess ( s, RANK_OPERATOR ) )
+                {
+                    LangMsg ( s, "OPERS_HELP" );
+                    if ( HasAccess ( s, RANK_COADMINISTRATOR ) )
+                    {
+                        LangMsg ( s, "COADMINS_HELP" );
+                        if ( HasAccess ( s, RANK_ADMINISTRATOR ) )
+                            LangMsg ( s, "ADMINS_HELP" );
+                    }
+                }
+            }
+        }
+    }
+
     return bRet;
 }
 
@@ -303,6 +369,95 @@ COMMAND(Register)
     // Log
     Log ( "LOG_REGISTER", s.GetName ().c_str (), channel.GetName ().c_str () );
 
+    return true;
+}
+
+
+///////////////////
+// IDENTIFY
+//
+COMMAND(Identify)
+{
+    CUser& s = *( info.pSource );
+    SServicesData& data = s.GetServicesData ();
+
+    // Generamos la consulta para verificar la contraseña
+    static CDBStatement* SQLCheckPassword = 0;
+    if ( !SQLCheckPassword )
+    {
+        SQLCheckPassword = CDatabase::GetSingleton ().PrepareStatement (
+              "SELECT id FROM channel WHERE id=? AND password=MD5(?)"
+            );
+        if ( !SQLCheckPassword )
+            return ReportBrokenDB ( &s, 0, "Generando chanserv.SQLCheckPassword" );
+    }
+
+    // Nos aseguramos de que esté identificado
+    if ( !CheckIdentifiedAndReg ( s ) )
+        return false;
+
+    // Obtenemos el canal
+    CString& szChannel = info.GetNextParam ();
+    if ( szChannel == "" )
+        return SendSyntax ( s, "IDENTIFY" );
+
+    // Obtenemos la contraseña
+    CString& szPassword = info.GetNextParam ();
+    if ( szPassword == "" )
+        return SendSyntax ( s, "IDENTIFY" );
+
+    // Buscamos el canal
+    CChannel* pChannel = GetChannel ( s, szChannel );
+    if ( !pChannel )
+        return false;
+    CChannel& channel = *pChannel;
+
+    // Comprobamos que el canal está registrado
+    unsigned long long ID = GetChannelID ( szChannel );
+    if ( ID == 0ULL )
+    {
+        LangMsg ( s, "CHANNEL_NOT_REGISTERED", szChannel.c_str () );
+        return false;
+    }
+
+    // Comprobamos si tiene el debug activado
+    bool bHasDebug = HasChannelDebug ( ID );
+
+    // Comprobamos la contraseña
+    if ( ! SQLCheckPassword->Execute ( "Qs", ID, szPassword.c_str () ) )
+        return ReportBrokenDB ( &s, SQLCheckPassword, "Ejecutando chanserv.SQLCheckPassword" );
+
+    if ( SQLCheckPassword->Fetch ( 0, 0, "Q", &ID ) != CDBStatement::FETCH_OK )
+    {
+        SQLCheckPassword->FreeResult ();
+        LangMsg ( s, "IDENTIFY_WRONG_PASSWORD" );
+
+        if ( bHasDebug )
+            LangNotice ( channel, "IDENTIFY_WRONG_PASSWORD_DEBUG", s.GetName ().c_str () );
+
+        return false;
+    }
+    SQLCheckPassword->FreeResult ();
+
+    // Le ponemos como fundador
+    data.founderChannels.push_back ( ID );
+    if ( bHasDebug )
+        LangNotice ( channel, "IDENTIFY_SUCCESS_DEBUG", s.GetName ().c_str () );
+
+    // Le damos status de fundador si está en el canal
+    if ( channel.GetMembership ( &s ) )
+    {
+        char szNumeric [ 8 ];
+        s.FormatNumeric ( szNumeric );
+        std::vector < CString > vecParams;
+        vecParams.push_back ( szNumeric );
+        CProtocol::GetSingleton ().GetMe ().Send ( CMessageBMODE ( "ChanServ", pChannel, "+q", vecParams ) );
+    }
+
+    LangMsg ( s, "IDENTIFY_SUCCESS", channel.GetName ().c_str () );
+
+    // Log
+    Log ( "LOG_IDENTIFY", s.GetName ().c_str (), channel.GetName ().c_str () );
     return true;
 }
 

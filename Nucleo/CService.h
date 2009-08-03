@@ -62,6 +62,14 @@ public:
     bool            LangMsg             ( CUser& dest, const char* szTopic, ... );
     bool            vLangMsg            ( CChannel& dest, const char* szTopic, va_list vl );
     bool            LangMsg             ( CChannel& dest, const char* szTopic, ... );
+    void            Notice              ( CUser& dest, const CString& szMessage );
+    void            Notice              ( CChannel& dest, const CString& szMessage );
+    void            MultiNotice         ( CUser& dest, const CString& szMessage );
+    void            MultiNotice         ( CChannel& dest, const CString& szMessage );
+    bool            vLangNotice         ( CUser& dest, const char* szTopic, va_list vl );
+    bool            LangNotice          ( CUser& dest, const char* szTopic, ... );
+    bool            vLangNotice         ( CChannel& dest, const char* szTopic, va_list vl );
+    bool            LangNotice          ( CChannel& dest, const char* szTopic, ... );
     bool            vGetLangTopic       ( CString& szDest, const CString& szLanguage, const char* szTopic, va_list vl );
     bool            GetLangTopic        ( CString& szDest, const CString& szLanguage, const char* szTopic, ... );
     bool            SendSyntax          ( CUser& dest, const char* szCommand );
