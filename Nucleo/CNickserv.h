@@ -38,6 +38,8 @@ public:
     bool            VerifyEmail     ( const CString& szEmail );
     bool            VerifyVhost     ( const CString& szVhost, CString& szBadword, bool* bContainsColors );
 
+    void            BadPassword     ( CUser& user, CService* pSource = 0 );
+
 private:
     bool            CheckIdentified ( CUser& user );
     bool            CheckRegistered ( CUser& user );
@@ -109,6 +111,7 @@ private:
         unsigned int    uiDaysExpiration;
         unsigned int    uiPasswordMinLength;
         unsigned int    uiPasswordMaxLength;
+        unsigned int    uiPasswordMaxTries;
         unsigned int    uiVhostMinLength;
         unsigned int    uiVhostMaxLength;
         std::vector < CString >

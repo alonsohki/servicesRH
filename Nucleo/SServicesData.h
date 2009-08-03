@@ -19,7 +19,7 @@
 struct SServicesData
 {
     SServicesData ()
-        : bIdentified ( false ), ID ( 0 )
+        : bIdentified ( false ), ID ( 0 ), uiBadPasswords ( 0 )
     {
     }
 
@@ -28,6 +28,7 @@ struct SServicesData
     unsigned long long          ID;
     std::vector < unsigned long long >
                                 vecChannelFounder;
+    unsigned int                uiBadPasswords;
 
     struct
     {

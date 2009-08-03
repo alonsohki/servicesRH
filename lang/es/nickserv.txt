@@ -116,6 +116,12 @@ fundador
 sucesor
 %%
 
+%TOO_MANY_INVALID_PASSWORDS%
+Demasiadas contraseñas incorrectas
+%%
+
+
+
 ############################
 # REGISTER
 %SYNTAX_REGISTER%
@@ -503,7 +509,6 @@ Lista de acceso a canales:
 %INFO_ACCESS_LIST_ENTRY%
     %s %s
 %%
-
 #
 ############################
 

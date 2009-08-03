@@ -374,6 +374,7 @@ void CChanserv::CheckOnjoinStuff ( CUser& user, CChannel& channel )
     }
 
     SServicesData& data = user.GetServicesData ();
+    CMembership* pMembership = channel.GetMembership ( &user );
 
     char szNumeric [ 8 ];
     user.FormatNumeric ( szNumeric );
@@ -390,7 +391,13 @@ void CChanserv::CheckOnjoinStuff ( CUser& user, CChannel& channel )
         if ( iAccess == 500 )
         {
             // Fundador
-            BMode ( &channel, "+qo", szNumeric, szNumeric );
+            if ( pMembership &&
+                 ( pMembership->GetFlags () & ( CChannel::CFLAG_OWNER | CChannel::CFLAG_OP ) ) !=
+                   ( CChannel::CFLAG_OWNER | CChannel::CFLAG_OP )
+               )
+            {
+                BMode ( &channel, "+qo", szNumeric, szNumeric );
+            }
         }
 
         // Comprobamos si se le permite entrar en el canal
@@ -413,8 +420,12 @@ void CChanserv::CheckOnjoinStuff ( CUser& user, CChannel& channel )
 
             if ( ucMode != 0 )
             {
-                CString szFlag ( "+%c", ucMode );
-                Mode ( &channel, szFlag, szNumeric );
+                unsigned long ulFlag = CChannel::GetModeFlag ( ucMode );
+                if ( pMembership && ( pMembership->GetFlags () & ulFlag ) == 0 )
+                {
+                    CString szFlag ( "+%c", ucMode );
+                    Mode ( &channel, szFlag, szNumeric );
+                }
             }
         }
     }
@@ -703,6 +714,8 @@ COMMAND(Identify)
 
         if ( bHasDebug )
             LangNotice ( channel, "IDENTIFY_WRONG_PASSWORD_DEBUG", s.GetName ().c_str () );
+
+        m_pNickserv->BadPassword ( s, this );
 
         return false;
     }

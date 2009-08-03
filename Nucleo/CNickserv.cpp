@@ -56,6 +56,8 @@ CNickserv::CNickserv ( const CConfig& config )
     m_options.uiPasswordMinLength = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
     SAFE_LOAD ( szTemp, "options.nickserv", "password.maxLength" );
     m_options.uiPasswordMaxLength = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
+    SAFE_LOAD ( szTemp, "options.nickserv", "password.maxTries" );
+    m_options.uiPasswordMaxTries = static_cast < unsigned int > ( strtoul ( szTemp, NULL, 10 ) );
 
     // Límites de vhost
     SAFE_LOAD ( szTemp, "options.nickserv", "vhost.minLength" );
@@ -658,6 +660,28 @@ bool CNickserv::VerifyVhost ( const CString& szVhost, CString& szBadword, bool* 
     return true;
 }
 
+void CNickserv::BadPassword ( CUser& user, CService* pService )
+{
+    SServicesData& data = user.GetServicesData ();
+
+    CString szReason;
+    GetLangTopic ( szReason, "", "TOO_MANY_INVALID_PASSWORDS" );
+    while ( szReason.at ( szReason.length () - 1 ) == '\r' ||
+            szReason.at ( szReason.length () - 1 ) == '\n' )
+    {
+        szReason.resize ( szReason.length () - 1 );
+    }               
+
+
+    ++(data.uiBadPasswords);
+    if ( data.uiBadPasswords >= m_options.uiPasswordMaxTries )
+    {
+        if ( ! pService )
+            pService = this;
+        pService->Send ( CMessageKILL ( &user, szReason ) );
+    }
+}
+
 bool CNickserv::CheckIdentified ( CUser& user )
 {
     if ( user.GetServicesData ().bIdentified == false )
@@ -1097,7 +1121,10 @@ COMMAND(Identify)
     else
     {
         if ( !CheckPassword ( data.ID, szPassword ) )
+        {
             LangMsg ( s, "IDENTIFY_WRONG_PASSWORD" );
+            BadPassword ( s );
+        }
         else
         {
             if ( Identify ( s ) )
@@ -1180,6 +1207,7 @@ COMMAND(Group)
         {
             ClearPassword ( szPassword ); // Por seguridad, limpiamos el password
             LangMsg ( s, "GROUP_JOIN_WRONG_PASSWORD" );
+            BadPassword ( s );
             return false;
         }
 
