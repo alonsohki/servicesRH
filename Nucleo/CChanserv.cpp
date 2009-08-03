@@ -1066,7 +1066,7 @@ COMMAND(Access)
             }
         }
 
-        LangMsg ( s, "ACCESS_ADD_SUCCESS", szAccountName.c_str (), pChannel->GetName ().c_str (), iLevel );
+        LangMsg ( s, "ACCESS_ADD_SUCCESS", szAccountName.c_str (), szChannel.c_str (), iLevel );
     }
 
     else if ( !CPortability::CompareNoCase ( szCommand, "DEL" ) )
