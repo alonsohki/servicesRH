@@ -79,6 +79,10 @@ Si quieres saber cómo registrar un canal, escribe 12/msg %N HELP REGISTER.
 No se te permite la entrada a este canal
 %%
 
+%GREETMSG%
+[%s] %s
+%%
+
 ############################
 # REGISTER
 %SYNTAX_REGISTER%

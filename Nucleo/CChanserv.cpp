@@ -361,7 +361,7 @@ bool CChanserv::CheckAccess ( CUser& user, unsigned long long ID, EChannelLevel 
 
 
 
-void CChanserv::CheckOnjoinStuff ( CUser& user, CChannel& channel )
+void CChanserv::CheckOnjoinStuff ( CUser& user, CChannel& channel, bool bSendGreetmsg )
 {
     if ( !m_bEOBAcked )
     {
@@ -427,6 +427,41 @@ void CChanserv::CheckOnjoinStuff ( CUser& user, CChannel& channel )
                     Mode ( &channel, szFlag, szNumeric );
                 }
             }
+        }
+
+        // Greetmsg
+        if ( bSendGreetmsg && iAccess > 0 )
+        {
+            // Generamos la consulta para obtener el greetmsg
+            static CDBStatement* SQLGetGreetmsg = 0;
+            if ( !SQLGetGreetmsg )
+            {
+                SQLGetGreetmsg = CDatabase::GetSingleton ().PrepareStatement (
+                      "SELECT greetmsg FROM account WHERE id=?"
+                    );
+                if ( !SQLGetGreetmsg )
+                {
+                    ReportBrokenDB ( &user, 0, "Generando chanserv.SQLGetGreetmsg" );
+                    return;
+                }
+            }
+
+            // Ejecutamos la consulta
+            if ( ! SQLGetGreetmsg->Execute ( "Q", data.ID ) )
+            {
+                ReportBrokenDB ( &user, SQLGetGreetmsg, "Ejecutando chanserv.SQLGetGreetmsg" );
+                return;
+            }
+
+            // Obtenemos el greetmsg
+            char szGreetmsg [ 512 ];
+            bool bNull;
+            if ( SQLGetGreetmsg->Fetch ( 0, &bNull, "s", szGreetmsg, sizeof ( szGreetmsg ) ) == CDBStatement::FETCH_OK )
+            {
+                if ( !bNull )
+                    LangMsg ( channel, "GREETMSG", user.GetName ().c_str (), szGreetmsg );
+            }
+            SQLGetGreetmsg->FreeResult ();
         }
     }
 }
@@ -1247,7 +1282,7 @@ bool CChanserv::evtJoin ( const IMessage& msg_ )
         {
             CUser* pUser = static_cast < CUser* > ( pSource );
 
-            CheckOnjoinStuff ( *pUser, *( msg.GetChannel () ) );
+            CheckOnjoinStuff ( *pUser, *( msg.GetChannel () ), true );
         }
     }
     catch ( std::bad_cast ) { return false; }

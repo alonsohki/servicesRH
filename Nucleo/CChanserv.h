@@ -63,7 +63,7 @@ public:
     int             GetLevel                ( unsigned long long ID, EChannelLevel level );
     bool            CheckAccess             ( CUser& user, unsigned long long ID, EChannelLevel level );
 
-    void            CheckOnjoinStuff        ( CUser& user, CChannel& channel );
+    void            CheckOnjoinStuff        ( CUser& user, CChannel& channel, bool bSendGreetmsg = false );
 
     // Comandos
 protected:
