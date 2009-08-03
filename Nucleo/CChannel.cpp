@@ -64,10 +64,12 @@ void CChannel::RemoveBan ( const CString& szBan )
 }
 
 
-void CChannel::AddMember ( CUser* pUser, unsigned long ulFlags )
+CMembership* CChannel::AddMember ( CUser* pUser, unsigned long ulFlags )
 {
     m_listMembers.push_back ( CMembership ( this, pUser, ulFlags ) );
-    pUser->AddMembership ( &( m_listMembers.back () ) );
+    CMembership* pMembership = &(m_listMembers.back ());
+    pUser->AddMembership ( pMembership );
+    return pMembership;
 }
 
 void CChannel::RemoveMember ( CUser* pUser )

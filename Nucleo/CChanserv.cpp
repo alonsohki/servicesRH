@@ -16,6 +16,13 @@
 
 #include "stdafx.h"
 
+const char* const CChanserv::ms_szValidLevels [] = {
+    "autoop", "autohalfop", "autovoice", "autodeop", "autodehalfop", "autodevoice", "nojoin",
+    "invite", "akick", "set", "clear", "unban", "opdeop", "halfopdehalfop", "voicedevoce",
+    "acc-list", "acc-change"
+};
+
+
 CChanserv::CChanserv ( const CConfig& config )
 : CService ( "chanserv", config )
 {
@@ -24,6 +31,7 @@ CChanserv::CChanserv ( const CConfig& config )
     REGISTER ( Help,        All );
     REGISTER ( Register,    All );
     REGISTER ( Identify,    All );
+    REGISTER ( Levels,      All );
 #undef REGISTER
 
     // Cargamos la configuración para nickserv
@@ -60,12 +68,30 @@ CChanserv::~CChanserv ( )
 
 void CChanserv::Load ()
 {
-    CService::Load ();
+    if ( !IsLoaded () )
+    {
+        // Registramos los eventos
+        CProtocol& protocol = CProtocol::GetSingleton ();
+        protocol.AddHandler ( CMessageJOIN (), PROTOCOL_CALLBACK ( &CChanserv::evtJoin, this ) );
+        protocol.AddHandler ( CMessageMODE (), PROTOCOL_CALLBACK ( &CChanserv::evtMode, this ) );
+        protocol.AddHandler ( CMessageIDENTIFY (), PROTOCOL_CALLBACK ( &CChanserv::evtIdentify, this ) );
+
+        CService::Load ();
+    }
 }
 
 void CChanserv::Unload ()
 {
-    CService::Unload ();
+    if ( IsLoaded () )
+    {
+        // Desregistramos los eventos
+        CProtocol& protocol = CProtocol::GetSingleton ();
+        protocol.RemoveHandler ( CMessageJOIN (), PROTOCOL_CALLBACK ( &CChanserv::evtJoin, this ) );
+        protocol.RemoveHandler ( CMessageMODE (), PROTOCOL_CALLBACK ( &CChanserv::evtMode, this ) );
+        protocol.RemoveHandler ( CMessageIDENTIFY (), PROTOCOL_CALLBACK ( &CChanserv::evtIdentify, this ) );
+
+        CService::Unload ();
+    }
 }
 
 bool CChanserv::CheckIdentifiedAndReg ( CUser& s )
@@ -155,6 +181,85 @@ bool CChanserv::HasChannelDebug ( unsigned long long ID )
     SQLHasDebug->FreeResult ();
 
     return ( *szDebug == 'Y' );
+}
+
+
+int CChanserv::GetAccess ( CUser& s, unsigned long long ID )
+{
+    SServicesData& data = s.GetServicesData ();
+
+    // Si no está registrado o identificado, el nivel siempre será 0
+    if ( data.ID == 0ULL || data.bIdentified == false )
+        return 0;
+
+    // Generamos la consulta para comprobar si el usuario es el fundador del canal
+    static CDBStatement* SQLCheckFounder = 0;
+    if ( !SQLCheckFounder )
+    {
+        SQLCheckFounder = CDatabase::GetSingleton ().PrepareStatement (
+              "SELECT founder FROM channel WHERE id=? AND founder=?"
+            );
+        if ( !SQLCheckFounder )
+        {
+            ReportBrokenDB ( &s, 0, "Generando chanserv.SQLCheckFounder" );
+            return 0;
+        }
+    }
+
+    // Generamos la consulta para obtener el nivel de acceso que tiene el usuario en el canal
+    static CDBStatement* SQLGetAccess = 0;
+    if ( !SQLGetAccess )
+    {
+        SQLGetAccess = CDatabase::GetSingleton ().PrepareStatement (
+              "SELECT `level` FROM access WHERE account=? AND channel=?"
+            );
+        if ( !SQLGetAccess )
+        {
+            ReportBrokenDB ( &s, 0, "Generando chanserv.SQLGetAccess" );
+            return 0;
+        }
+    }
+
+    // Primero comprobamos si está identificado como fundador
+    if ( data.vecChannelFounder.size () > 0 )
+    {
+        for ( std::vector < unsigned long long >::const_iterator i = data.vecChannelFounder.begin ();
+              i != data.vecChannelFounder.end ();
+              ++i )
+        {
+            if ( (*i) == ID )
+                return 500;
+        }
+    }
+
+    // Comprobamos si es el fundador del canal
+    if ( !SQLCheckFounder->Execute ( "QQ", ID, data.ID ) )
+    {
+        ReportBrokenDB ( &s, SQLCheckFounder, "Ejecutando chanserv.SQLCheckFounder" );
+        return 0;
+    }
+
+    unsigned long long FounderID;
+    if ( SQLCheckFounder->Fetch ( 0, 0, "Q", &FounderID ) == CDBStatement::FETCH_OK && FounderID == data.ID )
+    {
+        SQLCheckFounder->FreeResult ();
+        return 500;
+    }
+    SQLCheckFounder->FreeResult ();
+
+    // Comprobamos el acceso que tenga en el canal
+    if ( !SQLGetAccess->Execute ( "QQ", data.ID, ID ) )
+    {
+        ReportBrokenDB ( &s, SQLGetAccess, "Ejecutando chanserv.SQLGetAccess" );
+        return 0;
+    }
+
+    int iAccess;
+    if ( SQLGetAccess->Fetch ( 0, 0, "d", &iAccess ) != CDBStatement::FETCH_OK )
+        iAccess = 0;
+    SQLGetAccess->FreeResult ();
+
+    return iAccess;
 }
 
 
@@ -409,13 +514,17 @@ COMMAND(Identify)
     // Buscamos el canal
     CChannel* pChannel = GetChannel ( s, szChannel );
     if ( !pChannel )
+    {
+        ClearPassword ( szPassword );
         return false;
+    }
     CChannel& channel = *pChannel;
 
     // Comprobamos que el canal está registrado
     unsigned long long ID = GetChannelID ( szChannel );
     if ( ID == 0ULL )
     {
+        ClearPassword ( szPassword );
         LangMsg ( s, "CHANNEL_NOT_REGISTERED", szChannel.c_str () );
         return false;
     }
@@ -425,7 +534,11 @@ COMMAND(Identify)
 
     // Comprobamos la contraseña
     if ( ! SQLCheckPassword->Execute ( "Qs", ID, szPassword.c_str () ) )
+    {
+        ClearPassword ( szPassword );
         return ReportBrokenDB ( &s, SQLCheckPassword, "Ejecutando chanserv.SQLCheckPassword" );
+    }
+    ClearPassword ( szPassword );
 
     if ( SQLCheckPassword->Fetch ( 0, 0, "Q", &ID ) != CDBStatement::FETCH_OK )
     {
@@ -440,7 +553,7 @@ COMMAND(Identify)
     SQLCheckPassword->FreeResult ();
 
     // Le ponemos como fundador
-    data.founderChannels.push_back ( ID );
+    data.vecChannelFounder.push_back ( ID );
     if ( bHasDebug )
         LangNotice ( channel, "IDENTIFY_SUCCESS_DEBUG", s.GetName ().c_str () );
 
@@ -461,6 +574,170 @@ COMMAND(Identify)
     return true;
 }
 
+
+///////////////////
+// LEVELS
+//
+COMMAND(Levels)
+{
+    // Preparamos el array de consultas SQL para cada uno de los niveles
+    static CDBStatement* s_statements [ LEVEL_MAX ] = { NULL };
+
+    if ( s_statements [ 0 ] == NULL )
+    {
+        for ( unsigned int i = 0;
+              i < sizeof ( ms_szValidLevels ) / sizeof ( ms_szValidLevels [ 0 ] );
+              ++i )
+        {
+            const char* szCurrent = ms_szValidLevels [ i ];
+            CString szQuery ( "UPDATE levels SET `%s`=? WHERE channel=?", szCurrent );
+            CDBStatement* SQLLevelUpdate = CDatabase::GetSingleton ().PrepareStatement ( szQuery );
+            if ( !SQLLevelUpdate )
+            {
+                s_statements [ i ] = NULL;
+                ReportBrokenDB ( 0, 0, "Generando chanserv.SQLLevelUpdate" );
+            }
+            else
+                s_statements [ i ] = SQLLevelUpdate;
+        }
+    }
+
+    CUser& s = *( info.pSource );
+
+    // Generamos la consulta SQL para listar los niveles
+    static CDBStatement* SQLListLevels = 0;
+    if ( !SQLListLevels )
+    {
+        // Generamos la consulta
+        CString szQuery = "SELECT ";
+        for ( unsigned int i = 0;
+              i < sizeof ( ms_szValidLevels ) / sizeof ( ms_szValidLevels [ 0 ] );
+              ++i )
+        {
+            const char* szCurrent = ms_szValidLevels [ i ];
+            szQuery.append ( CString ( "`%s`,", szCurrent ) );
+        }
+        szQuery.resize ( szQuery.length () - 1 );
+        szQuery.append ( " FROM levels WHERE channel=?" );
+
+        puts(szQuery);
+        SQLListLevels = CDatabase::GetSingleton ().PrepareStatement ( szQuery );
+        if ( !SQLListLevels )
+            return ReportBrokenDB ( &s, 0, "Generando chanserv.SQLListLevels" );
+    }
+
+    // Nos aseguramos de que esté identificado
+    if ( !CheckIdentifiedAndReg ( s ) )
+        return false;
+
+    // Obtenemos el canal
+    CString& szChannel = info.GetNextParam ();
+    if ( szChannel == "" )
+        return SendSyntax ( s, "LEVELS" );
+
+    // Obtenemos el comando
+    CString& szCommand = info.GetNextParam ();
+    if ( szCommand == "" )
+        return SendSyntax ( s, "LEVELS" );
+
+    // Comprobamos que el canal esté registrado
+    unsigned long long ID = GetChannelID ( szChannel );
+    if ( ID == 0ULL )
+    {
+        LangMsg ( s, "CHANNEL_NOT_REGISTERED", szChannel.c_str () );
+        return false;
+    }
+
+    if ( !CPortability::CompareNoCase ( szCommand, "LIST" ) )
+    {
+        // Listamos los niveles
+        if ( !SQLListLevels->Execute ( "Q", ID ) )
+            return ReportBrokenDB ( &s, SQLListLevels, "Ejecutando chanserv.SQLListLevels" );
+
+        // Extraemos los niveles
+        int iLevels [ LEVEL_MAX ];
+        if ( SQLListLevels->Fetch ( 0, 0, "ddddddddddddddddd",
+                &iLevels [ 0 ], &iLevels [ 1 ], &iLevels [ 2 ], &iLevels [ 3 ], &iLevels [ 4 ],
+                &iLevels [ 5 ], &iLevels [ 6 ], &iLevels [ 7 ], &iLevels [ 8 ], &iLevels [ 9 ],
+                &iLevels [ 10 ], &iLevels [ 11 ], &iLevels [ 12 ], &iLevels [ 13 ], &iLevels [ 14 ], 
+                &iLevels [ 15 ], &iLevels [ 16 ] ) == CDBStatement::FETCH_OK )
+        {
+            char szUpperName [ 64 ];
+            char szPadding [ 64 ];
+
+            for ( unsigned int i = 0; i < LEVEL_MAX; ++i )
+            {
+                const char* szCurrent = ms_szValidLevels [ i ];
+                unsigned int j;
+                for ( j = 0; j < strlen ( szCurrent ); ++j )
+                    szUpperName [ j ] = ToUpper ( szCurrent [ j ] );
+                szUpperName [ j ] = '\0';
+
+                memset ( szPadding, ' ', 20 - j );
+                szPadding [ 20 - j ] = '\0';
+                LangMsg ( s, "LEVELS_LIST_ENTRY", szUpperName, szPadding, iLevels [ i ] );
+            }
+        }
+
+        SQLListLevels->FreeResult ();
+    }
+
+    else if ( !CPortability::CompareNoCase ( szCommand, "SET" ) )
+    {
+        // Comprobamos que sea fundador del canal
+        int iAccess = GetAccess ( s, ID );
+        if ( iAccess < 500 )
+            return AccessDenied ( s );
+
+        // Obtenemos el nombre del nivel
+        CString& szLevelName = info.GetNextParam ();
+        if ( szLevelName == "" )
+            return SendSyntax ( s, "LEVELS" );
+
+        // Obtenemos el valor del nivel
+        CString& szLevelValue = info.GetNextParam ();
+        if ( szLevelValue == "" )
+            return SendSyntax ( s, "LEVELS" );
+        int iLevelValue = atoi ( szLevelValue );
+
+        // Comprobamos que el valor del nivel está en el rango
+        if ( iLevelValue < -1 || iLevelValue > 500 )
+        {
+            LangMsg ( s, "LEVELS_SET_INVALID_VALUE" );
+            return false;
+        }
+
+        // Obtenemos la posición del nivel
+        unsigned int i;
+        for ( i = 0; i < LEVEL_MAX; ++i )
+        {
+            if ( !CPortability::CompareNoCase ( ms_szValidLevels [ i ], szLevelName ) )
+                break;
+        }
+
+        // Comprobamos que hayan proporcionado un nombre de nivel válido
+        if ( i == LEVEL_MAX )
+        {
+            LangMsg ( s, "LEVELS_SET_INVALID_NAME" );
+            return false;
+        }
+
+        // Obtenemos la consulta y la ejecutamos
+        CDBStatement* SQLUpdateLevel = s_statements [ i ];
+        if ( SQLUpdateLevel )
+        {
+            if ( !SQLUpdateLevel->Execute ( "dQ", iLevelValue, ID ) )
+                return ReportBrokenDB ( &s, SQLUpdateLevel, "Ejecutando chanserv.SQLUpdateLevel" );
+            SQLUpdateLevel->FreeResult ();
+            LangMsg ( s, "LEVELS_SET_SUCCESS", szLevelName.c_str (), iLevelValue );
+        }
+    }
+
+    return true;
+}
+
+
+
 #undef COMMAND
 
 
@@ -471,3 +748,100 @@ bool CChanserv::verifyPreoperator ( SCommandInfo& info ) { return HasAccess ( *(
 bool CChanserv::verifyOperator ( SCommandInfo& info ) { return HasAccess ( *( info.pSource ), RANK_OPERATOR ); }
 bool CChanserv::verifyCoadministrator ( SCommandInfo& info ) { return HasAccess ( *( info.pSource ), RANK_COADMINISTRATOR ); }
 bool CChanserv::verifyAdministrator ( SCommandInfo& info ) { return HasAccess ( *( info.pSource ), RANK_ADMINISTRATOR ); }
+
+
+
+
+// Eventos
+bool CChanserv::evtJoin ( const IMessage& msg_ )
+{
+    try
+    {
+        const CMessageJOIN& msg = dynamic_cast < const CMessageJOIN& > ( msg_ );
+        CClient* pSource = msg.GetSource ();
+
+        // Comprobamos que el orígen del mensaje sea un usuario
+        if ( pSource && pSource->GetType () == CClient::USER )
+        {
+            CUser* pUser = static_cast < CUser* > ( pSource );
+
+            // Comprobamos si el canal está registrado
+            unsigned long long ID = GetChannelID ( msg.GetChannel ()->GetName () );
+            if ( ID != 0ULL )
+            {
+                CProtocol& protocol = CProtocol::GetSingleton ();
+
+                // Comprobamos si es fundador
+                int iAccess = GetAccess ( *pUser, ID );
+                if ( iAccess == 500 )
+                {
+                    // Le damos acceso de fundador
+                    char szNumeric [ 8 ];
+                    pUser->FormatNumeric ( szNumeric );
+                    std::vector < CString > vecParams;
+                    vecParams.push_back ( szNumeric );
+                    protocol.GetMe ().Send ( CMessageBMODE ( "ChanServ", msg.GetChannel (), "+q", vecParams ) );
+                }
+            }
+        }
+    }
+    catch ( std::bad_cast ) { return false; }
+
+    return true;
+}
+
+bool CChanserv::evtMode ( const IMessage& msg_ )
+{
+    try
+    {
+        const CMessageMODE& msg = dynamic_cast < const CMessageMODE& > ( msg_ );
+    }
+    catch ( std::bad_cast ) { return false; }
+
+    return true;
+}
+
+bool CChanserv::evtIdentify ( const IMessage& msg_ )
+{
+    try
+    {
+        const CMessageIDENTIFY& msg = dynamic_cast < const CMessageIDENTIFY& > ( msg_ );
+
+        // Comprobamos que exista el usuario
+        CUser* pUser = msg.GetUser ();
+        if ( pUser )
+        {
+            CProtocol& protocol = CProtocol::GetSingleton ();
+            char szNumeric [ 8 ];
+            pUser->FormatNumeric ( szNumeric );
+
+            // Comprobamos su acceso en todos los canales
+            const std::list < CMembership* >& memberships = pUser->GetMemberships ();
+            for ( std::list < CMembership* >::const_iterator i = memberships.begin ();
+                  i != memberships.end ();
+                  ++i )
+            {
+                const CMembership& membership = *(*i);
+
+                // Comprobamos que el canal esté registrado
+                unsigned long long ID = GetChannelID ( membership.GetChannel ()->GetName () );
+                if ( ID != 0ULL )
+                {
+                    // Obtenemos su nivel de acceso
+                    int iAccess = GetAccess ( *pUser, ID );
+                    if ( iAccess == 500 )
+                    {
+                        // Fundador
+                        std::vector < CString > vecParams;
+                        vecParams.push_back ( szNumeric );
+                        protocol.GetMe ().Send ( CMessageBMODE ( "ChanServ", membership.GetChannel (), "+q", vecParams ) );
+                    }
+                }
+            }
+        }
+
+    }
+    catch ( std::bad_cast ) { return false; }
+
+    return true;
+}

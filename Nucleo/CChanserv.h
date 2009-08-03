@@ -18,6 +18,29 @@
 
 class CChanserv : public CService
 {
+    enum
+    {
+        LEVEL_AUTOOP = 0,
+        LEVEL_AUTOHALFOP,
+        LEVEL_AUTOVOICE,
+        LEVEL_AUTODEOP,
+        LEVEL_AUTODEHALFOP,
+        LEVEL_AUTODEVOICE,
+        LEVEL_NOJOIN,
+        LEVEL_INVITE,
+        LEVEL_AKICK,
+        LEVEL_SET,
+        LEVEL_CLEAR,
+        LEVEL_UNBAN,
+        LEVEL_OPDEOP,
+        LEVEL_HALFOPDEHALFOP,
+        LEVEL_VOICEDEVOICE,
+        LEVEL_ACC_LIST,
+        LEVEL_ACC_CHANGE,
+        LEVEL_MAX
+    };
+    static const char* const ms_szValidLevels [];
+
 public:
                     CChanserv       ( const CConfig& config );
     virtual         ~CChanserv      ( );
@@ -30,6 +53,7 @@ public:
                     GetChannelID            ( const CString& szChannelName );
     CChannel*       GetChannel              ( CUser& s, const CString& szChannelName );
     bool            HasChannelDebug         ( unsigned long long ID );
+    int             GetAccess               ( CUser& s, unsigned long long ID );
 
     // Comandos
 protected:
@@ -40,6 +64,7 @@ private:
     COMMAND(Help);
     COMMAND(Register);
     COMMAND(Identify);
+    COMMAND(Levels);
 #undef SET_COMMAND
 #undef COMMAND
 
@@ -50,6 +75,12 @@ private:
     bool            verifyOperator          ( SCommandInfo& info );
     bool            verifyCoadministrator   ( SCommandInfo& info );
     bool            verifyAdministrator     ( SCommandInfo& info );
+
+    // Eventos
+private:
+    bool            evtJoin         ( const IMessage& msg );
+    bool            evtMode         ( const IMessage& msg );
+    bool            evtIdentify     ( const IMessage& msg );
 
 private:
     struct

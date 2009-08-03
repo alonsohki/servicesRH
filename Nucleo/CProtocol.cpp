@@ -824,19 +824,13 @@ bool CProtocol::evtBurst ( const IMessage& message_ )
             CChannelManager::GetSingleton ().AddChannel ( pChannel );
         }
 
-        // Establecemos los modos
-        unsigned long ulModes = message.GetModes ();
-        if ( ulModes != 0 )
-        {
-            pChannel->SetModes ( ulModes, message.GetModeParams () );
-        }
-
         // Agregamos los usuarios
         if ( vecUsers.size () > 0 )
         {
             unsigned long ulFlags = 0;
             CUser* pUser;
             char szTemp [ 32 ];
+            char szModes [ 8 ];
 
             for ( std::vector < CString >::const_iterator i = vecUsers.begin ();
                   i != vecUsers.end ();
@@ -850,6 +844,7 @@ bool CProtocol::evtBurst ( const IMessage& message_ )
                     // Procesamos los flags del usuario en el canal
                     *p = '\0';
                     ++p;
+                    strcpy ( szModes, p );
                     ulFlags = CChannel::GetUserFlags ( p );
                 }
 
@@ -861,6 +856,23 @@ bool CProtocol::evtBurst ( const IMessage& message_ )
                 }
 
                 pChannel->AddMember ( pUser, ulFlags );
+
+                // Ejecutamos los eventos para mensajes JOIN y los modos asociados
+                CMessageJOIN joinMsg ( pChannel );
+                joinMsg.SetSource ( pUser );
+                TriggerMessageHandlers ( HANDLER_IN_CALLBACKS, joinMsg );
+
+                if ( ulFlags != 0UL )
+                {
+                    std::vector < CString > vecParams;
+                    size_t len = strlen ( szModes );
+
+                    for ( size_t i = 0; i < len; ++i )
+                        vecParams.push_back ( szTemp );
+                    CMessageMODE modeMsg ( 0, pChannel, szModes, vecParams );
+                    modeMsg.SetSource ( message.GetSource () );
+                    TriggerMessageHandlers ( HANDLER_IN_CALLBACKS, modeMsg );
+                }
             }
         }
 
@@ -873,7 +885,26 @@ bool CProtocol::evtBurst ( const IMessage& message_ )
                   ++i )
             {
                 pChannel->AddBan ( *i );
+
+                // Ejecutamos los eventos para mensajes MODE
+                std::vector < CString > vecParams;
+                vecParams.push_back ( *i );
+                CMessageMODE modeMsg ( 0, pChannel, "+b", vecParams );
+                modeMsg.SetSource ( message.GetSource () );
+                TriggerMessageHandlers ( HANDLER_IN_CALLBACKS, modeMsg );
             }
+        }
+
+        // Establecemos los modos
+        unsigned long ulModes = message.GetModes ();
+        if ( ulModes != 0 )
+        {
+            pChannel->SetModes ( ulModes, message.GetModeParams () );
+
+            // Ejecutamos los eventos para mensajes MODE
+            CMessageMODE modeMsg ( 0, pChannel, message.GetModesStr (), message.GetModeParams () );
+            modeMsg.SetSource ( message.GetSource () );
+            TriggerMessageHandlers ( HANDLER_IN_CALLBACKS, modeMsg );
         }
     }
     catch ( std::bad_cast ) { return false; }
@@ -889,6 +920,11 @@ bool CProtocol::evtTburst ( const IMessage& message_ )
         pChannel->SetTopic ( message.GetTopic () );
         pChannel->SetTopicSetter ( message.GetSetter () );
         pChannel->SetTopicTime ( message.GetTime () );
+
+        // Ejecutamos los eventos para los mensajes TOPIC
+        CMessageTOPIC topicMsg ( pChannel, message.GetTopic () );
+        topicMsg.SetSource ( message.GetSource () );
+        TriggerMessageHandlers ( HANDLER_IN_CALLBACKS, topicMsg );
     }
     catch ( std::bad_cast ) { return false; }
     return true;
@@ -917,6 +953,7 @@ bool CProtocol::evtCreate ( const IMessage& message_ )
         CClient* pSource = message.GetSource ();
         if ( !pSource || pSource->GetType () != CClient::USER )
             return false;
+        CUser* pUser = static_cast < CUser* > ( pSource );
 
         CChannelManager& manager = CChannelManager::GetSingleton ();
         CChannel* pChannel = manager.GetChannel ( message.GetName () );
@@ -925,8 +962,23 @@ bool CProtocol::evtCreate ( const IMessage& message_ )
             pChannel = new CChannel ( message.GetName () );
             manager.AddChannel ( pChannel );
         }
+        CMembership* pMembership = pChannel->AddMember ( pUser, 0 );
 
-        pChannel->AddMember ( static_cast < CUser* > ( pSource ), CChannel::CFLAG_OP );
+        // Generamos un mensaje de tipo JOIN y ejecutamos los eventos
+        CMessageJOIN joinMsg ( pChannel, message.GetTime () );
+        joinMsg.SetSource ( pSource );
+        TriggerMessageHandlers ( HANDLER_IN_CALLBACKS, joinMsg );
+
+        // Generamos un mensaje de tipo MODE y ejecutamos los eventos
+        char szNumeric [ 8 ];
+        pUser->FormatNumeric ( szNumeric );
+        std::vector < CString > vecParams;
+        vecParams.push_back ( szNumeric );
+        pMembership->SetFlags ( pMembership->GetFlags () | CChannel::CFLAG_OP );
+
+        CMessageMODE modeMsg ( 0, pChannel, "+o", vecParams );
+        modeMsg.SetSource ( pSource );
+        TriggerMessageHandlers ( HANDLER_IN_CALLBACKS, modeMsg );
     }
     catch ( std::bad_cast ) { return false; }
     return true;

@@ -27,7 +27,7 @@ struct SServicesData
     bool                        bIdentified;
     unsigned long long          ID;
     std::vector < unsigned long long >
-                                founderChannels;
+                                vecChannelFounder;
 
     struct
     {

@@ -22,6 +22,7 @@ Lista de comandos disponibles:
 
     12REGISTER             Registro de un canal
     12IDENTIFY             Identificación como fundador de un canal
+    12LEVELS               Maneja la lista de niveles de un canal
 
 Para obtener ayuda detallada sobre cualquier comando, escribe 12/msg %N HELP <comando>.
 %%
@@ -143,6 +144,40 @@ identificado hasta que salgas del IRC o te cambies de nick.
 %%
 #
 ############################
+
+
+############################
+# LEVELS
+%SYNTAX_LEVELS%
+Sintaxis: 12LEVELS <#canal> {LIST|SET} [nombre] [valor]
+%%
+
+%HELP_LEVELS%
+Establece los niveles requeridos para los distintos accesos de un 12canal.
+Las distintas opciones son:
+    - 12LIST: Lista los niveles actuales de un canal
+    - 12SET: Cambia los niveles de un canal. Este comando sólo puede ejecutarlo el fundador.
+           El nivel especificado debe estar entre 12-1 y 12500.
+%%
+
+%LEVELS_LIST_ENTRY%
+    %s%s%d
+%%
+
+%LEVELS_SET_INVALID_NAME%
+04Error: No existe ningún nivel con ese nombre.
+%%
+
+%LEVELS_SET_INVALID_VALUE%
+04Error: Valor del nivel no válido. Debe estar entre 12-1 y 12500.
+%%
+
+%LEVELS_SET_SUCCESS%
+El valor del nivel 12%s ha sido cambiado correctamente a 12%d.
+%%
+#
+############################
+
 
 
 

@@ -618,6 +618,7 @@ bool CMessageBURST::ProcessMessage ( const CString& szLine, const std::vector < 
     m_szName = vec [ 2 ];
     m_creation.SetTimestamp ( strtoul ( vec [ 3 ], NULL, 10 ) );
     m_ulModes = 0;
+    m_szModes = "";
     m_vecModeParams.clear ();
     m_vecUsers.clear ();
     m_vecBans.clear ();
@@ -643,6 +644,7 @@ bool CMessageBURST::ProcessMessage ( const CString& szLine, const std::vector < 
             // Nos envían los modos del canal
             const char* p = vec2 [ 0 ].c_str () + 1;
             char c;
+            m_szModes = vec2 [ 0 ];
 
             iIndex = 1;
 

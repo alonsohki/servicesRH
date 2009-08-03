@@ -292,6 +292,7 @@ public:
     inline const CString&                   GetName             ( ) const { return m_szName; }
     inline const CDate&                     GetCreationTime     ( ) const { return m_creation; }
     inline unsigned long                    GetModes            ( ) const { return m_ulModes; }
+    inline const CString&                   GetModesStr         ( ) const { return m_szModes; }
     inline const std::vector < CString >&   GetModeParams       ( ) const { return m_vecModeParams; }
     inline const std::vector < CString >&   GetUsers            ( ) const { return m_vecUsers; }
     inline const std::vector < CString >&   GetBans             ( ) const { return m_vecBans; }
@@ -299,6 +300,7 @@ private:
     CString                     m_szName;
     CDate                       m_creation;
     unsigned long               m_ulModes;
+    CString                     m_szModes;
     std::vector < CString >     m_vecModeParams;
     std::vector < CString >     m_vecUsers;
     std::vector < CString >     m_vecBans;

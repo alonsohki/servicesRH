@@ -90,7 +90,7 @@ public:
     inline const std::list < CString >&
                                     GetBans         ( ) const { return m_listBans; }
 
-    void                            AddMember       ( CUser* pUser, unsigned long ulFlags = 0 );
+    CMembership*                    AddMember       ( CUser* pUser, unsigned long ulFlags = 0 );
     void                            RemoveMember    ( CUser* pUser );
     CMembership*                    GetMembership   ( CUser* pUser );
     inline const std::list < CMembership >&
