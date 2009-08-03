@@ -19,7 +19,7 @@
 class CUser;
 class CChannel;
 
-class CMembership
+class CMembership : public CDelayedDeletionElement
 {
 public:
                             CMembership     ( );

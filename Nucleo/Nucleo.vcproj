@@ -394,6 +394,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CDelayedDeletionElement.h"
+				>
+			</File>
+			<File
 				RelativePath=".\CDirectory.h"
 				>
 			</File>

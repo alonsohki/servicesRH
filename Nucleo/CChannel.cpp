@@ -66,22 +66,24 @@ void CChannel::RemoveBan ( const CString& szBan )
 
 CMembership* CChannel::AddMember ( CUser* pUser, unsigned long ulFlags )
 {
-    m_listMembers.push_back ( CMembership ( this, pUser, ulFlags ) );
-    CMembership* pMembership = &(m_listMembers.back ());
+    CMembership* pMembership = new CMembership ( this, pUser, ulFlags );
+    m_listMembers.push_back ( pMembership );
     pUser->AddMembership ( pMembership );
     return pMembership;
 }
 
 void CChannel::RemoveMember ( CUser* pUser )
 {
-    for ( std::list < CMembership >::iterator i = m_listMembers.begin ();
+    for ( std::list < CMembership* >::iterator i = m_listMembers.begin ();
           i != m_listMembers.end ();
           ++i )
     {
-        if ( (*i).GetUser () == pUser )
+        CMembership* pCur = (*i);
+        if ( pCur->GetUser () == pUser )
         {
-            pUser->RemoveMembership ( &(*i) );
+            pUser->RemoveMembership ( pCur );
             m_listMembers.erase ( i );
+            CProtocol::GetSingleton ().DelayedDelete ( pCur );
             break;
         }
     }
@@ -89,17 +91,17 @@ void CChannel::RemoveMember ( CUser* pUser )
     if ( m_listMembers.size () == 0 )
     {
         CChannelManager::GetSingleton ().RemoveChannel ( this );
-        delete this;
+        CProtocol::GetSingleton ().DelayedDelete ( this );
     }
 }
 
 CMembership* CChannel::GetMembership ( CUser* pUser )
 {
-    for ( std::list < CMembership >::iterator i = m_listMembers.begin ();
+    for ( std::list < CMembership* >::iterator i = m_listMembers.begin ();
           i != m_listMembers.end ();
           ++i )
     {
-        CMembership& cur = (*i);
+        CMembership& cur = *(*i);
         if ( cur.GetUser ( ) == pUser )
             return &cur;
     }

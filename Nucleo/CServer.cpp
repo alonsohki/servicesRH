@@ -49,15 +49,19 @@ void CServer::Destroy ( )
     }
 
     // Destruímos todos los servidores hijos linkados a este servidor
+    CProtocol& protocol = CProtocol::GetSingleton ();
     for ( std::list < CServer* >::iterator i = m_children.begin ();
           i != m_children.end ();
           i = m_children.begin () )
     {
-        delete *i;
+        CServer* pCur = *i;
+        pCur->Destroy ();
+        protocol.DelayedDelete ( pCur );
     }
     m_children.clear ();
 
     m_clientManager.Destroy ();
+    CClient::Destroy ();
 }
 
 void CServer::Create ( CServer* pParent,

@@ -420,6 +420,8 @@ bool CService::vGetLangTopic ( CString& szDest, const CString& szLanguage, const
         while ( ( iPos = szTemp.find ( "%N", iPos ) ) != CString::npos )
             szTemp.replace ( iPos, 2, GetName () );
     }
+    else
+        return false;
 
     // Formateamos el mensaje
     szDest.vFormat ( szTemp.c_str (), vl );
@@ -599,6 +601,12 @@ bool CService::evtPrivmsg ( const IMessage& message_ )
     return true;
 }
 
+void CService::SetupForCommand ( CUser& user )
+{
+    SServicesData& data = user.GetServicesData ();
+    data.access.bCached = false;
+}
+
 void CService::ProcessCommands ( CUser* pSource, const CString& szMessage )
 {
     SCommandInfo info;
@@ -607,8 +615,8 @@ void CService::ProcessCommands ( CUser* pSource, const CString& szMessage )
     szMessage.Split ( info.vecParams );
     CString& szCommand = info.GetNextParam ( );
 
-    SServicesData& data = pSource->GetServicesData ();
-    data.access.bCached = false;
+    if ( pSource )
+        SetupForCommand ( *pSource );
 
     if ( szCommand.length () > 0 )
     {

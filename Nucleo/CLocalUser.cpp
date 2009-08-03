@@ -102,3 +102,114 @@ void CLocalUser::Quit ( const CString& szMessage )
         m_bCreated = false;
     }
 }
+
+void CLocalUser::Mode ( CChannel* pChannel, const char* szModes, ... )
+{
+    va_list vl;
+    std::vector < CString > vecParams;
+
+    va_start ( vl, szModes );
+    const char* p = szModes;
+    while ( *p )
+    {
+        unsigned long ulMode = CChannel::GetModeFlag ( *p );
+        if ( ulMode != 0 )
+        {
+            if ( CChannel::HasModeParam ( ulMode ) || CChannel::IsModeAFlag ( ulMode ) )
+            {
+                const char* szParam = va_arg ( vl, const char* );
+                vecParams.push_back ( szParam );
+            }
+        }
+
+        ++p;
+    }
+    va_end ( vl );
+
+    Send ( CMessageMODE ( 0, pChannel, szModes, vecParams ) );
+}
+
+void CLocalUser::BMode ( CChannel* pChannel, const char* szModes, ... )
+{
+    CService* pService = dynamic_cast < CService* > ( this );
+    if ( !pService )
+        return;
+
+    va_list vl;
+    std::vector < CString > vecParams;
+
+    va_start ( vl, szModes );
+    const char* p = szModes;
+    while ( *p )
+    {
+        unsigned long ulMode = CChannel::GetModeFlag ( *p );
+        if ( ulMode != 0 )
+        {
+            if ( CChannel::HasModeParam ( ulMode ) || CChannel::IsModeAFlag ( ulMode ) )
+            {
+                const char* szParam = va_arg ( vl, const char* );
+                vecParams.push_back ( szParam );
+            }
+        }
+
+        ++p;
+    }
+    va_end ( vl );
+
+    CProtocol::GetSingleton ().GetMe ().Send ( CMessageBMODE ( pService->GetServiceName (),
+                                                               pChannel,
+                                                               szModes,
+                                                               vecParams ) );
+}
+
+
+// Kickban
+void CLocalUser::Kick ( CUser* pUser, CChannel* pChannel, const CString& szReason )
+{
+    Send ( CMessageKICK ( pChannel, pUser, szReason ) );
+}
+
+void CLocalUser::Ban ( CUser* pUser, CChannel* pChannel, EBanType eType )
+{
+    CString szUsermask;
+    switch ( eType )
+    {
+        case BAN_NICK:
+            szUsermask.Format ( "%s!*@*", pUser->GetName ().c_str () );
+            break;
+        case BAN_IDENT:
+            szUsermask.Format ( "*!%s@*", pUser->GetIdent ().c_str () );
+            break;
+        case BAN_HOST:
+            szUsermask.Format ( "*!*@%s", CProtocol::GetSingleton ().GetUserVisibleHost ( *pUser ).c_str () );
+            break;
+        case BAN_FULL:
+            szUsermask.Format ( "%s!%s@%s", pUser->GetName ().c_str (),
+                                            pUser->GetIdent ().c_str (),
+                                            CProtocol::GetSingleton ().GetUserVisibleHost ( *pUser ).c_str () );
+            break;
+        case BAN_FULL_IDENT_WILDCARD:
+            szUsermask.Format ( "%s!*%s@%s", pUser->GetName ().c_str (),
+                                             pUser->GetIdent ().c_str (),
+                                             CProtocol::GetSingleton ().GetUserVisibleHost ( *pUser ).c_str () );
+            break;
+        case BAN_IDENT_AND_HOST:
+            szUsermask.Format ( "*!%s@%s", pUser->GetIdent ().c_str (),
+                                           CProtocol::GetSingleton ().GetUserVisibleHost ( *pUser ).c_str () );
+            break;
+        case BAN_IDENT_WILDCARD_AND_HOST:
+            szUsermask.Format ( "*!*%s@%s", pUser->GetIdent ().c_str (),
+                                            CProtocol::GetSingleton ().GetUserVisibleHost ( *pUser ).c_str () );
+            break;
+    }
+    std::vector < CString > vecParams;
+    vecParams.push_back ( szUsermask );
+
+    Send ( CMessageMODE ( 0, pChannel, "+b", vecParams ) );
+}
+
+void CLocalUser::KickBan ( CUser* pUser, CChannel* pChannel, const CString& szReason, EBanType eType )
+{
+    Ban ( pUser, pChannel, eType );
+    Kick ( pUser, pChannel, szReason );
+}

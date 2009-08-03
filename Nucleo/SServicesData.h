@@ -36,4 +36,12 @@ struct SServicesData
         bool bCached;
         int iRank;
     } access;
+
+    struct
+    {
+        friend class CChanserv;
+    private:
+        bool bCached;
+        int iLevel;
+    } chanAccess;
 };

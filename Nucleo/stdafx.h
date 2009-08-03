@@ -79,6 +79,7 @@
 #include "tea.h"
 #include "CConfig.h"
 #include "CSocket.h"
+#include "CDelayedDeletionElement.h"
 #include "SProtocolMessage.h"
 #include "CMessage.h"
 #include "CClient.h"

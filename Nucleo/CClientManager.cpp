@@ -36,12 +36,14 @@ CClientManager::~CClientManager ( )
 
 void CClientManager::Destroy ( )
 {
+    CProtocol& protocol = CProtocol::GetSingleton ();
+
     for ( t_mapUsersByName::iterator i = m_mapUsersByName.begin ();
           i != m_mapUsersByName.end ();
           ++i )
     {
         free ( (*i).first );
-        delete (*i).second;
+        protocol.DelayedDelete ( (*i).second );
     }
 
     for ( t_mapServersByName::iterator i = m_mapServersByName.begin ();
@@ -93,7 +95,7 @@ void CClientManager::RemoveClient ( CUser* pUser )
     if ( iter1 != m_mapUsersByName.end () )
     {
         free ( (*iter1).first );
-        delete (*iter1).second;
+        CProtocol::GetSingleton ().DelayedDelete ( (*iter1).second );
 
         m_mapUsersByName.erase ( iter1 );
 

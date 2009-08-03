@@ -48,6 +48,8 @@ public:
     virtual void    Unload              ( );
     bool            IsLoaded            ( ) const { return m_bIsLoaded; }
 
+    virtual void    SetupForCommand     ( CUser& user );
+
     const CString&  GetServiceName      ( ) const { return m_szServiceName; }
 
     bool            IsOk                ( ) const { return m_bIsOk; }

@@ -31,16 +31,23 @@ COperserv::COperserv ( const CConfig& config )
 
 COperserv::~COperserv ( )
 {
+    Unload ();
 }
 
 void COperserv::Load ()
 {
-    CService::Load ();
+    if ( !IsLoaded () )
+    {
+        CService::Load ();
+    }
 }
 
 void COperserv::Unload ()
 {
-    CService::Unload ();
+    if ( IsLoaded () )
+    {
+        CService::Unload ();
+    }
 }
 
 

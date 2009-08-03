@@ -57,6 +57,11 @@ public:
     inline CServer&         GetMe               ( ) { return m_me; }
     inline const CServer&   GetMe               ( ) const { return m_me; }
 
+    void                    DelayedDelete       ( CDelayedDeletionElement* pElement );
+private:
+    void                    DeleteDelayedElements ( );
+public:
+
     void                    AddHandler          ( const IMessage& message, const PROTOCOL_CALLBACK& callback );
     void                    RemoveHandler       ( const IMessage& message, const PROTOCOL_CALLBACK& callback );
 
@@ -73,6 +78,8 @@ public:
     void                    ConvertToLowercase  ( CString& szString ) const;
     char*                   HashIP              ( char* dest, const char* szHost,
                                                   unsigned int uiAddress, const char* szKey ) const;
+
+    CString                 GetUserVisibleHost  ( CUser& user ) const;
 
 private:
     void                    InternalAddHandler      ( unsigned long ulStage,
@@ -119,6 +126,8 @@ private:
     bool                    m_bGotServer;
     CString                 m_szHiddenAddress;
     CString                 m_szHiddenDesc;
+    std::vector < CDelayedDeletionElement* >
+                            m_vecDelayedDeletionElements;
 
     // Distributed database
     typedef google::dense_hash_map < char*, char*, SStringHasher, SStringEquals > t_mapDDB;

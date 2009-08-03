@@ -108,6 +108,7 @@ CNickserv::CNickserv ( const CConfig& config )
 
 CNickserv::~CNickserv ()
 {
+    Unload ();
 }
 
 

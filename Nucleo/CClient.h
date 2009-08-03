@@ -18,7 +18,7 @@
 
 class CServer;
 
-class CClient
+class CClient : public CDelayedDeletionElement
 {
 public:
     enum EType
@@ -50,6 +50,11 @@ public:
         m_ulNumeric = base64toint ( m_szYXX );
         m_szName = szName;
         m_szDesc = szDesc;
+    }
+
+    void                    Destroy         ( )
+    {
+        m_pParent = NULL;
     }
 
     virtual inline EType    GetType         ( ) const { return UNKNOWN; }

@@ -45,6 +45,8 @@ CProtocol::~CProtocol ( )
     // Destruímos el servidor local
     m_me.Destroy ();
 
+    DeleteDelayedElements ();
+
     // Eliminamos las listas de callbacks
     for ( t_commandsMap::iterator i = m_commandsMap.begin ();
           i != m_commandsMap.end ();
@@ -154,6 +156,15 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
     Send ( CMessagePASS ( szPass ) );
     Send ( CMessageSERVER ( szHost, 1, time ( 0 ), "J10", szYXX, ulMaxusers, szFlags, szDesc ) );
 
+    // Enviamos la versión de base de datos
+    Send ( CMessageDB ( "*", 0, 0, 0, "", "", 2 ), &m_me );
+
+    // Solicitamos las tablas
+    for ( unsigned char ucTable = 'a'; ucTable <= 'z'; ++ucTable )
+        Send ( CMessageDB ( "*", 'J', 0, ucTable, "", "", 0 ), &m_me );
+    for ( unsigned char ucTable = 'A'; ucTable <= 'Z'; ++ucTable )
+        Send ( CMessageDB ( "*", 'J', 0, ucTable, "", "", 0 ), &m_me );
+
     // Registramos eventos
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageEND_OF_BURST(), PROTOCOL_CALLBACK ( &CProtocol::evtEndOfBurst, this ) );
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessagePING(),   PROTOCOL_CALLBACK ( &CProtocol::evtPing,   this ) );
@@ -176,9 +187,6 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
     InternalAddHandler ( HANDLER_BEFORE_CALLBACKS, CMessageAWAY(),   PROTOCOL_CALLBACK ( &CProtocol::evtAway,   this ) );
     InternalAddHandler ( HANDLER_AFTER_CALLBACKS,  CMessageWHOIS(),  PROTOCOL_CALLBACK ( &CProtocol::evtWhois,  this ) );
 
-    // Enviamos la versión de base de datos
-    Send ( CMessageDB ( "*", 0, 0, 0, "", "", 2 ), &m_me );
-
     // Inicializamos los servicios
     CService::RegisterServices ( m_config );
 
@@ -186,6 +194,26 @@ bool CProtocol::Initialize ( const CSocket& socket, const CConfig& config )
     Send ( CMessageEND_OF_BURST (), &m_me );
 
     return true;
+}
+
+void CProtocol::DelayedDelete ( CDelayedDeletionElement* pElement )
+{
+    m_vecDelayedDeletionElements.push_back ( pElement );
+}
+
+void CProtocol::DeleteDelayedElements ( )
+{
+    // Eliminamos los elementos pendientes por eliminar
+    std::vector < CDelayedDeletionElement* > vecCopy = m_vecDelayedDeletionElements;
+    m_vecDelayedDeletionElements.clear ();
+
+    for ( std::vector < CDelayedDeletionElement* >::iterator i = vecCopy.begin ();
+          i != vecCopy.end ();
+          ++i )
+    {
+        delete (*i);
+    }
+    
 }
 
 
@@ -199,6 +227,9 @@ int CProtocol::Loop ( )
     {
         Process ( m_szLine );
     }
+
+    DeleteDelayedElements ();
+
     return iSize;
 }
 
@@ -621,6 +652,30 @@ char* CProtocol::HashIP ( char* dest, const char* szHost, unsigned int uiAddress
     return dest;
 }
 
+
+CString CProtocol::GetUserVisibleHost ( CUser& user ) const
+{
+    if ( ! ( user.GetModes () & CUser::UMODE_HIDDENHOST ) )
+        return user.GetHost ();
+    else
+    {
+        // Calculamos el host virtual
+        const char* szValue = GetDDBValue ( 'v', user.GetName () );
+        if ( szValue )
+            return CString ( "%s", szValue );
+        else if ( ( szValue = GetDDBValue ( 'w', user.GetName () ) ) != NULL )
+            return CString ( "%s.virtual", szValue );
+        else if ( ( szValue = GetDDBValue ( 'v', "." ) ) == NULL )
+            return "no.hay.clave.de.cifrado";
+        else
+        {
+            char szIPHash [ 512 ];
+            HashIP ( szIPHash, user.GetHost (), user.GetAddress (), szValue );
+            return szIPHash;
+        }
+    }
+}
+
 // Parte estática
 CProtocol* CProtocol::ms_pInstance = 0;
 
@@ -691,7 +746,7 @@ bool CProtocol::evtSquit ( const IMessage& message_ )
     try
     {
         const CMessageSQUIT& message = dynamic_cast < const CMessageSQUIT& > ( message_ );
-        delete message.GetServer ();
+        DelayedDelete ( message.GetServer () );
     }
     catch ( std::bad_cast ) { return false; }
 
@@ -1042,11 +1097,15 @@ bool CProtocol::evtDB ( const IMessage& message_ )
 
                 if ( m_uiDDBVersion == 2 )
                 {
+                    // Movido al negociado de la conexión, ya que necesitamos
+                    // las tablas de vhosts para poder banear durante el net.burst.
+#if 0
                     // Solicitamos las tablas
                     for ( unsigned char ucTable = 'a'; ucTable <= 'z'; ++ucTable )
                         Send ( CMessageDB ( "*", 'J', 0, ucTable, "", "", 0 ), &m_me );
                     for ( unsigned char ucTable = 'A'; ucTable <= 'Z'; ++ucTable )
                         Send ( CMessageDB ( "*", 'J', 0, ucTable, "", "", 0 ), &m_me );
+#endif
                 }
             }
         }

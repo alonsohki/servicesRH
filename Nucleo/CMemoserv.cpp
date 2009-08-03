@@ -66,6 +66,7 @@ CMemoserv::CMemoserv ( const CConfig& config )
 
 CMemoserv::~CMemoserv ( )
 {
+    Unload ();
 }
 
 void CMemoserv::Load ()

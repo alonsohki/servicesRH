@@ -16,7 +16,7 @@
 
 #pragma once
 
-class CChannel
+class CChannel : public CDelayedDeletionElement
 {
 public:
     enum EChannelMode
@@ -93,7 +93,7 @@ public:
     CMembership*                    AddMember       ( CUser* pUser, unsigned long ulFlags = 0 );
     void                            RemoveMember    ( CUser* pUser );
     CMembership*                    GetMembership   ( CUser* pUser );
-    inline const std::list < CMembership >&
+    inline const std::list < CMembership* >&
                                     GetMembers      ( ) const { return m_listMembers; }
 
     inline const CString&           GetName         ( ) const { return m_szName; }
@@ -113,6 +113,12 @@ public:
     void                            SetModes        ( const CString& szModes, const std::vector < CString >& vecModeParams );
     void                            SetModes        ( unsigned long ulModes, const std::vector < CString >& vecModeParams );
 
+    static unsigned long            GetModeFlag     ( unsigned char ucMode ) { return ms_ulChannelModes [ ucMode ]; }
+    static bool                     HasModeParam    ( unsigned char ucMode ) { unsigned long ulMode = GetModeFlag ( ucMode ); return HasModeParam ( ulMode ); }
+    static bool                     HasModeParam    ( unsigned long ulMode ) { return ulMode >= CMODE_MAX; }
+    static bool                     IsModeAFlag     ( unsigned char ucMode ) { unsigned long ulMode = GetModeFlag ( ucMode ); return IsModeAFlag ( ulMode ); }
+    static bool                     IsModeAFlag     ( unsigned long ulMode ) { return ulMode >= CMODE_PARAMSMAX; }
+
 private:
     CString                     m_szName;
     CString                     m_szTopic;
@@ -123,5 +129,5 @@ private:
     unsigned long               m_ulModes;
 
     std::list < CString >       m_listBans;
-    std::list < CMembership >   m_listMembers;
+    std::list < CMembership* >  m_listMembers;
 };

@@ -18,7 +18,7 @@
 
 class CChanserv : public CService
 {
-    enum
+    enum EChannelLevel
     {
         LEVEL_AUTOOP = 0,
         LEVEL_AUTOHALFOP,
@@ -42,18 +42,28 @@ class CChanserv : public CService
     static const char* const ms_szValidLevels [];
 
 public:
-                    CChanserv       ( const CConfig& config );
-    virtual         ~CChanserv      ( );
+                    CChanserv               ( const CConfig& config );
+    virtual         ~CChanserv              ( );
 
-    void            Load            ( );
-    void            Unload          ( );
+    void            Load                    ( );
+    void            Unload                  ( );
+
+    void            SetupForCommand         ( CUser& user );
 
     bool            CheckIdentifiedAndReg   ( CUser& s );
     unsigned long long
                     GetChannelID            ( const CString& szChannelName );
     CChannel*       GetChannel              ( CUser& s, const CString& szChannelName );
     bool            HasChannelDebug         ( unsigned long long ID );
-    int             GetAccess               ( CUser& s, unsigned long long ID );
+    int             GetAccess               ( CUser& s, unsigned long long ID, bool bCheckFounder = true );
+    int             GetAccess               ( unsigned long long AccountID,
+                                              unsigned long long ID,
+                                              bool bCheckFounder = true,
+                                              CUser* pUser = 0 );
+    int             GetLevel                ( unsigned long long ID, EChannelLevel level );
+    bool            CheckAccess             ( CUser& user, unsigned long long ID, EChannelLevel level );
+
+    void            CheckOnjoinStuff        ( CUser& user, CChannel& channel );
 
     // Comandos
 protected:
@@ -65,6 +75,7 @@ private:
     COMMAND(Register);
     COMMAND(Identify);
     COMMAND(Levels);
+    COMMAND(Access);
 #undef SET_COMMAND
 #undef COMMAND
 
@@ -81,12 +92,23 @@ private:
     bool            evtJoin         ( const IMessage& msg );
     bool            evtMode         ( const IMessage& msg );
     bool            evtIdentify     ( const IMessage& msg );
+    bool            evtNick         ( const IMessage& msg );
+    bool            evtEOBAck       ( const IMessage& msg );
 
 private:
     struct
     {
         unsigned int    uiTimeRegister;
+        unsigned int    uiMaxAccessList;
     } m_options;
 
     CNickserv*      m_pNickserv;
+    bool            m_bEOBAcked;
+
+    struct SJoinProcessQueue
+    {
+        CUser*      pUser;
+        CChannel*   pChannel;
+    };
+    std::vector < SJoinProcessQueue >   m_vecJoinProcessQueue;
 };

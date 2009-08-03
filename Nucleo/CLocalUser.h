@@ -19,6 +19,18 @@
 class CLocalUser : public CUser
 {
 public:
+    enum EBanType
+    {
+        BAN_NICK = 0,
+        BAN_IDENT = 1,
+        BAN_HOST = 2,
+        BAN_FULL = 3,
+        BAN_FULL_IDENT_WILDCARD = 4,
+        BAN_IDENT_AND_HOST = 5,
+        BAN_IDENT_WILDCARD_AND_HOST = 6
+    };
+
+public:
     inline                  CLocalUser          ( ) : CUser ( ), m_bCreated ( false ) { }
     inline                  CLocalUser          ( unsigned long ulNumeric,
                                                   const CString& szName,
@@ -47,6 +59,14 @@ public:
     void                    Part                ( const CString& szChannel, const CString& szMessage = "" );
     void                    Part                ( CChannel* pChannel, const CString& szMessage = "" );
     void                    Quit                ( const CString& szQuitMessage = "" );
+
+    void                    Mode                ( CChannel* pChannel, const char* szModes, ... );
+    void                    BMode               ( CChannel* pChannel, const char* szModes, ... );
+
+    // Kickban
+    void                    Kick                ( CUser* user, CChannel* pCannel, const CString& szReason );
+    void                    Ban                 ( CUser* user, CChannel* pChannel, EBanType eType = BAN_HOST );
+    void                    KickBan             ( CUser* user, CChannel* pChannel, const CString& szReason, EBanType eType = BAN_HOST );
 
 private:
     bool            m_bCreated;
