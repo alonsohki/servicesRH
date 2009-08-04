@@ -14,7 +14,7 @@ CREATE TABLE account (
 	fullname	VARCHAR ( 128 )		NOT NULL,
 	quitmsg		VARCHAR ( 256 )		NULL,
 	
-	vhost		VARCHAR ( 32 )		NULL,
+	vhost		VARCHAR ( 128 )		NULL,
 	web			VARCHAR ( 128 )		NULL,
 	greetmsg	VARCHAR ( 150 )		NULL,
 	
