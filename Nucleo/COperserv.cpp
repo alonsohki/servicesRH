@@ -38,6 +38,10 @@ void COperserv::Load ()
 {
     if ( !IsLoaded () )
     {
+        // Registramos los eventos
+        CProtocol& protocol = CProtocol::GetSingleton ();
+        protocol.AddHandler ( CMessageNICK (), PROTOCOL_CALLBACK ( &COperserv::evtNick, this ) );
+
         CService::Load ();
     }
 }
@@ -46,6 +50,10 @@ void COperserv::Unload ()
 {
     if ( IsLoaded () )
     {
+        // Desregistramos los eventos
+        CProtocol& protocol = CProtocol::GetSingleton ();
+        protocol.RemoveHandler ( CMessageNICK (), PROTOCOL_CALLBACK ( &COperserv::evtNick, this ) );
+
         CService::Unload ();
     }
 }
@@ -267,3 +275,40 @@ COMMAND(Table)
 
 
 #undef COMMAND
+
+
+
+// Eventos
+bool COperserv::evtNick ( const IMessage& msg_ )
+{
+    try
+    {
+        const CMessageNICK& msg = dynamic_cast < const CMessageNICK& > ( msg_ );
+        CClient* pSource = msg.GetSource ();
+
+        if ( pSource )
+        {
+            switch ( pSource->GetType () )
+            {
+                case CClient::SERVER:
+                {
+                    CUser* pUser = CProtocol::GetSingleton ().GetMe ().GetUserAnywhere ( msg.GetNick () );
+                    if ( pUser )
+                    {
+                        // Logueamos la entrada
+                        Log ( "LOG_NEW_USER", pUser->GetName ().c_str (),
+                                              pUser->GetIdent ().c_str (),
+                                              pUser->GetHost ().c_str () );
+                    }
+                    break;
+                }
+                case CClient::USER:
+                default:
+                    break;
+            }
+        }
+    }
+    catch ( std::bad_cast ) { return false; }
+
+    return true;
+}

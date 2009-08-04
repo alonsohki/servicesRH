@@ -1670,11 +1670,7 @@ SET_COMMAND(Set_Vhost)
             return false;
         }
 
-        // Hacemos una comprobación de tiempo
-        if ( ! HasAccess ( s, RANK_OPERATOR ) &&
-             ! CheckOrAddTimeRestriction ( s, "SET VHOST", m_options.uiTimeSetVhost ) )
-            return false;
-
+        // Comprobamos caracteres inválidos
         CString szBadword;
         bool bContainsColors;
         if ( ! VerifyVhost ( szVhost, szBadword, &bContainsColors ) )
@@ -1688,6 +1684,11 @@ SET_COMMAND(Set_Vhost)
 
         if ( bContainsColors )
             szVhost.append ( "\017" );
+
+        // Hacemos una comprobación de tiempo
+        if ( ! HasAccess ( s, RANK_OPERATOR ) &&
+             ! CheckOrAddTimeRestriction ( s, "SET VHOST", m_options.uiTimeSetVhost ) )
+            return false;
 
         // Actualizamos el vhost en la DDB para todo el grupo
         CProtocol& protocol = CProtocol::GetSingleton ();

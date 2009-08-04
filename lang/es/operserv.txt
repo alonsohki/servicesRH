@@ -184,3 +184,7 @@ Se ha descargado el servicio 12%s.
 %LOG_TABLE%
 12%s ha ejecutado el comando 07TABLE para la tabla 12'%c' con clave 12%s y valor 12%s.
 %%
+
+%LOG_NEW_USER%
+> Nuevo usuario entra: 12%s (%s@%s)
+%%

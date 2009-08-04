@@ -46,5 +46,9 @@ private:
     bool            verifyCoadministrator   ( SCommandInfo& info );
     bool            verifyAdministrator     ( SCommandInfo& info );
 
+    // Eventos
+private:
+    bool            evtNick         ( const IMessage& msg );
+
 private:
 };
