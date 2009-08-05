@@ -430,7 +430,8 @@ bool CNickserv::Identify ( CUser& user )
 
     // Identificamos al usuario
     data.bIdentified = true;
-    CProtocol::GetSingleton ().GetMe ().Send ( CMessageIDENTIFY ( &user ) );
+    if ( ! ( user.GetModes () & CUser::UMODE_REGNICK ) )
+        CProtocol::GetSingleton ().GetMe ().Send ( CMessageIDENTIFY ( &user ) );
 
     // Actualizamos los datos de la cuenta
     CDate now;
