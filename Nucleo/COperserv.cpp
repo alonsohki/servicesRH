@@ -250,8 +250,6 @@ COMMAND(Table)
     // Obtenemos el valor
     CString szValue;
     info.GetRemainingText ( szValue );
-    if ( szValue == "" )
-        return SendSyntax ( s, "TABLE" );
 
     // Verificamos que la tabla es correcta
     unsigned char ucTable = (unsigned char)*szTable;
