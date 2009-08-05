@@ -69,6 +69,10 @@ Tu nick no está registrado. Si deseas saber cómo registrarlo, escribe 12/msg %s
 04Error: No hay ningún nick registrado con el nombre 12%s.
 %%
 
+%TIME_RESTRICTION%
+04Error: Sólo puedes ejecutar el comando 12%s cada 12%u segundos.
+%%
+
 %YOU_HAVE_ONE_MESSAGE%
 Tienes un nuevo mensaje de 12%s. Escribe 12/msg %N READ %llu para leerlo.
 %%
