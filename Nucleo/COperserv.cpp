@@ -266,7 +266,7 @@ COMMAND(Table)
     LangMsg ( s, "TABLE_SUCCESS" );
 
     // Log
-    Log ( "LOG_TABLE", s.GetName ().c_str (), ucTable, szKey.c_str (), szValue.c_str () );
+    Log ( "LOG_TABLE", s.GetName ().c_str (), ucTable, szKey.c_str (), szValue.length () == 0 ? "" : szValue.c_str () );
 
     return true;
 }
