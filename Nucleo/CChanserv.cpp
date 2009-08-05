@@ -959,6 +959,7 @@ COMMAND(Levels)
 COMMAND(Access)
 {
     CUser& s = *( info.pSource );
+    SServicesData& data = s.GetServicesData ();
 
     // Nos aseguramos de que esté identificado
     if ( !CheckIdentifiedAndReg ( s ) )
@@ -1068,13 +1069,35 @@ COMMAND(Access)
             return false;
         }
 
+        // Obtenemos el nivel del ejecutor
+        int iExecutorAccess = GetAccess ( s, ID, true );
+
+        // Comprobamos que la cuenta a añadir no sea uno mismo, salvo
+        // que se trate de un operador o de un fundador.
+        if ( AccountID == data.ID && !HasAccess ( s, RANK_OPERATOR ) && iExecutorAccess < 500 )
+        {
+            LangMsg ( s, "ACCESS_ADD_SELF_MODIFICATION" );
+            return false;
+        }
+
+        // Nos aseguramos de que no ponga un nivel superior al suyo.
+        if ( iLevel >= iExecutorAccess && !HasAccess ( s, RANK_OPERATOR ) )
+            return AccessDenied ( s );
+
+        // Obtenemos el nivel actual, para saber si insertamos o actualizamos
+        int iCurrentAccess = GetAccess ( AccountID, ID, false, &s );
+        bool bUpdated = false;
+
+        // Nos aseguramos de que no intente cambiar el nivel de alguien con tanto o más
+        // nivel que el suyo.
+        if ( iCurrentAccess >= iExecutorAccess && !HasAccess ( s, RANK_OPERATOR ) )
+            return AccessDenied ( s );
+
         // Obtenemos el nombre de la cuenta
         CString szAccountName;
         m_pNickserv->GetAccountName ( AccountID, szAccountName );
 
-        // Obtenemos el nivel actual, para saber si insertamos o actualizamos
-        int iCurrentAccess = GetAccess ( AccountID, ID, false, &s );
-
+        // Comprobamos si actualizamos o insertamos
         if ( iCurrentAccess == iLevel )
         {
             LangMsg ( s, "ACCESS_ADD_ALREADY_AT_THAT_LEVEL", szAccountName.c_str (), iLevel, szChannel.c_str () );
@@ -1091,6 +1114,7 @@ COMMAND(Access)
             if ( !SQLUpdateAccess->Execute ( "dQQ", iLevel, AccountID, ID ) )
                 return ReportBrokenDB ( &s, SQLUpdateAccess, "Ejecutando chanserv.SQLUpdateAccess" );
             SQLUpdateAccess->FreeResult ();
+            bUpdated = true;
         }
 
         // Comprobamos si hay que mandar debug
@@ -1100,10 +1124,15 @@ COMMAND(Access)
             bool bHasDebug = HasChannelDebug ( ID );
             if ( bHasDebug )
             {
-                LangNotice ( *pChannel, "ACCESS_ADD_DEBUG", s.GetName ().c_str (),
-                                                            pChannel->GetName ().c_str (),
-                                                            szAccountName.c_str (),
-                                                            iLevel );
+                const char* szTopic;
+                if ( bUpdated )
+                    szTopic = "ACCESS_ADD_MODIFY_DEBUG";
+                else
+                    szTopic = "ACCESS_ADD_DEBUG";
+                LangNotice ( *pChannel, szTopic, s.GetName ().c_str (),
+                                                 pChannel->GetName ().c_str (),
+                                                 szAccountName.c_str (),
+                                                 iLevel );
             }
 
             // Actualizamos los usuarios a los que afecte
@@ -1121,7 +1150,12 @@ COMMAND(Access)
             }
         }
 
-        LangMsg ( s, "ACCESS_ADD_SUCCESS", szAccountName.c_str (), szChannel.c_str (), iLevel );
+        const char* szTopic;
+        if ( bUpdated )
+            szTopic = "ACCESS_ADD_MODIFY_SUCCESS";
+        else
+            szTopic = "ACCESS_ADD_SUCCESS";
+        LangMsg ( s, szTopic, szAccountName.c_str (), szChannel.c_str (), iLevel );
     }
 
     else if ( !CPortability::CompareNoCase ( szCommand, "DEL" ) )
@@ -1158,17 +1192,23 @@ COMMAND(Access)
         CString szAccountName;
         m_pNickserv->GetAccountName ( AccountID, szAccountName );
 
-        // Eliminamos el registro
-        if ( !SQLDelAccess->Execute ( "QQ", AccountID, ID ) )
-            return ReportBrokenDB ( &s, SQLDelAccess, "Ejecutando chanserv.SQLDelAccess" );
-
-        // Comprobamos que el usuario tuviese acceso
-        if ( SQLDelAccess->AffectedRows () == 0 )
+        // Comprobamos que el usuario objetivo tenga acceso
+        int iCurrentAccess = GetAccess ( AccountID, ID, false, &s );
+        if ( iCurrentAccess == 0 )
         {
-            SQLDelAccess->FreeResult ();
             LangMsg ( s, "ACCESS_DEL_NOT_FOUND", szAccountName.c_str (), szChannel.c_str () );
             return false;
         }
+
+        // Comprobamos que el nivel del usuario objetivo no sea mayor
+        // o igual que el del ejecutor.
+        int iExecutorAccess = GetAccess ( s, ID, true );
+        if ( iCurrentAccess >= iExecutorAccess )
+            return AccessDenied ( s );
+
+        // Eliminamos el registro
+        if ( !SQLDelAccess->Execute ( "QQ", AccountID, ID ) )
+            return ReportBrokenDB ( &s, SQLDelAccess, "Ejecutando chanserv.SQLDelAccess" );
         SQLDelAccess->FreeResult ();
 
         // Comprobamos si hay que mandar debug
