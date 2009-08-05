@@ -405,6 +405,11 @@ void CChanserv::CheckOnjoinStuff ( CUser& user, CChannel& channel, bool bSendGre
         {
             CString szReason;
             GetLangTopic ( szReason, "", "NOJOIN_KICK_REASON" );
+            while ( szReason.at ( szReason.length () - 1 ) == '\r' ||
+                    szReason.at ( szReason.length () - 1 ) == '\n' )
+            {
+                szReason.resize ( szReason.length () - 1 );
+            }               
             KickBan ( &user, &channel, szReason, BAN_HOST );
         }
         else
