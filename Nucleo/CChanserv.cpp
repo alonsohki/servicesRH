@@ -1203,7 +1203,7 @@ COMMAND(Access)
         // Comprobamos que el nivel del usuario objetivo no sea mayor
         // o igual que el del ejecutor.
         int iExecutorAccess = GetAccess ( s, ID, true );
-        if ( iCurrentAccess >= iExecutorAccess )
+        if ( iCurrentAccess >= iExecutorAccess && !HasAccess ( s, RANK_OPERATOR ) )
             return AccessDenied ( s );
 
         // Eliminamos el registro
