@@ -650,8 +650,8 @@ bool CMessageBURST::ProcessMessage ( const CString& szLine, const std::vector < 
 
             while ( ( c = *p ) != '\0' )
             {
-                unsigned long ulMode = CChannel::ms_ulChannelModes [ (unsigned char)c ];
-                if ( !ulMode || ulMode >= CChannel::CMODE_PARAMSMAX )
+                unsigned long ulMode = CChannel::GetModeFlag ( (unsigned char)c );
+                if ( !ulMode || CChannel::IsModeAFlag ( ulMode ) )
                     return false;
 
                 m_ulModes |= ulMode;

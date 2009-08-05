@@ -22,8 +22,9 @@ const unsigned long CChannel::ms_ulChannelModes [ 256 ] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,         /* 040-059 */
 
     0, 0, 0, 0, 0, CChannel::CMODE_AUTOOP, CChannel::CMODE_BADWORDS, CChannel::CMODE_TALKS, 0, 0,           /* 060-069 */
-    0, CChannel::CMODE_NOCTCP, 0, 0, 0, 0, 0, CChannel::CMODE_REGMOD, 0, CChannel::CMODE_ONLYIRCOP,         /* 070-079 */
-    0, CChannel::CMODE_REGONLY, 0, CChannel::CMODE_SUSPEND, 0, 0, 0, 0, 0, 0,                               /* 080-089 */
+    0, CChannel::CMODE_NOCTCP, 0, 0, 0, 0, 0, CChannel::CMODE_REGMOD,
+    CChannel::CMODE_NONICKCHANGE, CChannel::CMODE_ONLYIRCOP,                                                /* 070-079 */
+    0, 0, CChannel::CMODE_REGONLY, CChannel::CMODE_SUSPEND, 0, 0, 0, 0, 0, 0,                               /* 080-089 */
     0, 0, 0, 0, 0, 0, 0, 0, CChannel::CFLAG_BAN, CChannel::CMODE_NOCOLORS,                                  /* 090-099 */
     0, 0, 0, 0, CChannel::CFLAG_HALFOP, CChannel::CMODE_INVITEONLY, CChannel::CMODE_HASJOINP,
     CChannel::CMODE_KEY, CChannel::CMODE_LIMIT, CChannel::CMODE_MODERATED,                                  /* 100-109 */

@@ -38,7 +38,8 @@ public:
         CMODE_SUSPEND           = 0x03000,
         CMODE_REGMOD            = 0x04000,
         CMODE_NOCTCP            = 0x10000,
-        CMODE_MAX               = 0x20000
+        CMODE_NONICKCHANGE      = 0x20000,
+        CMODE_MAX               = 0x40000
     };
     enum EChannelModeWithParams
     {
