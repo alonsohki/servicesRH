@@ -67,6 +67,123 @@ Si deseas saber cómo registrarlo, escribe 12/msg %s HELP REGISTER.
 %%
 
 
+
+############################
+# KILL
+%SYNTAX_KILL%
+Sintaxis: 12KILL <nick> <motivo>
+%%
+
+%HELP_KILL%
+Expulsa al 12nick especificado de la red con el 12motivo dado.
+%%
+
+%KILL_USER_NOT_FOUND%
+04Error: No se ha encontrado ningún usuario con el nick 12%s.
+%%
+
+%KILL_SUCCESS%
+El usuario 12%s ha sido 03expulsado corréctamente de la red.
+%%
+
+%LOG_KILL%
+12%s ha expulsado (07KILL) de la red al usuario 12%s por el motivo: 12%s
+%%
+#
+############################
+
+
+############################
+# GLINE
+%SYNTAX_GLINE%
+Sintaxis: 12GLINE {ADD|DEL|LIST}
+%%
+
+%HELP_GLINE%
+Maneja la lista de G-Lines. Una G-Line es una prohibición de acceso al irc
+durante un tiempo. Para recibir más ayuda acerca de las distintas opciones
+(12ADD, DEL y LIST) escribe 12/msg %N HELP GLINE <opción>.
+%%
+
+%SYNTAX_GLINE_ADD%
+Sintaxis: 12GLINE ADD <nick/máscara> <tiempo> <motivo>
+%%
+
+%HELP_GLINE_ADD%
+Añade una G-Line. Puedes añadirla sobre un 12nick o sobre una 12máscara
+ip en el formato ident@host. Además, puedes utilizar caracteres comodín como por ejemplo:
+12*@*.co.uk para banear a todo el Reino Unido.
+
+Si el 12nick está activo se aplicará el G-Line a su dirección actual. De lo contrario,
+este comando sólo funcionará si el nick está registrado, ya que utilizará su última ip
+conocida.
+
+La marca de 12tiempo está en segundos, aunque puedes usar formatos de tiempo
+como por ejemplo: 124w3d1h para añadir un G-Line de 4 semanas, 3 días y 1 hora.
+%%
+
+%GLINE_ADD_WILDCARDS_NOT_ALLOWED%
+04Error: No se te permite usar caracteres comodín en el host.
+%%
+
+%GLINE_ADD_INVALID_MASK%
+04Error: Máscara inválida.
+%%
+
+%GLINE_ADD_INVALID_EXPIRATION%
+04Error: Tiempo de g-line inválido.
+%%
+
+%GLINE_ADD_USER_NOT_CONNECTED_AND_NOT_REGISTERED%
+04Error: El nick 12%s no está conectado ni registrado.
+%%
+
+%GLINE_ADD_ALREADY_EXISTS%
+04Error: Ya existe una G-Line para esta máscara.
+%%
+
+%GLINE_ADD_IS_OPERATOR%
+04Error: La máscara de G-Line coincide con la de un representante de la red: 12%s.
+%%
+
+%GLINE_ADD_SUCCESS%
+G-Line para 12%s añadido 03correctamente.
+%%
+
+%LOG_GLINE_ADD%
+12%s ha 07AÑADIDO UN GLINE para 12%s con el motivo: 12%s
+%%
+
+%GLINE_ADD_SUCCESS_NICKNAME%
+G-Line para 12%s(%s) añadido 03correctamente.
+%%
+
+%LOG_GLINE_ADD_NICKNAME%
+12%s ha 07AÑADIDO UN GLINE para 12%s(%s) con el motivo: 12%s
+%%
+
+%SYNTAX_GLINE_DEL%
+Sintaxis: 12GLINE DEL <nick/máscara>
+%%
+
+%HELP_GLINE_DEL%
+Elimina una G-Line. Puedes eliminar diréctamente la 12máscara ip en el formato ident@host,
+o utilizar un 12nick registrado. Si el 12nick registrado está online, se usará su
+máscara actual. De lo contrario, se utilizará su última dirección ip conocida.
+%%
+
+%SYNTAX_GLINE_LIST%
+Sintaxis: 12GLINE LIST [máscara]
+%%
+
+%HELP_GLINE_LIST%
+Devuelve un listado de G-Lines. Puedes filtrar con el campo 12máscara. Este, además, permite
+utilizar caracteres comodín.
+%%
+#
+############################
+
+
 ############################
 # RAW
 %SYNTAX_RAW%
@@ -85,6 +202,10 @@ por ejemplo 12nickserv.
 
 %RAW_SUCCESS%
 03Mensaje enviado correctamente.
+%%
+
+%LOG_RAW%
+12%s ha enviado un mensaje directo (07RAW) con orígen 12%s: %s
 %%
 #
 ############################
@@ -157,6 +278,10 @@ Introduce el 12valor especificado en la 12clave de la 12tabla especificada
 %TABLE_SUCCESS%
 03Registro introducido en la DDB correctamente.
 %%
+
+%LOG_TABLE%
+12%s ha ejecutado el comando 07TABLE para la tabla 12'%c' con clave 12%s y valor 12%s.
+%%
 #
 ############################
 
@@ -175,14 +300,6 @@ Se ha cargado el servicio 12%s.
 
 %LOG_SERVICE_UNLOADED%
 Se ha descargado el servicio 12%s.
-%%
-
-%LOG_RAW%
-12%s ha enviado un mensaje directo (07RAW) con orígen 12%s: %s
-%%
-
-%LOG_TABLE%
-12%s ha ejecutado el comando 07TABLE para la tabla 12'%c' con clave 12%s y valor 12%s.
 %%
 
 %LOG_NEW_USER%

@@ -503,5 +503,24 @@ private:
 END_MESSAGE_DECLARATION()
 
 
+////////////////////////////
+//          GLINE         //
+////////////////////////////
+BEGIN_MESSAGE_DECLARATION(GLINE, const CString& szTarget, bool bAdd, const CString& szMask, const CDate& expirationTime, const CString& szReason )
+public:
+    inline const CString&       GetTarget       ( ) const { return m_szTarget; }
+    inline bool                 GetAdd          ( ) const { return m_bAdd; }
+    inline const CString&       GetMask         ( ) const { return m_szMask; }
+    inline const CDate&         GetExpiration   ( ) const { return m_expirationTime; }
+    inline const CString&       GetReason       ( ) const { return m_szReason; }
+private:
+    CString         m_szTarget;
+    bool            m_bAdd;
+    CString         m_szMask;
+    CDate           m_expirationTime;
+    CString         m_szReason;
+END_MESSAGE_DECLARATION()
+
+
 #undef BEGIN_MESSAGE_DECLARATION
 #undef END_MESSAGE_DECLARATION

@@ -19,19 +19,25 @@
 class COperserv : public CService
 {
 public:
-                    COperserv       ( const CConfig& config );
-    virtual         ~COperserv      ( );
+                    COperserv               ( const CConfig& config );
+    virtual         ~COperserv              ( );
 
-    void            Load            ( );
-    void            Unload          ( );
+    void            Load                    ( );
+    void            Unload                  ( );
+
+
+    CDate           GetGlineExpiration      ( const CString& szMask );
+    void            DropGline               ( unsigned long long ID );
 
     // Comandos
 protected:
-    void            UnknownCommand  ( SCommandInfo& info );
+    void            UnknownCommand          ( SCommandInfo& info );
 private:
 #define COMMAND(x) bool cmd ## x ( SCommandInfo& info )
 #define SET_COMMAND(x) bool cmd ## x ( SCommandInfo& info, unsigned long long IDTarget )
     COMMAND(Help);
+    COMMAND(Kill);
+    COMMAND(Gline);
     COMMAND(Raw);
     COMMAND(Load);
     COMMAND(Unload);
@@ -46,9 +52,26 @@ private:
     bool            verifyCoadministrator   ( SCommandInfo& info );
     bool            verifyAdministrator     ( SCommandInfo& info );
 
+    // Foreach
+private:
+    struct SOperatorCheck
+    {
+        CUser*  pOperator;
+        char    szMask [ 512 ];
+        int     minlen;
+        int     charset;
+    };
+    bool            foreachUserCheckOperatorMask    ( SForeachInfo < CUser* >& );
+
     // Eventos
 private:
     bool            evtNick         ( const IMessage& msg );
 
+    // Cronómetros
 private:
+    bool            timerCheckExpiredGlines     ( void* );
+    CTimer*         m_pTimerGlineExpired;
+
+private:
+    CNickserv*      m_pNickserv;
 };

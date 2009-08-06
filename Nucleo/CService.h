@@ -91,7 +91,7 @@ protected:
     virtual void    UnknownCommand      ( SCommandInfo& info ) { }
 
     bool            ProcessHelp         ( SCommandInfo& info );
-    bool            HasAccess           ( CUser& user, EServicesRank rank );
+    bool            HasAccess           ( CUser& user, EServicesRank rank, bool bUseCache = true );
     bool            CheckOrAddTimeRestriction
                                         ( CUser& user, const CString& szCommand, unsigned int uiTime );
 private:

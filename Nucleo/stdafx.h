@@ -77,6 +77,7 @@
 #include "base64.h"
 #include "hash.h"
 #include "tea.h"
+#include "match.h"
 #include "CConfig.h"
 #include "CSocket.h"
 #include "CDelayedDeletionElement.h"

@@ -1310,3 +1310,39 @@ bool CMessageAWAY::ProcessMessage ( const CString& szLine, const std::vector < C
         m_szReason = vec [ 2 ];
     return true;
 }
+
+
+
+////////////////////////////
+//          GLINE         //
+////////////////////////////
+CMessageGLINE::CMessageGLINE ( const CString& szTarget,
+                               bool bAdd,
+                               const CString& szMask,
+                               const CDate& expirationTime,
+                               const CString& szReason )
+: m_szTarget ( szTarget ),
+  m_bAdd ( bAdd ),
+  m_szMask ( szMask ),
+  m_expirationTime ( expirationTime ),
+  m_szReason ( szReason )
+{
+}
+CMessageGLINE::~CMessageGLINE ( ) { }
+
+bool CMessageGLINE::BuildMessage ( SProtocolMessage& message ) const
+{
+    message.szExtraInfo.Format ( "%s %c%s %lu",
+                                  m_szTarget.c_str (),
+                                  m_bAdd ? '+' : '-',
+                                  m_szMask.c_str (),
+                                  static_cast < unsigned long > ( m_expirationTime.GetTimestamp () ) );
+    message.szText = m_szReason;
+    return true;
+}
+
+bool CMessageGLINE::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
+{
+    // No nos interesa procesar este mensaje
+    return false;
+}

@@ -639,7 +639,7 @@ void CService::ProcessCommands ( CUser* pSource, const CString& szMessage )
     }
 }
 
-bool CService::HasAccess ( CUser& user, EServicesRank rank )
+bool CService::HasAccess ( CUser& user, EServicesRank rank, bool bUseCache )
 {
     // Creamos la consulta SQL para obtener el rango de un usuario
     static CDBStatement* SQLHasAccess = 0;
@@ -658,7 +658,7 @@ bool CService::HasAccess ( CUser& user, EServicesRank rank )
     if ( data.ID == 0ULL || data.bIdentified == false )
         return false;
 
-    if ( ! data.access.bCached )
+    if ( ! bUseCache || ! data.access.bCached )
     {
         // Obtenemos el rango
         if ( ! SQLHasAccess->Execute ( "Q", data.ID ) )

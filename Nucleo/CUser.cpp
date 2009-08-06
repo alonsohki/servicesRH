@@ -144,6 +144,7 @@ void CUser::SetModes ( const CString& szModes )
 }
 
 
+
 // Membresías a canales
 void CUser::AddMembership ( CMembership* pMembership )
 {

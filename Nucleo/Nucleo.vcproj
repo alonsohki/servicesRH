@@ -280,6 +280,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\match.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Nucleo.cpp"
 				>
 			</File>
@@ -471,6 +475,10 @@
 			</File>
 			<File
 				RelativePath=".\ircd_chattr.h"
+				>
+			</File>
+			<File
+				RelativePath=".\match.h"
 				>
 			</File>
 			<File
