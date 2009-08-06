@@ -466,7 +466,7 @@ COMMAND(Gline)
         SQLAddGline->FreeResult ();
 
         // Enviamos el mensaje al ircd
-        //CProtocol::GetSingleton ().GetMe ().Send ( CMessageGLINE ( "*", true, szFinalMask, expirationDate, szReason ) );
+        CProtocol::GetSingleton ().GetMe ().Send ( CMessageGLINE ( "*", true, szFinalMask, expirationDate, szReason ) );
 
         if ( bMask )
         {
