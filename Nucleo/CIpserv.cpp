@@ -142,27 +142,36 @@ COMMAND(Default)
 {
     CUser& s = *( info.pSource );
 
-    // Obtenemos el número
+    // Obtenemos el número a cambiar
     CString& szNumber = info.GetNextParam ();
     if ( szNumber == "" )
-        return SendSyntax ( s, "DEFAULT" );
-
-    // Comprobamos que el número es válido
-    int iNumber = atoi ( szNumber );
-    if ( iNumber < 1 )
     {
-        LangMsg ( s, "DEFAULT_INVALID_NUMBER", iNumber );
-        return false;
+        // No quieren cambiar, sino mostrar el límite actual.
+        int iCurrent = 1;
+        const char* szLimit = CProtocol::GetSingleton ().GetDDBValue ( 'i', "." );
+        if ( szLimit )
+            iCurrent = atoi ( szLimit );
+        LangMsg ( s, "DEFAULT_NUMBER", iCurrent );
     }
-    CString szNumberValid ( "%d", iNumber );
+    else
+    {
+        // Comprobamos que el número es válido
+        int iNumber = atoi ( szNumber );
+        if ( iNumber < 1 )
+        {
+            LangMsg ( s, "DEFAULT_INVALID_NUMBER", iNumber );
+            return false;
+        }
+        CString szNumberValid ( "%d", iNumber );
 
-    // Insertamos el registro en la DDB
-    CProtocol::GetSingleton ().InsertIntoDDB ( 'i', ".", szNumberValid );
+        // Insertamos el registro en la DDB
+        CProtocol::GetSingleton ().InsertIntoDDB ( 'i', ".", szNumberValid );
 
-    LangMsg ( s, "DEFAULT_SUCCESS", iNumber );
+        LangMsg ( s, "DEFAULT_SUCCESS", iNumber );
 
-    // Log
-    Log ( "LOG_DEFAULT", s.GetName ().c_str (), iNumber );
+        // Log
+        Log ( "LOG_DEFAULT", s.GetName ().c_str (), iNumber );
+    }
 
     return true;
 }

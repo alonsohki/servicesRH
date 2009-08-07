@@ -63,15 +63,20 @@ Vuelve a intentarlo en unos minutos.
 ############################
 # DEFAULT
 %SYNTAX_DEFAULT%
-Sintaxis: 12DEFAULT <número>
+Sintaxis: 12DEFAULT [número]
 %%
 
 %HELP_DEFAULT%
-Cambia el número de clones por defecto para los usuarios no registrados en este servicio.
+Cambia el 12número de clones por defecto para los usuarios no registrados en este servicio.
+Si no especificas ningún número, muestra el límite actual.
 %%
 
 %DEFAULT_INVALID_NUMBER%
 12%d no es un número válido de clones por defecto.
+%%
+
+%DEFAULT_NUMBER%
+Número de clones por defecto actual: 12%d.
 %%
 
 %DEFAULT_SUCCESS%
