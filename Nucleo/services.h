@@ -20,3 +20,4 @@
 #include "CChanserv.h"
 #include "CMemoserv.h"
 #include "COperserv.h"
+#include "CIpserv.h"

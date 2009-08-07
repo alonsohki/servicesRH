@@ -35,7 +35,6 @@ protected:
     void            UnknownCommand          ( SCommandInfo& info );
 private:
 #define COMMAND(x) bool cmd ## x ( SCommandInfo& info )
-#define SET_COMMAND(x) bool cmd ## x ( SCommandInfo& info, unsigned long long IDTarget )
     COMMAND(Help);
     COMMAND(Kill);
     COMMAND(Gline);
@@ -43,7 +42,6 @@ private:
     COMMAND(Load);
     COMMAND(Unload);
     COMMAND(Table);
-#undef SET_COMMAND
 #undef COMMAND
 
     // Verificación de acceso a comandos

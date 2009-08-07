@@ -1,0 +1,85 @@
+####################################################################################
+## Fichero de idioma de ipserv.
+##   Autores:						Alberto Alonso < rydencillo@gmail.com >
+##   Idioma:						Castellano
+##
+##
+## Sintaxis:
+## - Para crear un tema de idioma, pon entre %% el nombre del tema. Por ejemplo: %TEMA%.
+## - Para finalizarlo, usa %% sin escribir nada dentro.
+## - Para añadir comentarios, comienza la línea con #. También se puede insertar comentarios
+##   dentro de la definición de un tema.
+## - Puedes dejar tantas líneas en blanco como quieras entre tema y tema.
+## - Las líneas en blanco dentro de los temas aparecerán en el resultado que se envíe a los clientes.
+##
+
+%HELP%
+Ayuda de 12%N
+
+12%N es el servicio encargado de la asignación de clones a ips.
+
+Lista de comandos disponibles:
+
+    12SETIP                Ajusta la ip actual para tu cuenta
+
+Para obtener ayuda detallada sobre cualquier comando, escribe 12/msg %N HELP <comando>.
+%%
+
+%COADMINS_HELP%
+
+03-= Co-administradores =-
+    12REGISTER             Crea una nueva cuenta para clones
+    12SET                  Realiza ajustes en una cuenta
+    12DROP                 Elimina una cuenta
+    12DEFAULT              Establece los clones por IP por defecto
+%%
+
+%UNKNOWN_COMMAND%
+Comando 12%s desconocido. Escribe 12/msg %N HELP para recibir ayuda.
+%%
+
+%ACCESS_DENIED%
+04¡Acceso denegado!
+%%
+
+%NO_HELP_TOPIC%
+04Error: No existe ningún tema de ayuda para 12%s.
+%%
+
+%HELP_FOR_MORE_INFORMATION%
+Escribe 12/msg %N HELP %s para obtener más información.
+%%
+
+%BROKEN_DB%
+04Error: La base de datos está caída en este momento. Tu petición no se ha podido procesar.
+Vuelve a intentarlo en unos minutos.
+%%
+
+%TIME_RESTRICTION%
+04Error: Sólo puedes ejecutar el comando 12%s cada 12%u segundos.
+%%
+
+
+############################
+# DEFAULT
+%SYNTAX_DEFAULT%
+Sintaxis: 12DEFAULT <número>
+%%
+
+%HELP_DEFAULT%
+Cambia el número de clones por defecto para los usuarios no registrados en este servicio.
+%%
+
+%DEFAULT_INVALID_NUMBER%
+12%d no es un número válido de clones por defecto.
+%%
+
+%DEFAULT_SUCCESS%
+Número de clones por defecto cambiado a 12%d.
+%%
+
+%LOG_DEFAULT%
+12%s ha cambiado el número de clones por 07DEFECTO a 12%d.
+%%
+#
+############################

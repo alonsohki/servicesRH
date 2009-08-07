@@ -319,6 +319,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\CIpserv.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\CMemoserv.cpp"
 					>
 				</File>
@@ -502,6 +506,10 @@
 				>
 				<File
 					RelativePath=".\CChanserv.h"
+					>
+				</File>
+				<File
+					RelativePath=".\CIpserv.h"
 					>
 				</File>
 				<File
