@@ -192,6 +192,14 @@ Sintaxis: 12GLINE LIST [máscara]
 Devuelve un listado de G-Lines. Puedes filtrar con el campo 12máscara. Este, además, permite
 utilizar caracteres comodín.
 %%
+
+%GLINE_LIST_HEADER%
+Lista de G-Lines:
+%%
+
+%GLINE_LIST_ENTRY%
+12%s añadida por 03%s, expira el 07%s. Motivo: 12%s
+%%
 #
 ############################
 

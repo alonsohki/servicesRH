@@ -525,6 +525,61 @@ COMMAND(Gline)
 
     else if ( ! CPortability::CompareNoCase ( szOption, "LIST" ) )
     {
+        // Obtenemos el término de búsqueda
+        CString& szSearchTerm = info.GetNextParam ();
+        bool bFilter = true;
+        if ( szSearchTerm == "" )
+            bFilter = false;
+
+        // Compilamos la cadena de match
+        char szCompiledMask [ 512 ];
+        int minlen, charset;
+        if ( bFilter )
+            matchcomp ( szCompiledMask, &minlen, &charset, szSearchTerm );
+
+        // Construímos la consulta para obtener la información de las G-Lines
+        static CDBStatement* SQLGetGlines = 0;
+        if ( !SQLGetGlines )
+        {
+            SQLGetGlines = CDatabase::GetSingleton ().PrepareStatement (
+                  "SELECT mask, `from`, expiration, reason FROM gline WHERE expiration > ?"
+                );
+            if ( !SQLGetGlines )
+                ReportBrokenDB ( 0, 0, "Generando operserv.SQLGetGlines" );
+        }
+
+        // La ejecutamos
+        CDate now;
+        if ( ! SQLGetGlines->Execute ( "T", &now ) )
+            return ReportBrokenDB ( &s, SQLGetGlines, "Ejecutando operserv.SQLGetGlines" );
+
+        // Almacenamos los datos
+        char szMask [ 512 ];
+        char szFrom [ 128 ];
+        CDate expirationDate;
+        char szReason [ 512 ];
+        if ( ! SQLGetGlines->Store ( 0, 0, "ssTs", szMask, sizeof ( szMask ),
+                                                   szFrom, sizeof ( szFrom ),
+                                                   &expirationDate,
+                                                   szReason, sizeof ( szReason ) ) )
+        {
+            SQLGetGlines->FreeResult ();
+            return ReportBrokenDB ( &s, SQLGetGlines, "Almacenando operserv.SQLGetGlines" );
+        }
+
+        // Listamos
+        LangMsg ( s, "GLINE_LIST_HEADER" );
+        while ( SQLGetGlines->FetchStored () == CDBStatement::FETCH_OK )
+        {
+            // Comprobamos que coincide con el patrón dado
+            if ( !bFilter || ! matchexec ( szMask, szCompiledMask, minlen ) )
+            {
+                LangMsg ( s, "GLINE_LIST_ENTRY", szMask, szFrom,
+                                                 expirationDate.GetDateString ().c_str (),
+                                                 szReason );
+            }
+        }
+        SQLGetGlines->FreeResult ();
     }
 
     else
