@@ -106,7 +106,7 @@ void COperserv::DropGline ( unsigned long long ID )
     SQLRemoveGline->FreeResult ();
 }
 
-CDate COperserv::GetGlineExpiration ( const CString& szMask )
+CDate COperserv::GetGlineExpiration ( const CString& szMask, unsigned long long& ID )
 {
     // Construímos la consulta para obtener la expiración de una G-line
     static CDBStatement* SQLGetGlineExpiration = 0;
@@ -130,7 +130,6 @@ CDate COperserv::GetGlineExpiration ( const CString& szMask )
     }
 
     // Obtenemos la fecha de expiración si hubiere
-    unsigned long long ID;
     CDate expirationDate;
     CDate now;
     if ( SQLGetGlineExpiration->Fetch ( 0, 0, "QT", &ID, &expirationDate ) != CDBStatement::FETCH_OK )
@@ -148,6 +147,142 @@ CDate COperserv::GetGlineExpiration ( const CString& szMask )
     }
 
     return expirationDate;
+}
+
+bool COperserv::GetGlineMask ( CUser& s, const CString& szNickOrMask, CString& szFinalMask, bool& bMask )
+{
+    size_t atPos;
+    if ( ( atPos = szNickOrMask.find ( '@' ) ) == CString::npos )
+    {
+        if ( szNickOrMask.find ( '.' ) == CString::npos )
+            bMask = false; // Es un nick
+        else
+        {
+            bMask = true;
+
+            // Si es un operador o pre-operador, no permitimos glines
+            // con comodines.
+            if ( ! HasAccess ( s, RANK_COADMINISTRATOR ) && (
+                  szNickOrMask.find ( '*' ) != CString::npos ||
+                  szNickOrMask.find ( '?' ) != CString::npos
+                ) )
+            {
+                LangMsg ( s, "GLINE_WILDCARDS_NOT_ALLOWED" );
+                return false;
+            }
+
+            // Completamos la máscara
+            szFinalMask = std::string ( "*@" ) + szNickOrMask;
+        }
+    }
+    else if ( atPos >= szNickOrMask.length () - 1 ||
+              szNickOrMask.find ( '@', atPos + 1 ) != CString::npos )
+    {
+        LangMsg ( s, "GLINE_INVALID_MASK" );
+        return false;
+    }
+    else
+    {
+        // Si es un operador o pre-operador, no permitimos glines
+        // con comodines.
+        if ( ! HasAccess ( s, RANK_COADMINISTRATOR ) && (
+              szNickOrMask.find ( '*', atPos + 1 ) != CString::npos ||
+              szNickOrMask.find ( '?', atPos + 1 ) != CString::npos
+            ) )
+        {
+            LangMsg ( s, "GLINE_WILDCARDS_NOT_ALLOWED" );
+            return false;
+        }
+        bMask = true;
+        szFinalMask = szNickOrMask;
+    }
+
+    // Si nos han enviado un nick, buscamos su máscara
+    if ( !bMask )
+    {
+        // Buscamos al usuario si está conectado
+        CUser* pUser = CProtocol::GetSingleton ().GetMe ().GetUserAnywhere ( szNickOrMask );
+        if ( !pUser )
+        {
+            // Escapamos los caracteres comodin
+            CString szNick = szNickOrMask;
+            size_t pos = 0;
+            while ( ( pos = szNick.find ( '%', pos ) ) != CString::npos )
+            {
+                szNick.replace ( pos, 1, "\\%" );
+                ++pos;
+            }
+            pos = 0;
+            while ( ( pos = szNick.find ( '_', pos ) ) != CString::npos )
+            {
+                szNick.replace ( pos, 1, "\\_" );
+                ++pos;
+            }
+
+            // Si el usuario no está conectado, buscamos nicks registrados
+            unsigned long long ID = m_pNickserv->GetAccountID ( szNick );
+            if ( ID == 0ULL )
+            {
+                LangMsg ( s, "GLINE_USER_NOT_CONNECTED_AND_NOT_REGISTERED", szNickOrMask.c_str () );
+                return false;
+            }
+
+            // Generamos la consulta SQL para obtener el host de ese usuario
+            static CDBStatement* SQLGetHost = 0;
+            if ( !SQLGetHost )
+            {
+                SQLGetHost = CDatabase::GetSingleton ().PrepareStatement (
+                      "SELECT hostname FROM account WHERE id=?"
+                    );
+                if ( !SQLGetHost )
+                    return ReportBrokenDB ( &s, 0, "Generando operserv.SQLGetHost" );
+            }
+
+            // La ejecutamos
+            if ( ! SQLGetHost->Execute ( "Q", ID ) )
+                return ReportBrokenDB ( &s, SQLGetHost, "Ejecutando operserv.SQLGetHost" );
+
+            // Obtenemos el resultado
+            char szHostname [ 256 ];
+            if ( SQLGetHost->Fetch ( 0, 0, "s", szHostname, sizeof ( szHostname ) ) != CDBStatement::FETCH_OK )
+            {
+                SQLGetHost->FreeResult ();
+                return ReportBrokenDB ( &s, SQLGetHost, "Extrayendo operserv.SQLGetHost" );
+            }
+            SQLGetHost->FreeResult ();
+
+            // Formateamos la máscara
+            szFinalMask.Format ( "*@%s", szHostname );
+        }
+        else
+        {
+            szFinalMask.Format ( "*@%s", pUser->GetHost ().c_str () );
+        }
+    }
+
+    // Nos aseguramos de que la máscara no se componga exclusivamente de caracteres
+    // comodín y @ .
+    const char* p = szFinalMask.c_str ();
+    bool bValid = false;
+    while ( !bValid && *p != '\0' )
+    {
+        switch ( *p )
+        {
+            case '.': case '@': case '*': case '?': break;
+            default:
+                bValid = true;
+                break;
+        }
+        ++p;
+    }
+
+    if ( !bValid )
+    {
+        LangMsg ( s, "GLINE_INVALID_MASK" );
+        return false;
+    }
+
+    return true;
 }
 
 
@@ -299,139 +434,12 @@ COMMAND(Gline)
         // la transformamos en una máscara.
         CString szFinalMask;
         bool bMask;
-        size_t atPos;
-        if ( ( atPos = szNickOrMask.find ( '@' ) ) == CString::npos )
-        {
-            if ( szNickOrMask.find ( '.' ) == CString::npos )
-                bMask = false; // Es un nick
-            else
-            {
-                bMask = true;
-
-                // Si es un operador o pre-operador, no permitimos glines
-                // con comodines.
-                if ( ! HasAccess ( s, RANK_COADMINISTRATOR ) && (
-                      szNickOrMask.find ( '*' ) != CString::npos ||
-                      szNickOrMask.find ( '?' ) != CString::npos
-                    ) )
-                {
-                    LangMsg ( s, "GLINE_ADD_WILDCARDS_NOT_ALLOWED" );
-                    return false;
-                }
-
-                // Completamos la máscara
-                szFinalMask = std::string ( "*@" ) + szNickOrMask;
-            }
-        }
-        else if ( atPos >= szNickOrMask.length () - 1 ||
-                  szNickOrMask.find ( '@', atPos + 1 ) != CString::npos )
-        {
-            LangMsg ( s, "GLINE_ADD_INVALID_MASK" );
+        if ( ! GetGlineMask ( s, szNickOrMask, szFinalMask, bMask ) )
             return false;
-        }
-        else
-        {
-            // Si es un operador o pre-operador, no permitimos glines
-            // con comodines.
-            if ( ! HasAccess ( s, RANK_COADMINISTRATOR ) && (
-                  szNickOrMask.find ( '*', atPos + 1 ) != CString::npos ||
-                  szNickOrMask.find ( '?', atPos + 1 ) != CString::npos
-                ) )
-            {
-                LangMsg ( s, "GLINE_ADD_WILDCARDS_NOT_ALLOWED" );
-                return false;
-            }
-            bMask = true;
-            szFinalMask = szNickOrMask;
-        }
-
-        // Si nos han enviado un nick, buscamos su máscara
-        if ( !bMask )
-        {
-            // Buscamos al usuario si está conectado
-            CUser* pUser = CProtocol::GetSingleton ().GetMe ().GetUserAnywhere ( szNickOrMask );
-            if ( !pUser )
-            {
-                // Escapamos los caracteres comodin
-                CString szNick = szNickOrMask;
-                size_t pos = 0;
-                while ( ( pos = szNick.find ( '%', pos ) ) != CString::npos )
-                {
-                    szNick.replace ( pos, 1, "\\%" );
-                    ++pos;
-                }
-                pos = 0;
-                while ( ( pos = szNick.find ( '_', pos ) ) != CString::npos )
-                {
-                    szNick.replace ( pos, 1, "\\_" );
-                    ++pos;
-                }
-
-                // Si el usuario no está conectado, buscamos nicks registrados
-                unsigned long long ID = m_pNickserv->GetAccountID ( szNick );
-                if ( ID == 0ULL )
-                {
-                    LangMsg ( s, "GLINE_ADD_USER_NOT_CONNECTED_AND_NOT_REGISTERED", szNickOrMask.c_str () );
-                    return false;
-                }
-
-                // Generamos la consulta SQL para obtener el host de ese usuario
-                static CDBStatement* SQLGetHost = 0;
-                if ( !SQLGetHost )
-                {
-                    SQLGetHost = CDatabase::GetSingleton ().PrepareStatement (
-                          "SELECT hostname FROM account WHERE id=?"
-                        );
-                    if ( !SQLGetHost )
-                        return ReportBrokenDB ( &s, 0, "Generando operserv.SQLGetHost" );
-                }
-
-                // La ejecutamos
-                if ( ! SQLGetHost->Execute ( "Q", ID ) )
-                    return ReportBrokenDB ( &s, SQLGetHost, "Ejecutando operserv.SQLGetHost" );
-
-                // Obtenemos el resultado
-                char szHostname [ 256 ];
-                if ( SQLGetHost->Fetch ( 0, 0, "s", szHostname, sizeof ( szHostname ) ) != CDBStatement::FETCH_OK )
-                {
-                    SQLGetHost->FreeResult ();
-                    return ReportBrokenDB ( &s, SQLGetHost, "Extrayendo operserv.SQLGetHost" );
-                }
-                SQLGetHost->FreeResult ();
-
-                // Formateamos la máscara
-                szFinalMask.Format ( "*@%s", szHostname );
-            }
-            else
-            {
-                szFinalMask.Format ( "*@%s", pUser->GetHost ().c_str () );
-            }
-        }
-
-        // Nos aseguramos de que la máscara no se componga exclusivamente de caracteres
-        // comodín y @ .
-        const char* p = szFinalMask.c_str ();
-        bool bValid = false;
-        while ( !bValid && *p != '\0' )
-        {
-            switch ( *p )
-            {
-                case '.': case '@': case '*': case '?': break;
-                default:
-                    bValid = true;
-                    break;
-            }
-            ++p;
-        }
-
-        if ( !bValid )
-        {
-            LangMsg ( s, "GLINE_ADD_INVALID_MASK" );
-            return false;
-        }
 
         // Comprobamos que no exista ya la G-Line
-        CDate curExpiration = GetGlineExpiration ( szFinalMask );
+        unsigned long long GlineID;
+        CDate curExpiration = GetGlineExpiration ( szFinalMask, GlineID );
         if ( curExpiration.GetTimestamp () != 0 )
         {
             LangMsg ( s, "GLINE_ADD_ALREADY_EXISTS" );
@@ -484,12 +492,44 @@ COMMAND(Gline)
 
     else if ( ! CPortability::CompareNoCase ( szOption, "DEL" ) )
     {
+        // Obtenemos la márcara o nick
+        CString& szNickOrMask = info.GetNextParam ();
+        if ( szNickOrMask == "" )
+            return SendSyntax ( s, "GLINE DEL" );
+
+        // Comprobamos qué nos mandan: máscara, ip ó nick. Si es una ip,
+        // la transformamos en una máscara.
+        CString szFinalMask;
+        bool bMask;
+        if ( ! GetGlineMask ( s, szNickOrMask, szFinalMask, bMask ) )
+            return false;
+
+        // Buscamos el G-Line
+        unsigned long long GlineID;
+        CDate curExpiration = GetGlineExpiration ( szFinalMask, GlineID );
+        if ( curExpiration.GetTimestamp () == 0 )
+        {
+            LangMsg ( s, "GLINE_DEL_DOESNT_EXIST" );
+            return false;
+        }
+
+        // Eliminamos el G-Line
+        DropGline ( GlineID );
+        CProtocol::GetSingleton ().GetMe ().Send ( CMessageGLINE ( "*", false, szFinalMask ) );
+
+        LangMsg ( s, "GLINE_DEL_SUCCESS", szFinalMask.c_str () );
+
+        // Log
+        Log ( "LOG_GLINE_DEL", s.GetName ().c_str (), szFinalMask.c_str () );
     }
+
     else if ( ! CPortability::CompareNoCase ( szOption, "LIST" ) )
     {
     }
+
     else
         return SendSyntax ( s, "GLINE" );
+
     return true;
 }
 

@@ -482,6 +482,7 @@ int CProtocol::Send ( const IMessage& ircmessage, CClient* pSource )
         szMessage.append ( message.szText );
     }
 
+    puts(szMessage);
     int iRet = m_socket.WriteString ( szMessage );
     if ( iRet > 0 )
     {

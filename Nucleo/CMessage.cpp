@@ -1332,12 +1332,21 @@ CMessageGLINE::~CMessageGLINE ( ) { }
 
 bool CMessageGLINE::BuildMessage ( SProtocolMessage& message ) const
 {
-    message.szExtraInfo.Format ( "%s %c%s %lu",
-                                  m_szTarget.c_str (),
-                                  m_bAdd ? '+' : '-',
-                                  m_szMask.c_str (),
-                                  static_cast < unsigned long > ( m_expirationTime.GetTimestamp () ) );
-    message.szText = m_szReason;
+    if ( m_bAdd )
+    {
+        message.szExtraInfo.Format ( "%s +%s %lu",
+                                      m_szTarget.c_str (),
+                                      m_szMask.c_str (),
+                                      static_cast < unsigned long > ( m_expirationTime.GetTimestamp () ) );
+        message.szText = m_szReason;
+    }
+    else
+    {
+        message.szExtraInfo.Format ( "%s -%s",
+                                      m_szTarget.c_str (),
+                                      m_szMask.c_str () );
+    }
+
     return true;
 }
 

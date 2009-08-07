@@ -26,8 +26,9 @@ public:
     void            Unload                  ( );
 
 
-    CDate           GetGlineExpiration      ( const CString& szMask );
+    CDate           GetGlineExpiration      ( const CString& szMask, unsigned long long& ID );
     void            DropGline               ( unsigned long long ID );
+    bool            GetGlineMask            ( CUser& s, const CString& szNickOrMask, CString& szFinalMask, bool& bIsMask );
 
     // Comandos
 protected:

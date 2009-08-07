@@ -105,6 +105,18 @@ durante un tiempo. Para recibir más ayuda acerca de las distintas opciones
 (12ADD, DEL y LIST) escribe 12/msg %N HELP GLINE <opción>.
 %%
 
+%GLINE_WILDCARDS_NOT_ALLOWED%
+04Error: No se te permite usar caracteres comodín en el host.
+%%
+
+%GLINE_INVALID_MASK%
+04Error: Máscara inválida.
+%%
+
+%GLINE_USER_NOT_CONNECTED_AND_NOT_REGISTERED%
+04Error: El nick 12%s no está conectado ni registrado.
+%%
+
 %SYNTAX_GLINE_ADD%
 Sintaxis: 12GLINE ADD <nick/máscara> <tiempo> <motivo>
 %%
@@ -122,20 +134,8 @@ La marca de 12tiempo está en segundos, aunque puedes usar formatos de tiempo
 como por ejemplo: 124w3d1h para añadir un G-Line de 4 semanas, 3 días y 1 hora.
 %%
 
-%GLINE_ADD_WILDCARDS_NOT_ALLOWED%
-04Error: No se te permite usar caracteres comodín en el host.
-%%
-
-%GLINE_ADD_INVALID_MASK%
-04Error: Máscara inválida.
-%%
-
 %GLINE_ADD_INVALID_EXPIRATION%
 04Error: Tiempo de g-line inválido.
-%%
-
-%GLINE_ADD_USER_NOT_CONNECTED_AND_NOT_REGISTERED%
-04Error: El nick 12%s no está conectado ni registrado.
 %%
 
 %GLINE_ADD_ALREADY_EXISTS%
@@ -170,6 +170,18 @@ Sintaxis: 12GLINE DEL <nick/máscara>
 Elimina una G-Line. Puedes eliminar diréctamente la 12máscara ip en el formato ident@host,
 o utilizar un 12nick registrado. Si el 12nick registrado está online, se usará su
 máscara actual. De lo contrario, se utilizará su última dirección ip conocida.
+%%
+
+%GLINE_DEL_DOESNT_EXIST%
+04Error: No existe ninguna G-Line con esa máscara.
+%%
+
+%GLINE_DEL_SUCCESS%
+G-Line para 12%s eliminado 03correctamente.
+%%
+
+%LOG_GLINE_DEL%
+12%s ha 07ELIMINADO EL GLINE para la máscara 12%s.
 %%
 
 %SYNTAX_GLINE_LIST%

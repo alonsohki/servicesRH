@@ -506,7 +506,7 @@ END_MESSAGE_DECLARATION()
 ////////////////////////////
 //          GLINE         //
 ////////////////////////////
-BEGIN_MESSAGE_DECLARATION(GLINE, const CString& szTarget, bool bAdd, const CString& szMask, const CDate& expirationTime, const CString& szReason )
+BEGIN_MESSAGE_DECLARATION(GLINE, const CString& szTarget, bool bAdd, const CString& szMask, const CDate& expirationTime = CDate (), const CString& szReason = "" )
 public:
     inline const CString&       GetTarget       ( ) const { return m_szTarget; }
     inline bool                 GetAdd          ( ) const { return m_bAdd; }
