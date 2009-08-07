@@ -616,7 +616,9 @@ COMMAND(Gline)
         while ( SQLGetGlines->FetchStored () == CDBStatement::FETCH_OK )
         {
             // Comprobamos que coincide con el patrón dado
-            if ( !bFilter || ! matchexec ( szMask, szCompiledMask, minlen ) )
+            if ( !bFilter ||
+                 ! matchexec ( szMask, szCompiledMask, minlen ) ||
+                 ! matchexec ( szFrom, szCompiledMask, minlen ) )
             {
                 LangMsg ( s, "GLINE_LIST_ENTRY", szMask, szFrom,
                                                  expirationDate.GetDateString ().c_str (),
