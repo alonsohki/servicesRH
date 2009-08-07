@@ -576,10 +576,17 @@ COMMAND(Gline)
             bFilter = false;
 
         // Compilamos la cadena de match
+        bool bWildcards = false;
         char szCompiledMask [ 512 ];
         int minlen, charset;
         if ( bFilter )
-            matchcomp ( szCompiledMask, &minlen, &charset, szSearchTerm );
+        {
+            if ( strchr ( szSearchTerm, '*' ) || strchr ( szSearchTerm, '?' ) )
+            {
+                bWildcards = true;
+                matchcomp ( szCompiledMask, &minlen, &charset, szSearchTerm );
+            }
+        }
 
         // Construímos la consulta para obtener la información de las G-Lines
         static CDBStatement* SQLGetGlines = 0;
@@ -617,8 +624,8 @@ COMMAND(Gline)
         {
             // Comprobamos que coincide con el patrón dado
             if ( !bFilter ||
-                 ! matchexec ( szMask, szCompiledMask, minlen ) ||
-                 ! matchexec ( szFrom, szCompiledMask, minlen ) )
+                 ( bWildcards && ! matchexec ( szMask, szCompiledMask, minlen ) ) ||
+                 ( !bWildcards && ! matchexec ( szFrom, szCompiledMask, minlen ) ) )
             {
                 LangMsg ( s, "GLINE_LIST_ENTRY", szMask, szFrom,
                                                  expirationDate.GetDateString ().c_str (),
