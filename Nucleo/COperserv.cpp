@@ -625,7 +625,7 @@ COMMAND(Gline)
             // Comprobamos que coincide con el patrón dado
             if ( !bFilter ||
                  ( bWildcards && ! matchexec ( szMask, szCompiledMask, minlen ) ) ||
-                 ( !bWildcards && ! matchexec ( szFrom, szCompiledMask, minlen ) ) )
+                 ( !bWildcards && ! CPortability::CompareNoCase ( szFrom, szSearchTerm ) ) )
             {
                 LangMsg ( s, "GLINE_LIST_ENTRY", szMask, szFrom,
                                                  expirationDate.GetDateString ().c_str (),
