@@ -138,29 +138,44 @@ como por ejemplo: 124w3d1h para añadir un G-Line de 4 semanas, 3 días y 1 hora
 04Error: Tiempo de g-line inválido.
 %%
 
-%GLINE_ADD_ALREADY_EXISTS%
-04Error: Ya existe una G-Line para esta máscara.
-%%
-
 %GLINE_ADD_IS_OPERATOR%
 04Error: La máscara de G-Line coincide con la de un representante de la red: 12%s.
 %%
+
 
 %GLINE_ADD_SUCCESS%
 G-Line para 12%s añadido 03correctamente.
 %%
 
-%LOG_GLINE_ADD%
-12%s ha 07AÑADIDO UN GLINE para 12%s con el motivo: 12%s
+%GLINE_ADD_SUCCESS_UPDATED%
+G-Line para 12%s actualizado 03correctamente.
 %%
 
 %GLINE_ADD_SUCCESS_NICKNAME%
 G-Line para 12%s(%s) añadido 03correctamente.
 %%
 
+%GLINE_ADD_SUCCESS_NICKNAME_UPDATED%
+G-Line para 12%s(%s) actualizado 03correctamente.
+%%
+
+
+%LOG_GLINE_ADD%
+12%s ha 07AÑADIDO UN GLINE para 12%s con el motivo: 12%s
+%%
+
+%LOG_GLINE_ADD_UPDATED%
+12%s ha 07ACTUALIZADO UN GLINE para 12%s. Nueva expiración: 12%s. Motivo: 12%s
+%%
+
 %LOG_GLINE_ADD_NICKNAME%
 12%s ha 07AÑADIDO UN GLINE para 12%s(%s) con el motivo: 12%s
 %%
+
+%LOG_GLINE_ADD_NICKNAME_UPDATED%
+12%s ha 07ACTUALIZADO UN GLINE para 12%s(%s). Nueva expiración: 12%s. Motivo: 12%s
+%%
+
 
 %SYNTAX_GLINE_DEL%
 Sintaxis: 12GLINE DEL <nick/máscara>
@@ -198,7 +213,7 @@ Lista de G-Lines:
 %%
 
 %GLINE_LIST_ENTRY%
-12%s añadida por 03%s, expira el 07%s. Motivo: 12%s
+12%s añadida por 03%s, expira el 07%s. Motivo: %s
 %%
 #
 ############################

@@ -404,6 +404,17 @@ COMMAND(Gline)
                 return ReportBrokenDB ( &s, 0, "Generando operserv.SQLAddGline" );
         }
 
+        // Construímos la consulta SQL para actualizar G-Lines
+        static CDBStatement* SQLUpdateGline = 0;
+        if ( !SQLUpdateGline )
+        {
+            SQLUpdateGline = CDatabase::GetSingleton ().PrepareStatement (
+                  "UPDATE gline SET expiration=?, reason=? WHERE id=?"
+                );
+            if ( !SQLUpdateGline )
+                return ReportBrokenDB ( &s, 0, "Generando operserv.SQLUpdateGline" );
+        }
+
         // Obtenemos el nick o máscara
         CString szNickOrMask = info.GetNextParam ();
         if ( szNickOrMask == "" )
@@ -437,14 +448,12 @@ COMMAND(Gline)
         if ( ! GetGlineMask ( s, szNickOrMask, szFinalMask, bMask ) )
             return false;
 
-        // Comprobamos que no exista ya la G-Line
+        // Comprobamos si ya existe la G-Line
         unsigned long long GlineID;
+        bool bUpdate = false;
         CDate curExpiration = GetGlineExpiration ( szFinalMask, GlineID );
         if ( curExpiration.GetTimestamp () != 0 )
-        {
-            LangMsg ( s, "GLINE_ADD_ALREADY_EXISTS" );
-            return false;
-        }
+            bUpdate = true;
 
         // Comprobamos que no intenten añadir un G-Line para un
         // representante de la red.
@@ -461,32 +470,67 @@ COMMAND(Gline)
         }
 
 
-        // Insertamos la G-Line en la base de datos
-        if ( ! SQLAddGline->Execute ( "ssdsTs", szFinalMask.c_str (),
-                                                operCheck.szMask,
-                                                operCheck.minlen,
-                                                s.GetName ().c_str (),
-                                                &targetDate,
-                                                szReason.c_str () ) )
+        if ( !bUpdate )
         {
-            return ReportBrokenDB ( &s, SQLAddGline, "Ejecutando operserv.SQLAddGline" );
-        }
-        SQLAddGline->FreeResult ();
-
-        // Enviamos el mensaje al ircd
-        CProtocol::GetSingleton ().GetMe ().Send ( CMessageGLINE ( "*", true, szFinalMask, expirationDate, szReason ) );
-
-        if ( bMask )
-        {
-            LangMsg ( s, "GLINE_ADD_SUCCESS", szNickOrMask.c_str () );
-            // Log
-            Log ( "LOG_GLINE_ADD", s.GetName ().c_str (), szNickOrMask.c_str (), szReason.c_str () );
+            // Insertamos la G-Line en la base de datos
+            if ( ! SQLAddGline->Execute ( "ssdsTs", szFinalMask.c_str (),
+                                                    operCheck.szMask,
+                                                    operCheck.minlen,
+                                                    s.GetName ().c_str (),
+                                                    &targetDate,
+                                                    szReason.c_str () ) )
+            {
+                return ReportBrokenDB ( &s, SQLAddGline, "Ejecutando operserv.SQLAddGline" );
+            }
+            SQLAddGline->FreeResult ();
         }
         else
         {
-            LangMsg ( s, "GLINE_ADD_SUCCESS_NICKNAME", szNickOrMask.c_str (), szFinalMask.c_str () );
-            // Log
-            Log ( "LOG_GLINE_ADD_NICKNAME", s.GetName ().c_str (), szNickOrMask.c_str (), szFinalMask.c_str (), szReason.c_str () );
+            // Actualizamos una G-Line existente
+            if ( ! SQLUpdateGline->Execute ( "TsQ", &targetDate, szReason.c_str (), GlineID ) )
+                return ReportBrokenDB ( &s, SQLUpdateGline, "Ejecutando operserv.SQLUpdateGline" );
+            SQLUpdateGline->FreeResult ();
+        }
+
+        // Enviamos el mensaje al ircd
+        if ( bUpdate )
+            me.Send ( CMessageGLINE ( "*", false, szFinalMask ) );
+        me.Send ( CMessageGLINE ( "*", true, szFinalMask, expirationDate, szReason ) );
+
+        if ( bMask )
+        {
+            if ( !bUpdate )
+            {
+                LangMsg ( s, "GLINE_ADD_SUCCESS", szNickOrMask.c_str () );
+                // Log
+                Log ( "LOG_GLINE_ADD", s.GetName ().c_str (), szNickOrMask.c_str (), szReason.c_str () );
+            }
+            else
+            {
+                LangMsg ( s, "GLINE_ADD_SUCCESS_UPDATED", szNickOrMask.c_str () );
+                // Log
+                Log ( "LOG_GLINE_ADD_UPDATED", s.GetName ().c_str (), szNickOrMask.c_str (),
+                                               targetDate.GetDateString ().c_str (),
+                                               szReason.c_str () );
+            }
+        }
+        else
+        {
+            if ( !bUpdate )
+            {
+                LangMsg ( s, "GLINE_ADD_SUCCESS_NICKNAME", szNickOrMask.c_str (), szFinalMask.c_str () );
+                // Log
+                Log ( "LOG_GLINE_ADD_NICKNAME", s.GetName ().c_str (), szNickOrMask.c_str (), szFinalMask.c_str (), szReason.c_str () );
+            }
+            else
+            {
+                LangMsg ( s, "GLINE_ADD_SUCCESS_NICKNAME_UPDATED", szNickOrMask.c_str (), szFinalMask.c_str () );
+                // Log
+                Log ( "LOG_GLINE_ADD_NICKNAME_UPDATED", s.GetName ().c_str (), szNickOrMask.c_str (),
+                                                        szFinalMask.c_str (),
+                                                        targetDate.GetDateString ().c_str (),
+                                                        szReason.c_str () );
+            }
         }
     }
 
