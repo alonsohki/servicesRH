@@ -244,6 +244,10 @@ Añade el 12nick especificado a la lista de acceso del 12canal con el
 Nivel de 12%s en 12%s cambiado a 12%d.
 %%
 
+%LOG_ACCESS_ADD_OPERATOR%
+12%s ha 07CAMBIADO EL ACCESO en 12%s de 12%s al nivel 12%d.
+%%
+
 %SYNTAX_ACCESS_DEL%
 Sintaxis: 12ACCESS <#canal> DEL <nick>
 %%

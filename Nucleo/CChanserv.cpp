@@ -1062,9 +1062,17 @@ COMMAND(Access)
             return SendSyntax ( s, "ACCESS ADD" );
         int iLevel = atoi ( szLevel );
 
+        // Comprobaremos si está haciendo uso de su nivel de operador
+        // para cambiar el acceso.
+        bool bOperAccess = false;
+
         // Comprobamos que tenga acceso a este comando
-        if ( ! HasAccess ( s, RANK_OPERATOR ) && ! CheckAccess ( s, ID, LEVEL_ACC_CHANGE ) )
-            return AccessDenied ( s );
+        if ( ! CheckAccess ( s, ID, LEVEL_ACC_CHANGE ) )
+        {
+            if ( ! HasAccess ( s, RANK_OPERATOR ) )
+                return AccessDenied ( s );
+            bOperAccess = true;
+        }
 
         // Comprobamos que la lista de acceso no esté llena
         if ( ! HasAccess ( s, RANK_OPERATOR ) )
@@ -1107,15 +1115,23 @@ COMMAND(Access)
 
         // Comprobamos que la cuenta a añadir no sea uno mismo, salvo
         // que se trate de un operador o de un fundador.
-        if ( AccountID == data.ID && !HasAccess ( s, RANK_OPERATOR ) && iExecutorAccess < 500 )
+        if ( AccountID == data.ID && iExecutorAccess < 500 )
         {
-            LangMsg ( s, "ACCESS_ADD_SELF_MODIFICATION" );
-            return false;
+            if ( !HasAccess ( s, RANK_OPERATOR ) )
+            {
+                LangMsg ( s, "ACCESS_ADD_SELF_MODIFICATION" );
+                return false;
+            }
+            bOperAccess = true;
         }
 
         // Nos aseguramos de que no ponga un nivel superior al suyo.
-        if ( iLevel >= iExecutorAccess && !HasAccess ( s, RANK_OPERATOR ) )
-            return AccessDenied ( s );
+        if ( iLevel >= iExecutorAccess  )
+        {
+            if ( !HasAccess ( s, RANK_OPERATOR ) )
+                return AccessDenied ( s );
+            bOperAccess = true;
+        }
 
         // Obtenemos el nivel actual, para saber si insertamos o actualizamos
         int iCurrentAccess = GetAccess ( AccountID, ID, false, &s );
@@ -1123,8 +1139,12 @@ COMMAND(Access)
 
         // Nos aseguramos de que no intente cambiar el nivel de alguien con tanto o más
         // nivel que el suyo.
-        if ( iCurrentAccess >= iExecutorAccess && !HasAccess ( s, RANK_OPERATOR ) )
-            return AccessDenied ( s );
+        if ( iCurrentAccess >= iExecutorAccess )
+        {
+            if ( !HasAccess ( s, RANK_OPERATOR ) )
+               return AccessDenied ( s );
+            bOperAccess = true;
+        }
 
         // Obtenemos el nombre de la cuenta
         CString szAccountName;
@@ -1189,6 +1209,14 @@ COMMAND(Access)
         else
             szTopic = "ACCESS_ADD_SUCCESS";
         LangMsg ( s, szTopic, szAccountName.c_str (), szChannel.c_str (), iLevel );
+
+        // Mandamos un log si se ha modificado el acceso haciendo
+        // uso del nivel de operador.
+        if ( bOperAccess )
+        {
+            Log ( "LOG_ACCESS_ADD_OPERATOR", s.GetName ().c_str (), szChannel.c_str (),
+                                             szAccountName.c_str (), iLevel );
+        }
     }
 
     else if ( !CPortability::CompareNoCase ( szCommand, "DEL" ) )
