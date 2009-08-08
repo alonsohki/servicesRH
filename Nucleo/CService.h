@@ -37,6 +37,7 @@ private:
     static std::vector < unsigned long >        ms_ulFreeNumerics;
     static std::list < CService* >              ms_listServices;
     static CString                              ms_szLogChannel;
+    static CString                              ms_szNetworkLogChannel;
 
 
     // Parte no estática
@@ -82,6 +83,8 @@ public:
 protected:
     void            Log                 ( const char* szTopic, ... );
     void            vLog                ( const char* szTopic, va_list vl );
+    void            NetworkLog          ( const char* szTopic, ... );
+    void            vNetworkLog         ( const char* szTopic, va_list vl );
 
 protected:
     void            SetOk               ( bool bOk ) { m_bIsOk = bOk; }

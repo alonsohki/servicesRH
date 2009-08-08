@@ -488,15 +488,17 @@ COMMAND(Gline)
             {
                 LangMsg ( s, "GLINE_ADD_SUCCESS", szNickOrMask.c_str () );
                 // Log
-                Log ( "LOG_GLINE_ADD", s.GetName ().c_str (), szNickOrMask.c_str (), szReason.c_str () );
+                NetworkLog ( "LOG_GLINE_ADD", s.GetName ().c_str (),
+                                              szNickOrMask.c_str (),
+                                              szReason.c_str () );
             }
             else
             {
                 LangMsg ( s, "GLINE_ADD_SUCCESS_UPDATED", szNickOrMask.c_str () );
                 // Log
-                Log ( "LOG_GLINE_ADD_UPDATED", s.GetName ().c_str (), szNickOrMask.c_str (),
-                                               targetDate.GetDateString ().c_str (),
-                                               szReason.c_str () );
+                NetworkLog ( "LOG_GLINE_ADD_UPDATED", s.GetName ().c_str (), szNickOrMask.c_str (),
+                                                      targetDate.GetDateString ().c_str (),
+                                                      szReason.c_str () );
             }
         }
         else
@@ -505,16 +507,19 @@ COMMAND(Gline)
             {
                 LangMsg ( s, "GLINE_ADD_SUCCESS_NICKNAME", szNickOrMask.c_str (), szFinalMask.c_str () );
                 // Log
-                Log ( "LOG_GLINE_ADD_NICKNAME", s.GetName ().c_str (), szNickOrMask.c_str (), szFinalMask.c_str (), szReason.c_str () );
+                NetworkLog ( "LOG_GLINE_ADD_NICKNAME", s.GetName ().c_str (),
+                                                       szNickOrMask.c_str (),
+                                                       szFinalMask.c_str (),
+                                                       szReason.c_str () );
             }
             else
             {
                 LangMsg ( s, "GLINE_ADD_SUCCESS_NICKNAME_UPDATED", szNickOrMask.c_str (), szFinalMask.c_str () );
                 // Log
-                Log ( "LOG_GLINE_ADD_NICKNAME_UPDATED", s.GetName ().c_str (), szNickOrMask.c_str (),
-                                                        szFinalMask.c_str (),
-                                                        targetDate.GetDateString ().c_str (),
-                                                        szReason.c_str () );
+                NetworkLog ( "LOG_GLINE_ADD_NICKNAME_UPDATED", s.GetName ().c_str (), szNickOrMask.c_str (),
+                                                               szFinalMask.c_str (),
+                                                               targetDate.GetDateString ().c_str (),
+                                                               szReason.c_str () );
             }
         }
     }
@@ -549,7 +554,7 @@ COMMAND(Gline)
         LangMsg ( s, "GLINE_DEL_SUCCESS", szFinalMask.c_str () );
 
         // Log
-        Log ( "LOG_GLINE_DEL", s.GetName ().c_str (), szFinalMask.c_str () );
+        NetworkLog ( "LOG_GLINE_DEL", s.GetName ().c_str (), szFinalMask.c_str () );
     }
 
     else if ( ! CPortability::CompareNoCase ( szOption, "LIST" ) )
@@ -891,9 +896,9 @@ bool COperserv::evtNick ( const IMessage& msg_ )
                         /////////////////////////////////////
 
                         // Logueamos la entrada
-                        Log ( "LOG_NEW_USER", pUser->GetName ().c_str (),
-                                              pUser->GetIdent ().c_str (),
-                                              pUser->GetHost ().c_str () );
+                        NetworkLog ( "LOG_NEW_USER", pUser->GetName ().c_str (),
+                                                     pUser->GetIdent ().c_str (),
+                                                     pUser->GetHost ().c_str () );
                     }
                     break;
                 }

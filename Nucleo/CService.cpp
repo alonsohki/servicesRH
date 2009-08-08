@@ -21,6 +21,7 @@
 std::vector < unsigned long > CService::ms_ulFreeNumerics ( 4096 );
 std::list < CService* > CService::ms_listServices;
 CString CService::ms_szLogChannel;
+CString CService::ms_szNetworkLogChannel;
 
 void CService::RegisterServices ( const CConfig& config )
 {
@@ -30,10 +31,15 @@ void CService::RegisterServices ( const CConfig& config )
         ms_ulFreeNumerics [ ulIter ] = 4095 - ulIter;
     }
 
-    // Cargamos el canal de logs
-    if ( ! config.GetValue ( ms_szLogChannel, "bots", "logchannel" ) )
+    // Cargamos los canales de log
+    if ( ! config.GetValue ( ms_szLogChannel, "bots", "services-log" ) )
     {
-        CLogger::Log ( "Error cargando el canal de logs de la configuración." );
+        CLogger::Log ( "Error cargando el canal de log de los servicios de la configuración." );
+        return;
+    }
+    if ( ! config.GetValue ( ms_szNetworkLogChannel, "bots", "network-log" ) )
+    {
+        CLogger::Log ( "Error cargando el canal de log de la red de la configuración." );
         return;
     }
 
@@ -773,6 +779,31 @@ void CService::vLog ( const char* szTopic, va_list vl )
 
     // Obtenemos el canal de destino
     CChannel* pChannel = CChannelManager::GetSingleton ().GetChannel ( ms_szLogChannel );
+    if ( !pChannel )
+        return;
+
+    // Obtenemos y enviamos el mensaje
+    CString szMessage;
+    if ( vGetLangTopic ( szMessage, "", szTopic, vl ) )
+        MultiMsg ( *pChannel, szMessage );
+}
+
+void CService::NetworkLog ( const char* szTopic, ... )
+{
+    va_list vl;
+    va_start ( vl, szTopic );
+    vNetworkLog ( szTopic, vl );
+    va_end ( vl );
+}
+
+void CService::vNetworkLog ( const char* szTopic, va_list vl )
+{
+    // Nos aseguramos de que el servicio esté cargado
+    if ( ! IsLoaded () )
+        return;
+
+    // Obtenemos el canal de destino
+    CChannel* pChannel = CChannelManager::GetSingleton ().GetChannel ( ms_szNetworkLogChannel );
     if ( !pChannel )
         return;
 
