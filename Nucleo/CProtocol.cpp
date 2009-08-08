@@ -1204,9 +1204,11 @@ bool CProtocol::evtWhois ( const IMessage& message_ )
     try
     {
         const CMessageWHOIS& message = dynamic_cast < const CMessageWHOIS& > ( message_ );
-        if ( message.GetServer () == &m_me )
+        CClient* pSource = message.GetSource ();
+
+        if ( message.GetServer () == &m_me && pSource->GetType () == CClient::USER )
         {
-            CClient* pSource = message.GetSource ();
+            CUser* pSourceUser = static_cast < CUser* > ( pSource );
             CUser* pUser = m_me.GetUserAnywhere ( message.GetTarget () );
             if ( !pUser )
             {
@@ -1267,14 +1269,39 @@ bool CProtocol::evtWhois ( const IMessage& message_ )
                       ++i )
                 {
                     CMembership* pCur = (*i);
-                    CString szFlags = pCur->GetFlagsString ();
-                    szChannels.append ( szFlags );
-                    szChannels.append ( pCur->GetChannel ()->GetName () );
-                    szChannels.append ( " " );
-                }
-                szChannels.resize ( szChannels.length () - 1 );
 
-                m_me.Send ( CMessageNUMERIC ( 319, pSource, pUser->GetName (), szChannels ) );
+                    // Comprobamos si el canal es secreto o privado
+                    bool bCanBeSeen = true;
+                    if ( ( pCur->GetChannel ()->GetModes () &
+                          ( CChannel::CMODE_SECRET | CChannel::CMODE_PRIVATE ) ) != 0
+                       )
+                    {
+                        bCanBeSeen = false;
+                    }
+
+                    // Si no puede ser visto, comprobamos si se trata de un operador,
+                    // o tiene el canal en común.
+                    if ( !bCanBeSeen &&
+                        ( ( pSourceUser->GetModes () & ( CUser::UMODE_CHSERV | CUser::UMODE_OPER ) ) != 0 ) ||
+                        ( pCur->GetChannel ()->GetMembership ( pSourceUser ) ) )
+                    {
+                        bCanBeSeen = true;
+                    }
+
+                    if ( bCanBeSeen )
+                    {
+                        CString szFlags = pCur->GetFlagsString ();
+                        szChannels.append ( szFlags );
+                        szChannels.append ( pCur->GetChannel ()->GetName () );
+                        szChannels.append ( " " );
+                    }
+                }
+
+                if ( szChannels.length () > 0 )
+                {
+                    szChannels.resize ( szChannels.length () - 1 );
+                    m_me.Send ( CMessageNUMERIC ( 319, pSource, pUser->GetName (), szChannels ) );
+                }
             }
 
             // Enviamos el servidor

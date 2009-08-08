@@ -102,11 +102,10 @@ CMembership* CChannel::GetMembership ( CUser* pUser )
           i != m_listMembers.end ();
           ++i )
     {
-        CMembership& cur = *(*i);
-        if ( cur.GetUser ( ) == pUser )
-            return &cur;
+        CMembership* pCur = *i;
+        if ( pCur->GetUser ( ) == pUser )
+            return pCur;
     }
-
     return NULL;
 }
 
