@@ -39,6 +39,16 @@ CDBStatement::~CDBStatement ()
         FreeResult ();
         mysql_stmt_close ( m_pStatement );
     }
+
+    // Eliminamos las referencias
+    for ( std::list < CDBStatement** >::iterator i = m_listRefs.begin ();
+          i != m_listRefs.end ();
+          ++i )
+    {
+        CDBStatement** ppCur = *i;
+        *ppCur = NULL;
+    }
+    m_listRefs.clear ();
 }
 
 bool CDBStatement::Prepare ( const CString& szQuery )
@@ -53,6 +63,25 @@ bool CDBStatement::Prepare ( const CString& szQuery )
     m_szError = mysql_stmt_error ( m_pStatement );
 
     return false;
+}
+
+void CDBStatement::AddRef ( CDBStatement** ppRef )
+{
+    m_listRefs.push_back ( ppRef );
+}
+
+void CDBStatement::RemoveRef ( CDBStatement** ppRef )
+{
+    for ( std::list < CDBStatement** >::iterator i = m_listRefs.begin ();
+          i != m_listRefs.end ();
+          ++i )
+    {
+        if ( (*i) == ppRef )
+        {
+            m_listRefs.erase ( i );
+            break;
+        }
+    }
 }
 
 bool CDBStatement::Execute ( const char* szParamTypes, ... )

@@ -44,6 +44,9 @@ private:
 
 public:
     bool                    Execute         ( const char* szParamTypes = "", ... );
+    void                    AddRef          ( CDBStatement** ppRef );
+    void                    RemoveRef       ( CDBStatement** ppRef );
+
 private:
     void                    BindResults     ( MYSQL_BIND* results, unsigned long* ulLengths, my_bool* bNulls, my_bool* bErrors, DateConversion* dates, unsigned int& uiNumDates, const char* szParamTypes, va_list vl );
 public:
@@ -66,6 +69,9 @@ private:
 
     int                     m_iErrno;
     CString                 m_szError;
+
+    std::list < CDBStatement** >
+                            m_listRefs;
 
     MYSQL_BIND*             m_pStoredBinds;
     DateConversion*         m_pStoredDates;

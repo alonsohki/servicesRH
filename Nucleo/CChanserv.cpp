@@ -146,6 +146,8 @@ unsigned long long CChanserv::GetChannelID ( const CString& szChannelName )
             ReportBrokenDB ( 0, 0, "Generando chanserv.SQLGetChannelID" );
             return 0ULL;
         }
+        else
+            SQLGetChannelID->AddRef ( &SQLGetChannelID );
     }
 
     // La ejecutamos
@@ -184,6 +186,8 @@ bool CChanserv::HasChannelDebug ( unsigned long long ID )
             );
         if ( !SQLHasDebug )
             return ReportBrokenDB ( 0, 0, "Generando chanserv.SQLHasDebug" );
+        else
+            SQLHasDebug->AddRef ( &SQLHasDebug );
     }
 
     // Ejecutamos la consulta
@@ -235,6 +239,8 @@ int CChanserv::GetAccess ( unsigned long long AccountID, unsigned long long ID, 
             ReportBrokenDB ( pUser, 0, "Generando chanserv.SQLCheckFounder" );
             return 0;
         }
+        else
+            SQLCheckFounder->AddRef ( &SQLCheckFounder );
     }
 
     // Generamos la consulta para obtener el nivel de acceso que tiene el usuario en el canal
@@ -249,6 +255,8 @@ int CChanserv::GetAccess ( unsigned long long AccountID, unsigned long long ID, 
             ReportBrokenDB ( pUser, 0, "Generando chanserv.SQLGetAccess" );
             return 0;
         }
+        else
+            SQLGetAccess->AddRef ( &SQLGetAccess );
     }
 
     // Primero comprobamos si está identificado como fundador
@@ -321,7 +329,10 @@ int CChanserv::GetLevel ( unsigned long long ID, EChannelLevel level )
                 ReportBrokenDB ( 0, 0, "Generando chanserv.SQLGetLevel" );
             }
             else
+            {
                 s_statements [ i ] = SQLGetLevel;
+                SQLGetLevel->AddRef ( &( s_statements [ i ]) );
+            }
         }
     }
 
@@ -452,6 +463,8 @@ void CChanserv::CheckOnjoinStuff ( CUser& user, CChannel& channel, bool bSendGre
                     ReportBrokenDB ( &user, 0, "Generando chanserv.SQLGetGreetmsg" );
                     return;
                 }
+                else
+                    SQLGetGreetmsg->AddRef ( &SQLGetGreetmsg );
             }
 
             // Ejecutamos la consulta
@@ -556,6 +569,8 @@ COMMAND(Register)
             );
         if ( !SQLRegister )
             return ReportBrokenDB ( &s, 0, "Generando chanserv.SQLRegister" );
+        else
+            SQLRegister->AddRef ( &SQLRegister );
     }
 
     // Generamos la consulta SQL para crear el registro de niveles
@@ -567,6 +582,8 @@ COMMAND(Register)
             );
         if ( !SQLCreateLevels )
             return ReportBrokenDB ( &s, 0, "Generando chanserv.SQLCreateLevels" );
+        else
+            SQLCreateLevels->AddRef ( &SQLCreateLevels );
     }
 
     // Nos aseguramos de que esté identificado
@@ -705,6 +722,8 @@ COMMAND(Identify)
             );
         if ( !SQLCheckPassword )
             return ReportBrokenDB ( &s, 0, "Generando chanserv.SQLCheckPassword" );
+        else
+            SQLCheckPassword->AddRef ( &SQLCheckPassword );
     }
 
     // Nos aseguramos de que esté identificado
@@ -813,7 +832,10 @@ COMMAND(Levels)
                 ReportBrokenDB ( 0, 0, "Generando chanserv.SQLLevelUpdate" );
             }
             else
+            {
                 s_statements [ i ] = SQLLevelUpdate;
+                SQLLevelUpdate->AddRef ( &( s_statements [ i ] ) );
+            }
         }
     }
 
@@ -836,6 +858,8 @@ COMMAND(Levels)
         SQLListLevels = CDatabase::GetSingleton ().PrepareStatement ( szQuery );
         if ( !SQLListLevels )
             return ReportBrokenDB ( &s, 0, "Generando chanserv.SQLListLevels" );
+        else
+            SQLListLevels->AddRef ( &SQLListLevels );
     }
 
     // Nos aseguramos de que esté identificado
@@ -997,6 +1021,8 @@ COMMAND(Access)
                 );
             if ( !SQLAddAccess )
                 return ReportBrokenDB ( &s, 0, "Generando chanserv.SQLAddAccess" );
+            else
+                SQLAddAccess->AddRef ( &SQLAddAccess );
         }
 
         // Generamos la consulta SQL para actualizar accesos
@@ -1008,6 +1034,8 @@ COMMAND(Access)
                 );
             if ( !SQLUpdateAccess )
                 return ReportBrokenDB ( &s, 0, "Generando chanserv.SQLUpdateAccess" );
+            else
+                SQLUpdateAccess->AddRef ( &SQLUpdateAccess );
         }
 
         // Generamos la consulta SQL para contar el número de registros de un canal
@@ -1019,6 +1047,8 @@ COMMAND(Access)
                 );
             if ( !SQLCountAccess )
                 return ReportBrokenDB ( &s, 0, "Generando chanserv.SQLCountAccess" );
+            else
+                SQLCountAccess->AddRef ( &SQLCountAccess );
         }
 
         // Obtenemos el nick a añadir
@@ -1172,6 +1202,8 @@ COMMAND(Access)
                 );
             if ( !SQLDelAccess )
                 return ReportBrokenDB ( &s, 0, "Generando chanserv.SQLDelAccess" );
+            else
+                SQLDelAccess->AddRef ( &SQLDelAccess );
         }
 
         // Obtenemos el nick a eliminar
@@ -1257,6 +1289,8 @@ COMMAND(Access)
                 );
             if ( !SQLListAccess )
                 return ReportBrokenDB ( &s, 0, "Generando chanserv.SQLListAccess" );
+            else
+                SQLListAccess->AddRef ( &SQLListAccess );
         }
 
         // Comprobamos que tenga acceso a este comando

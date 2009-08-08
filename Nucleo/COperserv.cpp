@@ -96,6 +96,8 @@ void COperserv::DropGline ( unsigned long long ID )
             ReportBrokenDB ( 0, 0, "Generando operserv.SQLRemoveGline" );
             return;
         }
+        else
+            SQLRemoveGline->AddRef ( &SQLRemoveGline );
     }
 
     if ( ! SQLRemoveGline->Execute ( "Q", ID ) )
@@ -120,6 +122,8 @@ CDate COperserv::GetGlineExpiration ( const CString& szMask, unsigned long long&
             ReportBrokenDB ( 0, 0, "Generando operserv.SQLGetGlineExpiration" );
             return CDate ( (time_t)0 );
         }
+        else
+            SQLGetGlineExpiration->AddRef ( &SQLGetGlineExpiration );
     }
 
     // Ejecutamos la consulta para obtener el G-Line
@@ -221,6 +225,8 @@ bool COperserv::GetGlineMask ( CUser& s, const CString& szNickOrMask, CString& s
                     );
                 if ( !SQLGetHost )
                     return ReportBrokenDB ( &s, 0, "Generando operserv.SQLGetHost" );
+                else
+                    SQLGetHost->AddRef ( &SQLGetHost );
             }
 
             // La ejecutamos
@@ -387,6 +393,8 @@ COMMAND(Gline)
                 );
             if ( !SQLAddGline )
                 return ReportBrokenDB ( &s, 0, "Generando operserv.SQLAddGline" );
+            else
+                SQLAddGline->AddRef ( &SQLAddGline );
         }
 
         // Construímos la consulta SQL para actualizar G-Lines
@@ -398,6 +406,8 @@ COMMAND(Gline)
                 );
             if ( !SQLUpdateGline )
                 return ReportBrokenDB ( &s, 0, "Generando operserv.SQLUpdateGline" );
+            else
+                SQLUpdateGline->AddRef ( &SQLUpdateGline );
         }
 
         // Obtenemos el nick o máscara
@@ -587,6 +597,8 @@ COMMAND(Gline)
                 );
             if ( !SQLGetGlines )
                 ReportBrokenDB ( 0, 0, "Generando operserv.SQLGetGlines" );
+            else
+                SQLGetGlines->AddRef ( &SQLGetGlines );
         }
 
         // La ejecutamos
@@ -824,6 +836,8 @@ bool COperserv::evtNick ( const IMessage& msg_ )
                                 );
                             if ( !SQLGetGlines )
                                 ReportBrokenDB ( 0, 0, "Generando operserv.SQLGetGlines" );
+                            else
+                                SQLGetGlines->AddRef ( &SQLGetGlines );
                         }
 
                         // Construímos también una consulta para obtener los datos de la g-line
@@ -835,6 +849,8 @@ bool COperserv::evtNick ( const IMessage& msg_ )
                                 );
                             if ( !SQLGetGline )
                                 ReportBrokenDB ( 0, 0, "Generando operserv.SQLGetGline" );
+                            else
+                                SQLGetGline->AddRef ( &SQLGetGline );
                         }
 
                         if ( SQLGetGline && SQLGetGlines )
@@ -926,6 +942,8 @@ bool COperserv::timerCheckExpiredGlines ( void* )
             );
         if ( !SQLExpireGlines )
             return ReportBrokenDB ( 0, 0, "Generando operserv.SQLExpireGlines" );
+        else
+            SQLExpireGlines->AddRef ( &SQLExpireGlines );
     }
 
     // Expiramos glines

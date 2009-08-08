@@ -129,6 +129,8 @@ unsigned long long CMemoserv::GetBestIDForMessage ( unsigned long long ID, bool 
             ReportBrokenDB ( 0, 0, "Generando memoserv.SQLGetIDs" );
             return 0ULL;
         }
+        else
+            SQLGetIDs->AddRef ( &SQLGetIDs );
     }
 
     // Ejecutamos la consulta SQL
@@ -210,6 +212,8 @@ COMMAND(Send)
             );
         if ( !SQLCreateMessage )
             return ReportBrokenDB ( &s, 0, "Generando memoserv.SQLCreateMessage" );
+        else
+            SQLCreateMessage->AddRef ( &SQLCreateMessage );
     }
 
     // Verificamos si está registrado e identificado
@@ -298,6 +302,8 @@ COMMAND(List)
             );
         if ( !SQLList )
             return ReportBrokenDB ( &s, 0, "Generando memoserv.SQLList" );
+        else
+            SQLList->AddRef ( &SQLList );
     }
 
     // Verificamos si está registrado e identificado
@@ -360,6 +366,8 @@ COMMAND(Read)
             );
         if ( !SQLReadMessage )
             return ReportBrokenDB ( &s, 0, "Generando memoserv.SQLReadMessage" );
+        else
+            SQLReadMessage->AddRef ( &SQLReadMessage );
     }
 
     // Generamos la consulta para marcar un mensaje como leído
@@ -371,6 +379,8 @@ COMMAND(Read)
               );
         if ( !SQLMarkMessageAsRead )
             return ReportBrokenDB ( &s, 0, "Generando memoserv.SQLMarkMessageAsRead" );
+        else
+            SQLMarkMessageAsRead->AddRef ( &SQLMarkMessageAsRead );
     }
 
     // Obtenemos el ID del mensaje
@@ -432,6 +442,8 @@ COMMAND(Del)
             );
         if ( !SQLDelMessage )
             return ReportBrokenDB ( &s, 0, "Generando memoserv.SQLDelMessage" );
+        else
+            SQLDelMessage->AddRef ( &SQLDelMessage );
     }
 
     // Generamos la consulta para eliminar todos los mensajes
@@ -443,6 +455,8 @@ COMMAND(Del)
             );
         if ( !SQLDelAllMessages )
             return ReportBrokenDB ( &s, 0, "Generando memoserv.SQLDelAllMessages" );
+        else
+            SQLDelAllMessages->AddRef ( &SQLDelAllMessages );
     }
 
     // Verificamos si está registrado e identificado
@@ -499,6 +513,8 @@ COMMAND(Global)
             );
         if ( !SQLGetRegisteredNicks )
             return ReportBrokenDB ( &s, 0, "Generando memoserv.SQLGetRegisteredNicks" );
+        else
+            SQLGetRegisteredNicks->AddRef ( &SQLGetRegisteredNicks );
     }
 
     // Generamos la consulta para enviar globales
@@ -511,6 +527,8 @@ COMMAND(Global)
               );
         if ( !SQLSendGlobal )
             return ReportBrokenDB ( &s, 0, "Generando memoserv.SQLSendGlobal" );
+        else
+            SQLSendGlobal->AddRef ( &SQLSendGlobal );
     }
 
     // Obtenemos el nick de orígen
@@ -660,6 +678,8 @@ bool CMemoserv::evtIdentify ( const IMessage& message_ )
                 ReportBrokenDB ( 0, 0, "Generando memoserv.SQLGetUnread" );
                 return true;
             }
+            else
+                SQLGetUnread->AddRef ( &SQLGetUnread );
         }
 
         // Comprobamos si tiene mensajes nuevos

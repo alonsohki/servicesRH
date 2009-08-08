@@ -192,6 +192,8 @@ bool CIpserv::verifyCoadminOrRegistered ( SCommandInfo& info )
             );
         if ( !SQLCheckOwner )
             return ReportBrokenDB ( &s, 0, "Generando ipserv.SQLCheckOwner" );
+        else
+            SQLCheckOwner->AddRef ( &SQLCheckOwner );
     }
 
     // Antes de nada, debe estar identificado

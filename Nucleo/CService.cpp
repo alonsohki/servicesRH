@@ -657,6 +657,8 @@ bool CService::HasAccess ( CUser& user, EServicesRank rank, bool bUseCache )
             );
         if ( !SQLHasAccess )
             return ReportBrokenDB ( &user, 0, "Generando CService.SQLHasAccess" );
+        else
+            SQLHasAccess->AddRef ( &SQLHasAccess );
     }
 
     SServicesData& data = user.GetServicesData ();

@@ -176,6 +176,8 @@ unsigned long long CNickserv::GetAccountID ( const CString& szName, bool bCheckG
             ReportBrokenDB ( 0, 0, "Generando nickserv.SQLAccountIDGroups" );
             return 0ULL;
         }
+        else
+            SQLAccountIDGroups->AddRef ( &SQLAccountIDGroups );
     }
 
     // Generamos la consulta SQL para obtener el ID dado un nick (sin comprobar grupos)
@@ -190,6 +192,8 @@ unsigned long long CNickserv::GetAccountID ( const CString& szName, bool bCheckG
             ReportBrokenDB ( 0, 0, "Generando nickserv.SQLAccountIDNogroups" );
             return 0ULL;
         }
+        else
+            SQLAccountIDNogroups->AddRef ( &SQLAccountIDNogroups );
     }
 
     // Ejecutamos la consulta más adecuada
@@ -239,6 +243,8 @@ void CNickserv::GetAccountName ( unsigned long long ID, CString& szDest )
             szDest = "";
             return;
         }
+        else
+            SQLGetName->AddRef ( &SQLGetName );
     }
 
     // Obtenemos el nombre
@@ -268,6 +274,8 @@ bool CNickserv::CheckSuspension ( unsigned long long ID, CString& szReason, CDat
             );
         if ( !SQLCheckSuspension )
             return ReportBrokenDB ( 0, 0, "Generando nickserv.SQLCheckSuspension" );
+        else
+            SQLCheckSuspension->AddRef ( &SQLCheckSuspension );
     }
 
     // Ejecutamos la consulta
@@ -312,6 +320,8 @@ bool CNickserv::RemoveSuspension ( unsigned long long ID )
             );
         if ( !SQLRemoveSuspension )
             return ReportBrokenDB ( 0, 0, "Generando nickserv.SQLRemoveSuspension" );
+        else
+            SQLRemoveSuspension->AddRef ( &SQLRemoveSuspension );
     }
 
     // Ejecutamos la consulta
@@ -362,6 +372,8 @@ bool CNickserv::CheckForbidden ( const CString& szName, CString& szReason )
             );
         if ( !SQLCheckForbidden )
             return ReportBrokenDB ( 0, 0, "Generando nickserv.SQLCheckForbidden" );
+        else
+            SQLCheckForbidden->AddRef ( &SQLCheckForbidden );
     }
 
     // Ejecutamos la consulta
@@ -390,6 +402,8 @@ bool CNickserv::Identify ( CUser& user )
         SQLGetLang = CDatabase::GetSingleton ().PrepareStatement ( "SELECT lang FROM account WHERE id=?" );
         if ( !SQLGetLang )
             return ReportBrokenDB ( 0, 0, "Generando nickserv.SQLGetLang" );
+        else
+            SQLGetLang->AddRef ( &SQLGetLang );
     }
 
     // Construímos la consulta para almacenar los datos del usuario
@@ -401,6 +415,8 @@ bool CNickserv::Identify ( CUser& user )
             );
         if ( !SQLSaveAccountDetails )
             return ReportBrokenDB ( 0, 0, "Generando nickserv.SQLSaveAccountDetails" );
+        else
+            SQLSaveAccountDetails->AddRef ( &SQLSaveAccountDetails );
     }
 
     SServicesData& data = user.GetServicesData ();
@@ -514,9 +530,9 @@ bool CNickserv::CheckPassword ( unsigned long long ID, const CString& szPassword
               "SELECT id FROM account WHERE id=? AND password=MD5(?)"
             );
         if ( !SQLIdentify )
-        {
             return ReportBrokenDB ( 0, 0, "Generando nickserv.SQLIdentify" );
-        }
+        else
+            SQLIdentify->AddRef ( &SQLIdentify );
     }
 
     if ( ID == 0ULL )
@@ -717,6 +733,8 @@ bool CNickserv::CreateDDBGroupMember ( CUser& s, const CString& szPassword )
             );
         if ( !SQLGetAccountDetails )
             return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLGetAccountDetails" );
+        else
+            SQLGetAccountDetails->AddRef ( &SQLGetAccountDetails );
     }
 
     SServicesData& data = s.GetServicesData ();
@@ -821,9 +839,9 @@ bool CNickserv::GetGroupMembers ( CUser* pUser, unsigned long long ID, std::vect
               "SELECT name FROM groups WHERE id=?"
             );
         if ( !SQLGetGroupMembers )
-        {
             return ReportBrokenDB ( pUser, 0, "Generando nickserv.SQLGetGroupMembers" );
-        }
+        else
+            SQLGetGroupMembers->AddRef ( &SQLGetGroupMembers );
     }
 
     // Ejecutamos la consulta SQL para obtener los miembros del grupo
@@ -980,6 +998,8 @@ COMMAND(Register)
             "VALUES ( ?, MD5(?), ?, ?, ?, ?, ?, ?, ? )" );
         if ( !SQLRegister )
             return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLRegister" );
+        else
+            SQLRegister->AddRef ( &SQLRegister );
     }
 
     // Generamos la consulta SQL para establecer al primer
@@ -992,6 +1012,8 @@ COMMAND(Register)
             );
         if ( !SQLSetFirstAdmin )
             return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLSetFirstAdmin" );
+        else
+            SQLSetFirstAdmin->AddRef ( &SQLSetFirstAdmin );
     }
 
     // Obtenemos el email
@@ -1167,6 +1189,8 @@ COMMAND(Group)
 
             if ( !SQLAddGroup )
                 return ReportBrokenDB ( &s, SQLAddGroup, "Generando nickserv.SQLAddGroup" );
+            else
+                SQLAddGroup->AddRef ( &SQLAddGroup );
         }
 
         // Generamos la consulta para comprobar el número de nicks
@@ -1179,6 +1203,8 @@ COMMAND(Group)
                 );
             if ( !SQLGetGroupCount )
                 return ReportBrokenDB ( &s, SQLGetGroupCount, "Generando nickserv.SQLGetGroupCount" );
+            else
+                SQLGetGroupCount->AddRef ( &SQLGetGroupCount );
         }
 
         // Obtenemos el nick y password con los que quiere agruparse
@@ -1280,6 +1306,8 @@ COMMAND(Group)
                 );
             if ( !SQLUngroup )
                 return ReportBrokenDB ( info.pSource, 0, "Generando nickserv.SQLUngroup" );
+            else
+                SQLUngroup->AddRef ( &SQLUngroup );
         }
 
         // Comprobamos que al menos está registrado o agrupado
@@ -1461,6 +1489,8 @@ SET_COMMAND(Set_Password)
             );
         if ( !SQLSetPassword )
             return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLSetPassword" );
+        else
+            SQLSetPassword->AddRef ( &SQLSetPassword );
     }
 
     // Obtenemos el password
@@ -1539,6 +1569,8 @@ SET_COMMAND(Set_Email)
             );
         if ( !SQLSetEmail )
             return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLSetEmail" );
+        else
+            SQLSetEmail->AddRef ( &SQLSetEmail );
     }
 
     // Obtenemos el nuevo email
@@ -1580,6 +1612,8 @@ SET_COMMAND(Set_Lang)
             );
         if ( !SQLSetLang )
             return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLSetLang" );
+        else
+            SQLSetLang->AddRef ( &SQLSetLang );
     }
 
     // Obtenemos el lenguaje solicitado
@@ -1622,6 +1656,8 @@ SET_COMMAND(Set_Vhost)
             );
         if ( ! SQLSetVhost )
             return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLSetVhost" );
+        else
+            SQLSetVhost->AddRef ( &SQLSetVhost );
     }
 
     // Obtenemos el vhost
@@ -1736,6 +1772,8 @@ SET_COMMAND(Set_Private)
             );
         if ( !SQLSetPrivate )
             return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLSetPrivate" );
+        else
+            SQLSetPrivate->AddRef ( &SQLSetPrivate );
     }
 
     // Obtenemos la opción
@@ -1778,6 +1816,8 @@ SET_COMMAND(Set_Web)
             );
         if ( !SQLSetWeb )
             return ReportBrokenDB ( &s, 0, "Generando nickerv.SQLSetWeb" );
+        else
+            SQLSetWeb->AddRef ( &SQLSetWeb );
     }
 
     // Obtenemos la web
@@ -1832,6 +1872,8 @@ SET_COMMAND(Set_Greetmsg)
             );
         if ( !SQLSetGreetmsg )
             return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLSetGreetmsg" );
+        else
+            SQLSetGreetmsg->AddRef ( &SQLSetGreetmsg );
     }
 
     // Obtenemos el mensaje de bienvenida
@@ -1893,6 +1935,8 @@ COMMAND(Info)
             );
         if ( !SQLGetInfo )
             return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLGetInfo" );
+        else
+            SQLGetInfo->AddRef ( &SQLGetInfo );
     }
 
     // Generamos la consulta para obtener sus registros
@@ -1934,6 +1978,8 @@ COMMAND(Info)
         SQLGetAccess = CDatabase::GetSingleton ().PrepareStatement ( szQuery );
         if ( !SQLGetAccess )
             return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLGetAccess" );
+        else
+            SQLGetAccess->AddRef ( &SQLGetAccess );
     }
 
     // Obtenemos el nick
@@ -2092,6 +2138,8 @@ COMMAND(List)
             );
         if ( !SQLListAccounts )
             return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLListAccounts" );
+        else
+            SQLListAccounts->AddRef ( &SQLListAccounts );
     }
 
     CString& szParam = info.GetNextParam ();
@@ -2226,6 +2274,8 @@ COMMAND(Drop)
             );
         if ( !SQLDropNick )
             return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLDropNick" );
+        else
+            SQLDropNick->AddRef ( &SQLDropNick );
     }
 
     // Obtenemos el nick que quiere eliminar
@@ -2275,6 +2325,8 @@ COMMAND(Suspend)
             );
         if ( !SQLSuspend )
             return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLSuspend" );
+        else
+            SQLSuspend->AddRef ( &SQLSuspend );
     }
 
     // Obtenemos el nick que desean suspender
@@ -2430,6 +2482,8 @@ COMMAND(Forbid)
                 );
             if ( !SQLAddForbid )
                 return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLAddForbid" );
+            else
+                SQLAddForbid->AddRef ( &SQLAddForbid );
         }
 
         // Obtenemos el nick a prohibir
@@ -2489,6 +2543,8 @@ COMMAND(Forbid)
                 );
             if ( !SQLRemoveForbid )
                 return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLRemoveForbid" );
+            else
+                SQLRemoveForbid->AddRef ( &SQLRemoveForbid );
         }
 
         // Obtenemos el nick a eliminar de la lista de prohibidos
@@ -2542,6 +2598,8 @@ COMMAND(Forbid)
                 );
             if ( !SQLListForbids )
                 return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLListForbids" );
+            else
+                SQLListForbids->AddRef ( &SQLListForbids );
         }
 
         // Ejecutamos la consulta
@@ -2638,6 +2696,8 @@ bool CNickserv::evtQuit ( const IMessage& msg_ )
                     ReportBrokenDB ( 0, 0, "Generating nickserv.SQLUpdateLastSeen" );
                     return true;
                 }
+                else
+                    SQLUpdateLastSeen->AddRef ( &SQLUpdateLastSeen );
             }
 
             // Obtenemos la fecha actual y la establecemos como
@@ -2812,6 +2872,8 @@ bool CNickserv::foreachUpdateLastSeen ( SForeachInfo < CUser* >& info )
         SQLUpdateLastSeen = database.PrepareStatement ( "UPDATE account SET lastSeen=? WHERE id=?" );
         if ( !SQLUpdateLastSeen )
             return ReportBrokenDB ( 0, 0, "Generando nickserv.SQLUpdateLastSeen en el timer" );
+        else
+            SQLUpdateLastSeen->AddRef ( &SQLUpdateLastSeen );
     }
 
     // Comprobamos que está registrado e identificado
@@ -2836,6 +2898,8 @@ bool CNickserv::timerCheckExpired ( void* )
             );
         if ( !SQLGetExpiredNicks )
             return ReportBrokenDB ( 0, 0, "Generando nickserv.SQLGetExpiredNicks" );
+        else
+            SQLGetExpiredNicks->AddRef ( &SQLGetExpiredNicks );
     }
 
     // Generamos la consulta SQL para eliminar los nicks que hayan expirado
@@ -2847,6 +2911,8 @@ bool CNickserv::timerCheckExpired ( void* )
             );
         if ( !SQLExpireNicks )
             return ReportBrokenDB ( 0, 0, "Generando nickserv.SQLExpireNicks" );
+        else
+            SQLExpireNicks->AddRef ( &SQLExpireNicks );
     }
 
     // Generamos la fecha de expiración
