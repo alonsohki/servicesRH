@@ -813,10 +813,13 @@ bool CMessageJOIN::BuildMessage ( SProtocolMessage& message ) const
 
 bool CMessageJOIN::ProcessMessage ( const CString& szLine, const std::vector < CString >& vec )
 {
-    if ( vec.size () < 4 )
+    if ( vec.size () < 3 )
         return false;
 
-    m_joinTime.SetTimestamp ( strtoul ( vec [ 3 ], NULL, 10 ) );
+    if ( vec.size () == 3 )
+        m_joinTime.Create ();
+    else
+        m_joinTime.SetTimestamp ( strtoul ( vec [ 3 ], NULL, 10 ) );
 
     CChannelManager& manager = CChannelManager::GetSingleton ();
     const CString& szChannel = vec [ 2 ];

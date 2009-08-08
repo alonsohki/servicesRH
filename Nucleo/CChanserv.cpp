@@ -376,6 +376,9 @@ void CChanserv::CheckOnjoinStuff ( CUser& user, CChannel& channel, bool bSendGre
     SServicesData& data = user.GetServicesData ();
     CMembership* pMembership = channel.GetMembership ( &user );
 
+    // Limpiamos la caché de registro
+    data.chanAccess.bCached = false;
+
     char szNumeric [ 8 ];
     user.FormatNumeric ( szNumeric );
 

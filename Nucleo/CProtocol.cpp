@@ -307,7 +307,6 @@ bool CProtocol::Process ( const CString& szLine )
     raw.SetSource ( pSource );
     TriggerMessageHandlers ( HANDLER_IN_CALLBACKS, raw );
 
-
     // Obtenemos el escenario en el que se ejecutan los eventos para este mensaje
     IMessage* pMessage = 0;
     unsigned long ulStage = 0;
@@ -485,7 +484,14 @@ int CProtocol::Send ( const IMessage& ircmessage, CClient* pSource )
     int iRet = m_socket.WriteString ( szMessage );
     if ( iRet > 0 )
     {
-        TriggerMessageHandlers ( HANDLER_ALL_CALLBACKS, ircmessage );
+        // Comprobamos si se trata de un mensaje directo, para procesarlo
+        // adecuadamente.
+        if ( ircmessage.GetMessageName () == "RAW" )
+        {
+            Process ( szMessage );
+        }
+        else
+            TriggerMessageHandlers ( HANDLER_ALL_CALLBACKS, ircmessage );
     }
     return iRet;
 }
