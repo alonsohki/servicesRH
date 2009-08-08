@@ -486,7 +486,7 @@ int CProtocol::Send ( const IMessage& ircmessage, CClient* pSource )
     {
         // Comprobamos si se trata de un mensaje directo, para procesarlo
         // adecuadamente.
-        if ( ircmessage.GetMessageName () == "RAW" )
+        if ( ! CPortability::CompareNoCase ( ircmessage.GetMessageName (), "RAW" ) )
         {
             Process ( szMessage );
         }
