@@ -204,23 +204,8 @@ bool COperserv::GetGlineMask ( CUser& s, const CString& szNickOrMask, CString& s
         CUser* pUser = CProtocol::GetSingleton ().GetMe ().GetUserAnywhere ( szNickOrMask );
         if ( !pUser )
         {
-            // Escapamos los caracteres comodin
-            CString szNick = szNickOrMask;
-            size_t pos = 0;
-            while ( ( pos = szNick.find ( '%', pos ) ) != CString::npos )
-            {
-                szNick.replace ( pos, 1, "\\%" );
-                ++pos;
-            }
-            pos = 0;
-            while ( ( pos = szNick.find ( '_', pos ) ) != CString::npos )
-            {
-                szNick.replace ( pos, 1, "\\_" );
-                ++pos;
-            }
-
             // Si el usuario no está conectado, buscamos nicks registrados
-            unsigned long long ID = m_pNickserv->GetAccountID ( szNick );
+            unsigned long long ID = m_pNickserv->GetAccountID ( szNickOrMask );
             if ( ID == 0ULL )
             {
                 LangMsg ( s, "GLINE_USER_NOT_CONNECTED_AND_NOT_REGISTERED", szNickOrMask.c_str () );
