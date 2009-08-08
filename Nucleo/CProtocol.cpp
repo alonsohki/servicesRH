@@ -1282,8 +1282,11 @@ bool CProtocol::evtWhois ( const IMessage& message_ )
                     // Si no puede ser visto, comprobamos si se trata de un operador,
                     // o tiene el canal en común.
                     if ( !bCanBeSeen &&
-                        ( ( pSourceUser->GetModes () & ( CUser::UMODE_CHSERV | CUser::UMODE_OPER ) ) != 0 ) ||
-                        ( pCur->GetChannel ()->GetMembership ( pSourceUser ) ) )
+                         (
+                           ( ( pSourceUser->GetModes () & ( CUser::UMODE_CHSERV | CUser::UMODE_OPER ) ) != 0 ) ||
+                           ( pCur->GetChannel ()->GetMembership ( pSourceUser ) )
+                         )
+                       )
                     {
                         bCanBeSeen = true;
                     }
