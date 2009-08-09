@@ -1954,7 +1954,7 @@ COMMAND(Info)
     if ( !SQLGetForbidden )
     {
         SQLGetForbidden = CDatabase::GetSingleton ().PrepareStatement (
-              "SELECT reason FROM forbids WHERE name=?"
+              "SELECT name,reason FROM forbids WHERE name=?"
             );
         if ( !SQLGetForbidden )
             return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLGetForbidden" );
@@ -2010,6 +2010,18 @@ COMMAND(Info)
     if ( szNick == "" )
         return SendSyntax ( s, "INFO" );
 
+    // Comprobamos si está prohibido
+    char szForbidName [ 128 ];
+    char szForbidReason [ 512 ];
+    if ( ! SQLGetForbidden->Execute ( "s", szNick.c_str () ) )
+        return ReportBrokenDB ( &s, SQLGetForbidden, "Ejecutando nickserv.SQLGetForbidden" );
+    if ( SQLGetForbidden->Fetch ( 0, 0, "ss", szForbidName, sizeof ( szForbidName ),
+                                              szForbidReason, sizeof ( szForbidReason ) ) == CDBStatement::FETCH_OK )
+    {
+        LangMsg ( s, "INFO_IS_FORBIDDEN", szForbidName, szForbidReason );
+    }
+    SQLGetForbidden->FreeResult ();
+
     // Comprobamos si quieren información completa
     bool bAll = false;
     CString& szAll = info.GetNextParam ();
@@ -2032,15 +2044,6 @@ COMMAND(Info)
     CString szSuspendReason;
     CDate expirationTime;
     bool bSuspended = CheckSuspension ( ID, szSuspendReason, expirationTime );
-
-    // Comprobamos si está prohibido
-    bool bIsForbidden = false;
-    char szForbidReason [ 512 ];
-    if ( ! SQLGetForbidden->Execute ( "s", szNick.c_str () ) )
-        return ReportBrokenDB ( &s, SQLGetForbidden, "Ejecutando nickserv.SQLGetForbidden" );
-    if ( SQLGetForbidden->Fetch ( 0, 0, "s", szForbidReason, sizeof ( szForbidReason ) ) == CDBStatement::FETCH_OK )
-        bIsForbidden = true;
-    SQLGetForbidden->FreeResult ();
 
     // Ejecutamos la consulta SQL para obtener la información
     if ( ! SQLGetInfo->Execute ( "Q", ID ) )
@@ -2078,9 +2081,6 @@ COMMAND(Info)
         szOptions [ 0 ] = '\0';
         if ( *szPrivate == 'Y' )
             strcat ( szOptions, "Privado" );
-
-        if ( bIsForbidden )
-            LangMsg ( s, "INFO_IS_FORBIDDEN", szNick.c_str (), szForbidReason );
 
         LangMsg ( s, "INFO_ABOUT", szName );
         LangMsg ( s, "INFO_IS", szName, szFullname );
