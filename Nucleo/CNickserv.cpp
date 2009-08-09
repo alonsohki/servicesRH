@@ -1949,6 +1949,19 @@ COMMAND(Info)
             SQLGetInfo->AddRef ( &SQLGetInfo );
     }
 
+    // Generamos la consulta para comprobar si el nick está prohibido
+    static CDBStatement* SQLGetForbidden = 0;
+    if ( !SQLGetForbidden )
+    {
+        SQLGetForbidden = CDatabase::GetSingleton ().PrepareStatement (
+              "SELECT reason FROM forbids WHERE name=?"
+            );
+        if ( !SQLGetForbidden )
+            return ReportBrokenDB ( &s, 0, "Generando nickserv.SQLGetForbidden" );
+        else
+            SQLGetForbidden->AddRef ( &SQLGetForbidden );
+    }
+
     // Generamos la consulta para obtener sus registros
     static CDBStatement* SQLGetAccess = 0;
     if ( !SQLGetAccess )
@@ -2020,6 +2033,15 @@ COMMAND(Info)
     CDate expirationTime;
     bool bSuspended = CheckSuspension ( ID, szSuspendReason, expirationTime );
 
+    // Comprobamos si está prohibido
+    bool bIsForbidden = false;
+    char szForbidReason [ 512 ];
+    if ( ! SQLGetForbidden->Execute ( "s", szNick.c_str () ) )
+        return ReportBrokenDB ( &s, SQLGetForbidden, "Ejecutando nickserv.SQLGetForbidden" );
+    if ( SQLGetForbidden->Fetch ( 0, 0, "s", szForbidReason, sizeof ( szForbidReason ) ) == CDBStatement::FETCH_OK )
+        bIsForbidden = true;
+    SQLGetForbidden->FreeResult ();
+
     // Ejecutamos la consulta SQL para obtener la información
     if ( ! SQLGetInfo->Execute ( "Q", ID ) )
         return ReportBrokenDB ( &s, SQLGetInfo, "Ejecutando nickserv.SQLGetInfo" );
@@ -2056,6 +2078,9 @@ COMMAND(Info)
         szOptions [ 0 ] = '\0';
         if ( *szPrivate == 'Y' )
             strcat ( szOptions, "Privado" );
+
+        if ( bIsForbidden )
+            LangMsg ( s, "INFO_IS_FORBIDDEN", szNick.c_str (), szForbidReason );
 
         LangMsg ( s, "INFO_ABOUT", szName );
         LangMsg ( s, "INFO_IS", szName, szFullname );

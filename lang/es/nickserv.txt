@@ -454,6 +454,10 @@ Muestra la información del 12nick especificado. Si se trata de tu nick, puedes
 escribir 12/msg %N INFO tuNick ALL para obtener información más completa.
 %%
 
+%INFO_IS_FORBIDDEN%
+El nick 12%s está PROHIBIDO de ser utilizado: 12%s
+%%
+
 %INFO_ABOUT%
 Información de 12%s:
 %%
