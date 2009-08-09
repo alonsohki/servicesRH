@@ -777,7 +777,12 @@ bool CNickserv::CreateDDBGroupMember ( CUser& s, const CString& szPassword )
 void CNickserv::DestroyDDBGroupMember ( CUser& s )
 {
     CProtocol& protocol = CProtocol::GetSingleton ();
-    protocol.InsertIntoDDB ( 'w', s.GetName (), "" );
+    if ( protocol.GetDDBValue ( 'w', s.GetName () ) )
+        protocol.InsertIntoDDB ( 'w', s.GetName (), "" );
+    if ( protocol.GetDDBValue ( 'v', s.GetName () ) )
+        protocol.InsertIntoDDB ( 'v', s.GetName (), "" );
+    if ( protocol.GetDDBValue ( 'f', s.GetName () ) )
+        protocol.InsertIntoDDB ( 'f', s.GetName (), "" );
 
     // Comprobamos si el nick está prohibido en la DDB
     const char* szHash = protocol.GetDDBValue ( 'n', s.GetName () );
