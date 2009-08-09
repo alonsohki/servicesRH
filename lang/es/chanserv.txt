@@ -27,6 +27,7 @@ Lista de comandos disponibles:
     12ACCESS               Maneja la lista de acceso de un canal
 
 Modos de canal
+    12DEOWNER              Te quita tu modo de fundador de un canal
     12OP                   Da estado de operador de un canal
     12DEOP                 Quita estado de operador de un canal
     12HALFOP               Da estado de halfop de un canal
@@ -297,7 +298,19 @@ Lista de acceso del canal 12%s:
 
 
 ############################
-# OP/DEOP/HALFOP/DEHALFOP/VOICE/DEVOICE
+# DEOWNER/OP/DEOP/HALFOP/DEHALFOP/VOICE/DEVOICE
+%SYNTAX_DEOWNER%
+Sintaxis: 12DEOWNER <#canal>
+%%
+
+%HELP_DEOWNER%
+Te quita tu modo de fundador del 12canal especificado.
+%%
+
+%DEOWNER_NOT_OWNER%
+04Error: No eres fundador del canal 12%s.
+%%
+
 %SYNTAX_OP%
 Sintaxis: 12OP <#canal> <nick1> [nick2] [nick3] ...
 %%
