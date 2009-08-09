@@ -87,6 +87,7 @@ private:
                        const char* szPrefix,
                        const char* szFlag,
                        EChannelLevel eRequiredLevel );
+    COMMAND(Owner);
     COMMAND(Deowner);
     COMMAND(Op);
     COMMAND(Deop);

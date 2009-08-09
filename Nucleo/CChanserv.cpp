@@ -35,6 +35,7 @@ CChanserv::CChanserv ( const CConfig& config )
     REGISTER ( Levels,      All );
     REGISTER ( Access,      All );
 
+    REGISTER ( Owner,       All );
     REGISTER ( Deowner,     All );
     REGISTER ( Op,          All );
     REGISTER ( Deop,        All );
@@ -1468,45 +1469,6 @@ bool CChanserv::DoOpdeopEtc ( CUser& s,
 
     return true;
 }
-///////////////////
-// DEOWNER
-//
-COMMAND(Deowner)
-{
-    CUser& s = *( info.pSource );
-
-    // Obtenemos el canal en el que quiere cambiar los modos
-    CString& szChannelName = info.GetNextParam ();
-    if ( szChannelName == "" )
-        return SendSyntax ( s, "DEOWNER" );
-
-    // Obtenemos el canal
-    CChannel* pChannel = GetChannel ( s, szChannelName );
-    if ( !pChannel )
-        return false;
-
-    // Obtenemos la membresía
-    CMembership* pMembership = pChannel->GetMembership ( &s );
-    if ( !pMembership )
-    {
-        LangMsg ( s, "DEOWNER_NOT_OWNER", szChannelName.c_str () );
-        return false;
-    }
-
-    // Comprobamos si es fundador
-    if ( ! ( pMembership->GetFlags () & CChannel::CFLAG_OWNER ) )
-    {
-        LangMsg ( s, "DEOWNER_NOT_OWNER", szChannelName.c_str () );
-        return false;
-    }
-
-    // Cambiamos los modos
-    char szNumeric [ 8 ];
-    s.FormatNumeric ( szNumeric );
-    BMode ( pChannel, "-q", szNumeric );
-
-    return true;
-}
 
 ///////////////////
 // OP
@@ -1550,6 +1512,89 @@ COMMAND(Devoice)
 {
     return DoOpdeopEtc ( *( info.pSource ), info, "DEVOICE", "-", "v", LEVEL_VOICEDEVOICE );
 }
+
+///////////////////
+// OWNER
+//
+COMMAND(Owner)
+{
+    CUser& s = *( info.pSource );
+
+    // Obtenemos el canal en el que quiere cambiar los modos
+    CString& szChannelName = info.GetNextParam ();
+    if ( szChannelName == "" )
+        return SendSyntax ( s, "OWNER" );
+
+    // Obtenemos el canal
+    unsigned long long ID;
+    CChannel* pChannel = GetRegisteredChannel ( s, szChannelName, ID, false );
+    if ( !pChannel )
+        return false;
+
+    // Obtenemos la membresía
+    CMembership* pMembership = pChannel->GetMembership ( &s );
+    if ( !pMembership )
+    {
+        LangMsg ( s, "OWNER_NOT_IN_CHANNEL", pChannel->GetName ().c_str () );
+        return false;
+    }
+
+    // Comprobamos si ya es fundador
+    if ( pMembership->GetFlags () & CChannel::CFLAG_OWNER )
+        return true;
+
+    // Comprobamos si tiene acceso
+    if ( GetAccess ( s, ID, true ) != 500 )
+        return AccessDenied ( s );
+
+    // Cambiamos los modos
+    char szNumeric [ 8 ];
+    s.FormatNumeric ( szNumeric );
+    BMode ( pChannel, "+q", szNumeric );
+
+    return true;
+}
+
+///////////////////
+// DEOWNER
+//
+COMMAND(Deowner)
+{
+    CUser& s = *( info.pSource );
+
+    // Obtenemos el canal en el que quiere cambiar los modos
+    CString& szChannelName = info.GetNextParam ();
+    if ( szChannelName == "" )
+        return SendSyntax ( s, "DEOWNER" );
+
+    // Obtenemos el canal
+    CChannel* pChannel = GetChannel ( s, szChannelName );
+    if ( !pChannel )
+        return false;
+
+    // Obtenemos la membresía
+    CMembership* pMembership = pChannel->GetMembership ( &s );
+    if ( !pMembership )
+    {
+        LangMsg ( s, "DEOWNER_NOT_OWNER", szChannelName.c_str () );
+        return false;
+    }
+
+    // Comprobamos si es fundador
+    if ( ! ( pMembership->GetFlags () & CChannel::CFLAG_OWNER ) )
+    {
+        LangMsg ( s, "DEOWNER_NOT_OWNER", szChannelName.c_str () );
+        return false;
+    }
+
+    // Cambiamos los modos
+    char szNumeric [ 8 ];
+    s.FormatNumeric ( szNumeric );
+    BMode ( pChannel, "-q", szNumeric );
+
+    return true;
+}
+
 
 #undef COMMAND
 
