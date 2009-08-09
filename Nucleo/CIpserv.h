@@ -25,6 +25,8 @@ public:
     void            Load                    ( );
     void            Unload                  ( );
 
+    CString         GetAccountIP            ( const CString& szName );
+
     // Comandos
 protected:
     void            UnknownCommand          ( SCommandInfo& info );
@@ -32,9 +34,11 @@ private:
 #define COMMAND(x) bool cmd ## x ( SCommandInfo& info )
     COMMAND(Help);
     COMMAND(Setip);
+    COMMAND(Accounts);
     COMMAND(Register);
     COMMAND(Set);
     COMMAND(Drop);
+    COMMAND(List);
     COMMAND(Default);
 #undef COMMAND
 
@@ -44,4 +48,5 @@ private:
     bool            verifyCoadmin               ( SCommandInfo& info );
 
 private:
+    CNickserv*      m_pNickserv;
 };

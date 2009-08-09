@@ -21,6 +21,7 @@ Ayuda de 12%N
 Lista de comandos disponibles:
 
     12SETIP                Ajusta la ip actual para tu cuenta
+    12ACCOUNTS             Lista las cuentas a las que tienes acceso
 
 Para obtener ayuda detallada sobre cualquier comando, escribe 12/msg %N HELP <comando>.
 %%
@@ -31,6 +32,7 @@ Para obtener ayuda detallada sobre cualquier comando, escribe 12/msg %N HELP <c
     12REGISTER             Crea una nueva cuenta para clones
     12SET                  Realiza ajustes en una cuenta
     12DROP                 Elimina una cuenta
+    12LIST                 Lista las cuentas existentes
     12DEFAULT              Establece los clones por IP por defecto
 %%
 
@@ -58,6 +60,210 @@ Vuelve a intentarlo en unos minutos.
 %TIME_RESTRICTION%
 04Error: Sólo puedes ejecutar el comando 12%s cada 12%u segundos.
 %%
+
+%ACCOUNT_NOT_FOUND%
+04Error: No hay ningún usuario registrado con el nick 12%s.
+%%
+
+
+
+############################
+# SETIP
+%SYNTAX_SETIP%
+Sintaxis: 12SETIP <nombre> <dirección IP>
+%%
+
+%HELP_SETIP%
+Cambia la 12dirección IP de la cuenta con el 12nombre dado.
+%%
+
+%SETIP_INVALID_IP%
+04Error: La dirección IP 12%s no es válida.
+%%
+
+%SETIP_ALREADY_THAT_IP%
+04Error: La cuenta 12%s ya tiene la dirección IP 12%s.
+%%
+
+%SETIP_ACCOUNT_NOT_FOUND%
+04Error: No existe ninguna cuenta con el nombre 12%s.
+%%
+
+%SETIP_ADDRESS_ALREADY_IN_USE%
+04Error: La dirección IP 12%s ya está siendo utilizada por otra cuenta.
+%%
+
+%SETIP_SUCCESS%
+Dirección IP de la cuenta 12%s cambiada 03correctamente a 12%s.
+%%
+
+%LOG_SETIP%
+12%s ha 07CAMBIADO LA IP de la cuenta 12%s a 12%s.
+%%
+#
+############################
+
+
+############################
+# ACCOUNTS
+%SYNTAX_ACCOUNTS%
+Sintaxis: 12ACCOUNTS
+%%
+
+%HELP_ACCOUNTS%
+Lista las cuentas de clones a las que tienes acceso.
+%%
+
+%ACCOUNTS_HEADER%
+Lista de cuentas a las que tienes acceso:
+%%
+
+%ACCOUNTS_ENTRY%
+    Nombre: 12%s, clones: 12%u, dirección IP: 12%s
+%%
+#
+############################
+
+
+############################
+# REGISTER
+%SYNTAX_REGISTER%
+Sintaxis: 12REGISTER <nombre> <número de clones> <dueño>
+%%
+
+%HELP_REGISTER%
+Crea una nueva cuenta de clones con el 12nombre y 12número de clones dados.
+El parámetro 12dueño es el nick de quien administrará esta cuenta.
+%%
+
+%REGISTER_INVALID_AMOUNT%
+04Error: Número de clones 12%d inválido.
+%%
+
+%REGISTER_NAME_EXISTS%
+04Error: Ya existe una cuenta con el nombre 12%s.
+%%
+
+%REGISTER_SUCCESS%
+Cuenta con el nombre 12%s creada 03correctamente. Número de clones: 12%d. Dueño: 12%s.
+%%
+
+%LOG_REGISTER%
+12%s ha 07CREADO una cuenta de clones con el nombre 12%s. Número de clones: 12%d. Dueño: 12%s.
+%%
+#
+############################
+
+
+############################
+# SET
+%SYNTAX_SET%
+Sintaxis: 12SET <nombre> <opción> <valor>
+%%
+
+%HELP_SET%
+Cambia las opciones de la cuenta con el 12nombre dado.
+
+Las distintas opciones son:
+    12OWNER                Cambia el dueño
+    12NUMBER               Cambia el número de clones
+
+Para obtener más información acerca de cualquier opción, escribe
+12/msg %N HELP SET <opción>.
+%%
+
+%SET_ACCOUNT_NOT_FOUND%
+04Error: No existe ninguna cuenta con el nombre 12%s.
+%%
+
+%SYNTAX_SET_OWNER%
+Sintaxis: 12SET <nombre> OWNER <nick>
+%%
+
+%HELP_SET_OWNER%
+Establece como dueño de la cuenta con el 12nombre dado al 12nick dado.
+%%
+
+%SET_OWNER_SUCCESS%
+El dueño de la cuenta 12%s ha sido cambiado a 12%s 03correctamente.
+%%
+
+%LOG_SET_OWNER%
+12%s ha 07CAMBIADO EL DUEÑO de la cuenta 12%s a 12%s.
+%%
+
+%SYNTAX_SET_NUMBER%
+Sintaxis: 12SET <nombre> NUMBER <número>
+%%
+
+%HELP_SET_NUMBER%
+Establece el 12número máximo de conexiones desde la IP de la cuenta con
+el 12nombre dado.
+%%
+
+%SET_NUMBER_SUCCESS%
+Número de clones de la cuenta 12%s cambiado a 12%d 03correctamente.
+%%
+
+%LOG_SET_NUMBER%
+12%s ha 07CAMBIADO EL NÚMERO de clones de la cuenta 12%s a 12%d.
+%%
+#
+############################
+
+
+############################
+# DROP
+%SYNTAX_DROP%
+Sintaxis: 12DROP <nombre>
+%%
+
+%HELP_DROP%
+Elimina la cuenta con el 12nombre dado.
+%%
+
+%DROP_ACCOUNT_NOT_FOUND%
+04Error: No existe ninguna cuenta con el nombre 12%s.
+%%
+
+%DROP_SUCCESS%
+La cuenta con el nombre 12%s ha sido eliminada 03correctamente.
+%%
+
+%LOG_DROP%
+12%s ha 07ELIMINADO la cuenta de clones 12%s.
+%%
+#
+############################
+
+
+############################
+# LIST
+%SYNTAX_LIST%
+Sintaxis: 12LIST
+%%
+
+%HELP_LIST%
+Muestra la lista de cuentas registradas.
+%%
+
+%LIST_NO_OWNER%
+Sin dueño
+%%
+
+%LIST_NO_IP%
+Sin ip asignada
+%%
+
+%LIST_HEADER%
+Lista de cuentas:
+%%
+
+%LIST_ENTRY%
+    Nombre: 12%s, clones: 12%d, dueño: 12%s, ip: 12%s
+%%
+#
+############################
 
 
 ############################
