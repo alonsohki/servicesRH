@@ -20,10 +20,19 @@ Ayuda de 12%N
 
 Lista de comandos disponibles:
 
+Gestión de canales
     12REGISTER             Registro de un canal
     12IDENTIFY             Identificación como fundador de un canal
     12LEVELS               Maneja la lista de niveles de un canal
     12ACCESS               Maneja la lista de acceso de un canal
+
+Modos de canal
+    12OP                   Da estado de operador de un canal
+    12DEOP                 Quita estado de operador de un canal
+    12HALFOP               Da estado de halfop de un canal
+    12DEHALFOP             Quita estado de halfop de un canal
+    12VOICE                Da voz en un canal
+    12DEVOICE              Quita voz en un canal
 
 Para obtener ayuda detallada sobre cualquier comando, escribe 12/msg %N HELP <comando>.
 %%
@@ -286,6 +295,66 @@ Lista de acceso del canal 12%s:
 #
 ############################
 
+
+############################
+# OP/DEOP/HALFOP/DEHALFOP/VOICE/DEVOICE
+%SYNTAX_OP%
+Sintaxis: 12OP <#canal> <nick1> [nick2] [nick3] ...
+%%
+
+%HELP_OP%
+Da estado de operador a los 12nicks especificados en un 12canal.
+%%
+
+%SYNTAX_DEOP%
+Sintaxis: 12DEOP <#canal> <nick1> [nick2] [nick3] ...
+%%
+
+%HELP_DEOP%
+Quita estado de operador a los 12nicks especificados en un 12canal.
+%%
+
+%SYNTAX_HALFOP%
+Sintaxis: 12HALFOP <#canal> <nick1> [nick2] [nick3] ...
+%%
+
+%HELP_HALFOP%
+Da estado de semi-operador a los 12nicks especificados en un 12canal.
+%%
+
+%SYNTAX_DEHALFOP%
+Sintaxis: 12DEHALFOP <#canal> <nick1> [nick2] [nick3] ...
+%%
+
+%HELP_DEHALFOP%
+Quita estado de semi-operador a los 12nicks especificados en un 12canal.
+%%
+
+%SYNTAX_VOICE%
+Sintaxis: 12VOICE <#canal> <nick1> [nick2] [nick3] ...
+%%
+
+%HELP_VOICE%
+Da voz a los 12nicks especificados en un 12canal.
+%%
+
+%SYNTAX_DEVOICE%
+Sintaxis: 12DEVOICE <#canal> <nick1> [nick2] [nick3] ...
+%%
+
+%HELP_DEVOICE%
+Quita voz a los 12nicks especificados en un 12canal.
+%%
+
+%OPDEOP_ETC_DEBUG%
+%s hace %s a %s
+%%
+
+%LOG_OPDEOP_ETC_OPER%
+12%s ha hecho 07%s en 12%s a 12%s.
+%%
+#
+############################
 
 
 

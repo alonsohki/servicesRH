@@ -34,6 +34,13 @@ CChanserv::CChanserv ( const CConfig& config )
     REGISTER ( Identify,    All );
     REGISTER ( Levels,      All );
     REGISTER ( Access,      All );
+
+    REGISTER ( Op,          All );
+    REGISTER ( Deop,        All );
+    REGISTER ( Halfop,      All );
+    REGISTER ( Dehalfop,    All );
+    REGISTER ( Voice,       All );
+    REGISTER ( Devoice,     All );
 #undef REGISTER
 
     // Cargamos la configuración para nickserv
@@ -173,6 +180,20 @@ CChannel* CChanserv::GetChannel ( CUser& s, const CString& szChannelName )
     if ( !pChannel )
         LangMsg ( s, "CHANNEL_NOT_FOUND", szChannelName.c_str () );
     return pChannel;
+}
+
+CChannel* CChanserv::GetRegisteredChannel ( CUser& s, const CString& szChannelName, unsigned long long& ID, bool bAllowUnregistered )
+{
+    CChannel* pChannel = GetChannel ( s, szChannelName );
+    if ( pChannel )
+    {
+        ID = GetChannelID ( szChannelName );
+        if ( bAllowUnregistered || ID != 0ULL )
+            return pChannel;
+        LangMsg ( s, "CHANNEL_NOT_REGISTERED", szChannelName.c_str () );
+    }
+
+    return NULL;
 }
 
 bool CChanserv::HasChannelDebug ( unsigned long long ID )
@@ -741,22 +762,14 @@ COMMAND(Identify)
         return SendSyntax ( s, "IDENTIFY" );
 
     // Buscamos el canal
-    CChannel* pChannel = GetChannel ( s, szChannel );
+    unsigned long long ID;
+    CChannel* pChannel = GetRegisteredChannel ( s, szChannel, ID );
     if ( !pChannel )
     {
         ClearPassword ( szPassword );
         return false;
     }
     CChannel& channel = *pChannel;
-
-    // Comprobamos que el canal está registrado
-    unsigned long long ID = GetChannelID ( szChannel );
-    if ( ID == 0ULL )
-    {
-        ClearPassword ( szPassword );
-        LangMsg ( s, "CHANNEL_NOT_REGISTERED", szChannel.c_str () );
-        return false;
-    }
 
     // Comprobamos si tiene el debug activado
     bool bHasDebug = HasChannelDebug ( ID );
@@ -1363,6 +1376,139 @@ COMMAND(Access)
 }
 
 
+///////////////////
+// OP/DEOP/HALFOP/DEHALFOP/VOICE/DEVOICE
+//
+bool CChanserv::DoOpdeopEtc ( CUser& s,
+                              SCommandInfo& info,
+                              const char* szCommand,
+                              const char* szPrefix,
+                              const char* szFlag,
+                              EChannelLevel eRequiredLevel )
+{
+    // Obtenemos el canal en el que quiere cambiar los modos
+    CString& szChannelName = info.GetNextParam ();
+    if ( szChannelName == "" )
+        return SendSyntax ( s, szCommand );
+
+    // Almacenamos si es operador
+    bool bIsOper = HasAccess ( s, RANK_OPERATOR );
+    bool bOperMode = false;
+    
+    // Comprobaremos si debemos hacer debug
+    bool bHasDebug = true;
+
+    // Buscamos el canal
+    unsigned long long ID;
+    CChannel* pChannel = GetRegisteredChannel ( s, szChannelName, ID, bIsOper );
+    if ( !pChannel )
+        return false;
+
+    // Hacemos una comprobación de acceso
+    if ( ID != 0ULL )
+    {
+        if ( ! CheckAccess ( s, ID, eRequiredLevel ) )
+        {
+            if ( ! bIsOper )
+                return AccessDenied ( s );
+            bOperMode = true;
+        }
+
+        if ( !bOperMode )
+            bHasDebug = HasChannelDebug ( ID );
+    }
+    else
+        bOperMode = true;
+
+    // Buscamos a los usuarios solicitados
+    CString szCur = info.GetNextParam ();
+    if ( szCur == "" )
+        return SendSyntax ( s, szCommand );
+
+    CServer& me = CProtocol::GetSingleton ().GetMe ();
+    std::vector < CString > vecModeParams;
+    CString szNicks;
+    CString szFlags = szPrefix;
+    char szNumeric [ 8 ];
+    
+    do
+    {
+        // Buscamos al usuario
+        CUser* pUser = me.GetUserAnywhere ( szCur );
+        if ( pUser )
+        {
+            pUser->FormatNumeric ( szNumeric );
+            szNicks.append ( pUser->GetName () );
+            szNicks.append ( " " );
+            szFlags.append ( szFlag );
+            vecModeParams.push_back ( szNumeric );
+        }
+
+        szCur = info.GetNextParam ();
+    } while ( szCur != "" );
+
+    // Nos aseguramos de que nos hayan dado al menos un nick válido
+    if ( vecModeParams.size () == 0 )
+        return SendSyntax ( s, szCommand );
+
+    // Eliminamos el espacio superfluo al final
+    szNicks.resize ( szNicks.length () - 1 );
+
+    // Enviamos el cambio de modos
+    Mode ( pChannel, szFlags, vecModeParams );
+
+    // Enviamos el debug
+    if ( bHasDebug )
+        LangNotice ( *pChannel, "OPDEOP_ETC_DEBUG", s.GetName ().c_str (), szCommand, szNicks.c_str () );
+
+    // Log
+    if ( bOperMode )
+        Log ( "LOG_OPDEOP_ETC_OPER", s.GetName ().c_str (), szCommand, pChannel->GetName ().c_str (), szNicks.c_str () );
+
+    return true;
+}
+///////////////////
+// OP
+//
+COMMAND(Op)
+{
+    return DoOpdeopEtc ( *( info.pSource ), info, "OP", "+", "o", LEVEL_OPDEOP );
+}
+///////////////////
+// DEOP
+//
+COMMAND(Deop)
+{
+    return DoOpdeopEtc ( *( info.pSource ), info, "DEOP", "-", "o", LEVEL_OPDEOP );
+}
+///////////////////
+// HALFOP
+//
+COMMAND(Halfop)
+{
+    return DoOpdeopEtc ( *( info.pSource ), info, "HALFOP", "+", "h", LEVEL_HALFOPDEHALFOP );
+}
+///////////////////
+// DEHALFOP
+//
+COMMAND(Dehalfop)
+{
+    return DoOpdeopEtc ( *( info.pSource ), info, "DEHALFOP", "-", "h", LEVEL_HALFOPDEHALFOP );
+}
+///////////////////
+// VOICE
+//
+COMMAND(Voice)
+{
+    return DoOpdeopEtc ( *( info.pSource ), info, "VOICE", "+", "v", LEVEL_VOICEDEVOICE );
+}
+///////////////////
+// DEVOICE
+//
+COMMAND(Devoice)
+{
+    return DoOpdeopEtc ( *( info.pSource ), info, "DEVOICE", "-", "v", LEVEL_VOICEDEVOICE );
+}
 
 #undef COMMAND
 

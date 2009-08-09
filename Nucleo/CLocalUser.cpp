@@ -129,6 +129,11 @@ void CLocalUser::Mode ( CChannel* pChannel, const char* szModes, ... )
     Send ( CMessageMODE ( 0, pChannel, szModes, vecParams ) );
 }
 
+void CLocalUser::Mode ( CChannel* pChannel, const char* szModes, const std::vector < CString >& vecModeParams )
+{
+    Send ( CMessageMODE ( 0, pChannel, szModes, vecModeParams ) );
+}
+
 void CLocalUser::BMode ( CChannel* pChannel, const char* szModes, ... )
 {
     CService* pService = dynamic_cast < CService* > ( this );
@@ -160,6 +165,18 @@ void CLocalUser::BMode ( CChannel* pChannel, const char* szModes, ... )
                                                                pChannel,
                                                                szModes,
                                                                vecParams ) );
+}
+
+void CLocalUser::BMode ( CChannel* pChannel, const char* szModes, const std::vector < CString >& vecModeParams )
+{
+    CService* pService = dynamic_cast < CService* > ( this );
+    if ( !pService )
+        return;
+
+    CProtocol::GetSingleton ().GetMe ().Send ( CMessageBMODE ( pService->GetServiceName (),
+                                                               pChannel,
+                                                               szModes,
+                                                               vecModeParams ) );
 }
 
 

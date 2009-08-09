@@ -61,7 +61,11 @@ public:
     void                    Quit                ( const CString& szQuitMessage = "" );
 
     void                    Mode                ( CChannel* pChannel, const char* szModes, ... );
+    void                    Mode                ( CChannel* pChannel, const char* szModes,
+                                                  const std::vector < CString >& vecModeParams );
     void                    BMode               ( CChannel* pChannel, const char* szModes, ... );
+    void                    BMode               ( CChannel* pChannel, const char* szModes,
+                                                  const std::vector < CString >& vecModeParams );
 
     // Kickban
     void                    Kick                ( CUser* user, CChannel* pCannel, const CString& szReason );

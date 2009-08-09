@@ -54,6 +54,10 @@ public:
     unsigned long long
                     GetChannelID            ( const CString& szChannelName );
     CChannel*       GetChannel              ( CUser& s, const CString& szChannelName );
+    CChannel*       GetRegisteredChannel    ( CUser& s,
+                                              const CString& szChannelName,
+                                              unsigned long long& ID,
+                                              bool bAllowUnregistered = false );
     bool            HasChannelDebug         ( unsigned long long ID );
     int             GetAccess               ( CUser& s, unsigned long long ID, bool bCheckFounder = true );
     int             GetAccess               ( unsigned long long AccountID,
@@ -76,6 +80,19 @@ private:
     COMMAND(Identify);
     COMMAND(Levels);
     COMMAND(Access);
+
+    bool DoOpdeopEtc ( CUser& s,
+                       SCommandInfo& info,
+                       const char* szCommand,
+                       const char* szPrefix,
+                       const char* szFlag,
+                       EChannelLevel eRequiredLevel );
+    COMMAND(Op);
+    COMMAND(Deop);
+    COMMAND(Halfop);
+    COMMAND(Dehalfop);
+    COMMAND(Voice);
+    COMMAND(Devoice);
 #undef SET_COMMAND
 #undef COMMAND
 
