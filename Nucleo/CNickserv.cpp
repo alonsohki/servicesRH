@@ -813,7 +813,12 @@ bool CNickserv::DestroyFullDDBGroup ( CUser* pUser, unsigned long long ID )
           ++i )
     {
         CString& szMember = (*i);
-        protocol.InsertIntoDDB ( 'w', szMember, "" );
+        if ( protocol.GetDDBValue ( 'w', szMember ) )
+            protocol.InsertIntoDDB ( 'w', szMember, "" );
+        if ( protocol.GetDDBValue ( 'v', szMember ) )
+            protocol.InsertIntoDDB ( 'v', szMember, "" );
+        if ( protocol.GetDDBValue ( 'f', szMember ) )
+            protocol.InsertIntoDDB ( 'f', szMember, "" );
 
         // Comprobamos si los nicks a dropar están prohibidos
         const char* szHash = protocol.GetDDBValue ( 'n', szMember );
