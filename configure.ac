@@ -23,7 +23,7 @@ AC_TYPE_SSIZE_T
 
 # Checks for library functions.
 
-cd Nucleo/google/sparsehash-1.4
+cd Nucleo/google/sparsehash
 ./configure
 cd ../../..
 

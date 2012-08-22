@@ -1,0 +1,49 @@
+10
+
+dir
+116
+http://sparsehash.googlecode.com/svn/tags/sparsehash-2.0.1/vsprojects
+http://sparsehash.googlecode.com/svn
+
+
+
+2012-01-31T23:50:02.386177Z
+106
+csilvers
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+21bedea4-f223-4c8b-73d6-85019ffb75a9
+
+libc_allocator_with_realloc_test
+dir
+
+sparsetable_unittest
+dir
+
+type_traits_unittest
+dir
+
+template_util_unittest
+dir
+
+simple_test
+dir
+
+hashtable_test
+dir
+
+time_hash_map
+dir
+

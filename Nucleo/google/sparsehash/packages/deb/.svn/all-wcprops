@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/110/tags/sparsehash-2.0.1/packages/deb
+END
+control
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/!svn/ver/110/tags/sparsehash-2.0.1/packages/deb/control
+END
+sparsehash.dirs
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/!svn/ver/110/tags/sparsehash-2.0.1/packages/deb/sparsehash.dirs
+END
+compat
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/110/tags/sparsehash-2.0.1/packages/deb/compat
+END
+sparsehash.install
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/!svn/ver/110/tags/sparsehash-2.0.1/packages/deb/sparsehash.install
+END
+changelog
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/110/tags/sparsehash-2.0.1/packages/deb/changelog
+END
+docs
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/110/tags/sparsehash-2.0.1/packages/deb/docs
+END
+copyright
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/110/tags/sparsehash-2.0.1/packages/deb/copyright
+END
+rules
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/110/tags/sparsehash-2.0.1/packages/deb/rules
+END
+README
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/110/tags/sparsehash-2.0.1/packages/deb/README
+END

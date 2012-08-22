@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/110/tags/sparsehash-2.0.1/src/windows
+END
+port.cc
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/110/tags/sparsehash-2.0.1/src/windows/port.cc
+END
+port.h
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/110/tags/sparsehash-2.0.1/src/windows/port.h
+END
+config.h
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/!svn/ver/110/tags/sparsehash-2.0.1/src/windows/config.h
+END
