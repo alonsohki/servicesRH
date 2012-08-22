@@ -68,7 +68,7 @@ bool CDatabase::Connect ( const CString& szHost,
     my_bool bReconnect = true;
     mysql_options ( &m_handler, MYSQL_OPT_RECONNECT, &bReconnect );
 
-    if ( ! mysql_real_connect ( &m_handler, szHost.c_str (), szUser.c_str (), szPass.c_str (), szDb.c_str (), usPort, "", 0 ) )
+    if ( ! mysql_real_connect ( &m_handler, szHost.c_str (), szUser.c_str (), szPass.c_str (), szDb.c_str (), usPort, NULL, 0 ) )
     {
         m_iErrno = mysql_errno ( &m_handler );
         m_szError = mysql_error ( &m_handler );
